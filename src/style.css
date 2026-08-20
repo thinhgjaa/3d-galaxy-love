@@ -968,3 +968,80 @@ input:checked + .slider:before {
 .saturn-modal-header {
   margin-bottom: 16px;
 }
+
+/* =========================================================================
+   RESPONSIVE OPTIMIZATIONS (Tối Ưu Hóa Màn Hình Điện Thoại & Máy Tính Bảng)
+   ========================================================================= */
+@media (max-width: 768px) {
+  .ui-controls {
+    bottom: 14px;
+    right: 50%;
+    transform: translateX(50%);
+    max-width: 96vw;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(14, 10, 26, 0.75);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .ui-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ui-controls.hidden {
+    transform: translate(50%, 20px);
+  }
+
+  .ui-controls button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 17px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .text-modal-content,
+  .settings-modal-content,
+  .saturn-modal-content,
+  .star-wishes-modal-content,
+  .snapshot-modal-content,
+  .music-modal-content {
+    max-width: 92vw;
+    width: 92vw;
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  .settings-cats-tabs {
+    gap: 4px;
+    padding-bottom: 8px;
+  }
+
+  .settings-cat-btn {
+    font-size: 0.76rem;
+    padding: 5px 9px;
+  }
+
+  .counter-box {
+    top: 14px;
+    left: 14px;
+    padding: 8px 14px;
+  }
+
+  .counter-box h4 {
+    font-size: 0.78rem;
+  }
+
+  .counter-number {
+    font-size: 1.15rem;
+  }
+}
