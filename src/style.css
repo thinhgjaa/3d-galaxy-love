@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -9,7 +11,9 @@ html, body {
   background-color: #000;
   width: 100vw;
   height: 100vh;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #app {
@@ -32,189 +36,20 @@ canvas {
   z-index: 80;
 }
 
+
+/* =========================================================================
+   UI CONTROLS (Thanh Công Cụ)
+   ========================================================================= */
 .ui-controls {
   position: absolute;
-  bottom: 30px;
-  right: 30px;
+  bottom: 26px;
+  right: 26px;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   z-index: 100;
   max-width: 90vw;
   justify-content: flex-end;
-}
-
-.ui-controls button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(20, 20, 35, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: white;
-  font-size: 19px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-  user-select: none;
-}
-
-.ui-controls button:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-4px) scale(1.08);
-  box-shadow: 0 8px 24px rgba(255, 0, 127, 0.45);
-  border-color: rgba(255, 0, 127, 0.6);
-}
-
-.ui-controls button:active {
-  transform: translateY(0) scale(0.95);
-}
-
-.ui-controls button.active {
-  background: rgba(255, 0, 127, 0.35);
-  border-color: #ff007f;
-  box-shadow: 0 0 15px rgba(255, 0, 127, 0.7);
-}
-
-.ui-controls button.muted {
-  background: rgba(255, 50, 50, 0.35);
-  border-color: rgba(255, 50, 50, 0.6);
-}
-
-/* Modal nhập văn bản */
-.text-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  animation: fadeIn 0.3s ease;
-}
-
-.text-modal.show {
-  display: flex;
-}
-
-.text-modal-content {
-  background: rgba(25, 20, 38, 0.85);
-  border: 1px solid rgba(255, 0, 127, 0.4);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 0, 127, 0.25);
-  backdrop-filter: blur(20px);
-  padding: 24px 30px;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 420px;
-  text-align: center;
-  color: #fff;
-  animation: scaleUp 0.3s ease;
-}
-
-.text-modal-content h3 {
-  margin-bottom: 18px;
-  font-size: 1.25rem;
-  font-weight: 600;
-  background: linear-gradient(135deg, #fff, #ff77aa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-modal-content input {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.text-modal-content input:focus {
-  border-color: #ff007f;
-  box-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.modal-buttons button {
-  padding: 10px 22px;
-  border-radius: 12px;
-  border: none;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-#btn-save-text {
-  background: linear-gradient(135deg, #ff007f, #ff5599);
-  color: white;
-  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
-}
-
-#btn-save-text:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 0, 127, 0.6);
-}
-
-#btn-cancel-text {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ddd;
-}
-
-#btn-cancel-text:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Hướng dẫn tương tác nhỏ */
-.hint-box {
-  position: absolute;
-  bottom: 30px;
-  left: 30px;
-  padding: 10px 18px;
-  background: rgba(20, 20, 35, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 30px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 0.85rem;
-  pointer-events: none;
-  z-index: 90;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-.hint-box.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(20px);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Ẩn thanh công cụ mượt mà (Zen Mode) */
-.ui-controls {
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
@@ -224,6 +59,48 @@ canvas {
   transform: translateY(20px);
 }
 
+.ui-controls button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(22, 18, 38, 0.68);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: white;
+  font-size: 19px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  position: relative;
+}
+
+.ui-controls button:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: 0 10px 25px rgba(255, 0, 127, 0.45);
+  border-color: rgba(255, 0, 127, 0.7);
+}
+
+.ui-controls button:active {
+  transform: translateY(0) scale(0.94);
+}
+
+.ui-controls button.active {
+  background: rgba(255, 0, 127, 0.35);
+  border-color: #ff007f;
+  box-shadow: 0 0 18px rgba(255, 0, 127, 0.75);
+}
+
+.ui-controls button.muted {
+  background: rgba(255, 60, 60, 0.35);
+  border-color: rgba(255, 60, 60, 0.65);
+}
+
+/* Nút nhỏ hiện lại thanh công cụ (Zen mode) */
 .btn-restore-ui {
   position: absolute;
   bottom: 24px;
@@ -232,16 +109,17 @@ canvas {
   height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(25, 20, 40, 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(25, 20, 40, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #ff77aa;
-  font-size: 18px;
+  font-size: 19px;
   cursor: pointer;
   z-index: 105;
   display: none;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+  box-shadow: 0 4px 18px rgba(255, 0, 127, 0.45);
   transition: all 0.3s ease;
 }
 
@@ -252,7 +130,7 @@ canvas {
 
 .btn-restore-ui:hover {
   transform: scale(1.15) rotate(15deg);
-  background: rgba(255, 0, 127, 0.3);
+  background: rgba(255, 0, 127, 0.4);
   border-color: #ff007f;
 }
 
@@ -271,24 +149,390 @@ canvas {
   opacity: 1;
 }
 
-@media (max-width: 600px) {
+/* =========================================================================
+   MODALS SYSTEM (Khung Kính Mờ Đa Chức Năng)
+   ========================================================================= */
+.text-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.3s ease;
+  padding: 16px;
+}
+
+.text-modal.show {
+  display: flex;
+}
+
+.text-modal-content {
+  background: rgba(26, 20, 42, 0.88);
+  border: 1px solid rgba(255, 0, 127, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 0, 127, 0.3);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 26px 30px;
+  border-radius: 22px;
+  width: 92%;
+  max-width: 440px;
+  text-align: center;
+  color: #fff;
+  animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.text-modal-content h3 {
+  margin-bottom: 16px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff, #ff88bb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.text-modal-content input,
+.text-modal-content textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.98rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.text-modal-content input:focus,
+.text-modal-content textarea:focus {
+  border-color: #ff007f;
+  box-shadow: 0 0 14px rgba(255, 0, 127, 0.5);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-buttons button:hover {
+  transform: translateY(-2px);
+}
+
+#btn-save-text,
+#btn-save-counter,
+#btn-download-snapshot,
+#btn-save-wishes,
+#btn-play-youtube {
+  background: linear-gradient(135deg, #ff007f, #ff5599);
+  color: white;
+  box-shadow: 0 4px 16px rgba(255, 0, 127, 0.45);
+}
+
+#btn-save-text:hover,
+#btn-save-counter:hover,
+#btn-download-snapshot:hover,
+#btn-save-wishes:hover,
+#btn-play-youtube:hover {
+  box-shadow: 0 6px 22px rgba(255, 0, 127, 0.7);
+}
+
+#btn-cancel-text,
+#btn-cancel-counter,
+#btn-close-wish,
+#btn-cancel-wishes,
+#btn-close-snapshot,
+#btn-cancel-music,
+#btn-default-music,
+#btn-reset-wishes {
+  background: rgba(255, 255, 255, 0.14);
+  color: #e5e5e5;
+}
+
+#btn-cancel-text:hover,
+#btn-cancel-counter:hover,
+#btn-close-wish:hover,
+#btn-cancel-wishes:hover,
+#btn-close-snapshot:hover,
+#btn-cancel-music:hover,
+#btn-default-music:hover,
+#btn-reset-wishes:hover {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+#btn-next-wish,
+#btn-edit-wishes {
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  color: #00f0ff;
+}
+
+#btn-next-wish:hover,
+#btn-edit-wishes:hover {
+  background: rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.45);
+}
+
+/* =========================================================================
+   STAR WISHES CARD (Thư Tình Vũ Trụ)
+   ========================================================================= */
+.star-wish-card {
+  max-width: 480px;
+  background: radial-gradient(circle at 50% 0%, rgba(60, 20, 80, 0.95), rgba(20, 12, 35, 0.96));
+  border: 1.5px solid rgba(255, 180, 220, 0.5);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 80, 180, 0.35);
+  padding: 30px 32px;
+}
+
+.wish-card-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.8));
+}
+
+.wish-quote-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #ff77aa;
+  padding: 18px 20px;
+  border-radius: 8px 14px 14px 8px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+#wish-quote-text {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.12rem;
+  line-height: 1.6;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.wish-author {
+  font-size: 0.85rem;
+  color: rgba(255, 180, 220, 0.85);
+  text-align: right;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* Wishes Editor */
+.wishes-editor textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.editor-desc {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+/* =========================================================================
+   POLAROID SNAPSHOT PREVIEW (Thiệp Kỷ Niệm)
+   ========================================================================= */
+.snapshot-card {
+  max-width: 440px;
+  padding: 20px 24px;
+}
+
+.polaroid-wrapper {
+  background: #ffffff;
+  padding: 12px 12px 24px 12px;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  margin: 12px auto;
+  width: 100%;
+  max-width: 360px;
+}
+
+#snapshot-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+}
+
+/* =========================================================================
+   MUSIC MODAL PRESETS (Danh Sách Nhạc)
+   ========================================================================= */
+.music-presets-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: left;
+  margin: 12px 0 8px 0;
+}
+
+.music-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-preset-song {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-preset-song:hover {
+  background: rgba(255, 0, 127, 0.3);
+  border-color: #ff007f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 0, 127, 0.35);
+}
+
+.music-custom-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 14px 0 12px 0;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.music-custom-divider::before,
+.music-custom-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.music-custom-divider span {
+  padding: 0 10px;
+}
+
+/* =========================================================================
+   HINT BOX & ANIMATIONS
+   ========================================================================= */
+.hint-box {
+  position: absolute;
+  bottom: 26px;
+  left: 26px;
+  padding: 10px 18px;
+  background: rgba(18, 14, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 30px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.82rem;
+  pointer-events: none;
+  z-index: 90;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hint-box b {
+  color: #ff88bb;
+}
+
+.hint-box.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================================
+   RESPONSIVE DESIGN (Tối Ưu Mọi Màn Hình)
+   ========================================================================= */
+@media (max-width: 768px) {
+
   .ui-controls {
-    bottom: 20px;
-    right: 20px;
+    bottom: 16px;
+    right: 16px;
     gap: 8px;
+    max-width: 95vw;
   }
+
   .ui-controls button {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     font-size: 16px;
   }
+
   .hint-box {
     display: none;
+  }
+
+  .music-presets-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 /* =========================================================================
-   LOADING SCREEN — Màn hình chào vũ trụ tình yêu
+   LOADING SCREEN (Màn Hình Chờ Lung Linh)
    ========================================================================= */
 #loading-screen {
   position: fixed;
@@ -314,7 +558,6 @@ canvas {
   pointer-events: none;
 }
 
-/* Các điểm sao được tạo động bằng JS */
 .l-star {
   position: absolute;
   background: #fff;
@@ -327,7 +570,6 @@ canvas {
   to   { opacity: 1.0;  transform: scale(1.5); }
 }
 
-/* Hào quang tinh vân nền */
 .loading-nebula {
   background:
     radial-gradient(ellipse 60% 38% at 12% 22%, rgba(170, 0, 255, 0.14) 0%, transparent 70%),
@@ -342,7 +584,6 @@ canvas {
   to   { opacity: 1.0; transform: scale(1.06) rotate(1.5deg); }
 }
 
-/* Nội dung loading */
 .loading-content {
   position: relative;
   z-index: 1;
@@ -354,7 +595,6 @@ canvas {
   padding: 0 28px;
 }
 
-/* Trái tim xung nhịp */
 .loading-heart-wrapper {
   position: relative;
   width: 108px;
@@ -378,7 +618,6 @@ canvas {
   65%       { transform: scale(1.08); filter: drop-shadow(0 0 26px rgba(255, 0, 127, 0.88)); }
 }
 
-/* Vòng sóng lan toa từ trái tim */
 .loading-ring {
   position: absolute;
   inset: 0;
@@ -395,7 +634,6 @@ canvas {
   100% { transform: scale(2.4);  opacity: 0; }
 }
 
-/* Tiêu đề gradient */
 .loading-title {
   font-size: clamp(1.9rem, 6vw, 3.1rem);
   font-weight: 800;
@@ -422,7 +660,6 @@ canvas {
   margin: 0;
 }
 
-/* Thanh tiến trình */
 .loading-bar-wrap {
   display: flex;
   align-items: center;
@@ -450,7 +687,6 @@ canvas {
   transition: width 0.06s linear;
 }
 
-/* Chấm sáng đầu thanh tiến trình */
 .loading-bar::after {
   content: '';
   position: absolute;
@@ -479,4 +715,3 @@ canvas {
   margin: 0;
   letter-spacing: 0.02em;
 }
-

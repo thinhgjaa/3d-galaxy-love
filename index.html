@@ -33,15 +33,23 @@
     </div>
 
     <div id="app"></div>
+
     <!-- Canvas cho hiệu ứng vệt bụi sao ma thuật theo con trỏ chuột -->
     <canvas id="fairy-canvas"></canvas>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- UI CONTROLS (Thanh điều khiển vũ trụ)                     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="ui-controls" class="ui-controls">
+      <button id="btn-star-wishes" title="Những Vì Sao Ước Nguyện (Thư Tình)">🌟</button>
+      <button id="btn-firework" title="Bắn Pháo Hoa Trái Tim 3D">🎆</button>
+      <button id="btn-snapshot" title="Chụp Ảnh Kỷ Niệm & Xuất Thiệp">📸</button>
       <button id="btn-wormhole" title="Cổng Dịch Chuyển Không Gian (Wormhole Warp)">🌀</button>
       <button id="btn-theme" title="Đổi Bảng Màu Vũ Trụ (Theme)">🎨</button>
       <button id="btn-cinema" title="Chế Độ Điện Ảnh (Cinema Tour)">🎥</button>
       <button id="btn-text" title="Đổi Lời Nhắn Tình Yêu">💌</button>
       <button id="btn-upload" title="Tải Ảnh Cá Nhân Lên">🖼️</button>
-      <button id="btn-change-music" title="Đổi Nhạc (Dán Link YouTube)">📻</button>
+      <button id="btn-change-music" title="Đổi Nhạc (Preset & YouTube)">📻</button>
       <button id="btn-music" title="Bật/Tắt Âm Thanh">🎵</button>
       <button id="btn-reset-view" title="Về Góc Nhìn Toàn Cảnh">🌐</button>
       <button id="btn-toggle-ui" title="Ẩn Thanh Công Cụ (Zen Mode)">👁️</button>
@@ -61,11 +69,15 @@
       <div id="yt-player"></div>
     </div>
 
-    <!-- Modal nhập lời nhắn -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- MODALS                                                      -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- 1. Modal nhập lời nhắn nổi 3D -->
     <div id="text-modal" class="text-modal">
       <div class="text-modal-content">
         <h3>💌 Lời nhắn gửi tới Vũ Trụ</h3>
-        <input type="text" id="custom-text-input" placeholder="Nhập tên hoặc lời nhắn..." maxlength="35" value="Forever & Always 💖" />
+        <input type="text" id="custom-text-input" placeholder="Nhập tên hoặc lời nhắn..." maxlength="40" value="Forever & Always 💖" />
         <div class="modal-buttons">
           <button id="btn-save-text">Cập Nhật</button>
           <button id="btn-cancel-text">Đóng</button>
@@ -73,14 +85,72 @@
       </div>
     </div>
 
-    <!-- Modal đổi nhạc YouTube -->
-    <div id="music-modal" class="text-modal">
-      <div class="text-modal-content">
-        <h3>📻 Đổi Nhạc Nền (Link YouTube)</h3>
-        <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
+
+    <!-- 3. Modal Lá Thư Tình Từ Ngôi Sao Ước Nguyện -->
+    <div id="star-wish-modal" class="text-modal">
+      <div class="text-modal-content star-wish-card">
+        <div class="wish-card-icon">✨ 💌 ✨</div>
+        <h3 id="wish-title">Lời Nhắn Gửi Tới Em</h3>
+        <div class="wish-quote-box">
+          <p id="wish-quote-text">"Vũ trụ có hàng tỷ vì sao, nhưng với anh, em là ngôi sao sáng và đẹp nhất."</p>
+        </div>
+        <div class="wish-author" id="wish-author-text">💖 Từ Vũ Trụ Gửi Tới Bạn</div>
+        <div class="modal-buttons wish-actions">
+          <button id="btn-next-wish">🎲 Ngẫu Nhiên Khác</button>
+          <button id="btn-edit-wishes">✏️ Soạn Lời Nhắn</button>
+          <button id="btn-close-wish">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Modal Quản Lý / Thêm Lời Chúc Ước Nguyện -->
+    <div id="wishes-edit-modal" class="text-modal">
+      <div class="text-modal-content wishes-editor">
+        <h3>✨ Danh Sách Lời Nhắn Ước Nguyện</h3>
+        <p class="editor-desc">Nhập mỗi lời nhắn một dòng (tối đa 20 lời nhắn):</p>
+        <textarea id="wishes-textarea" rows="6" placeholder="Nhập những lời nhắn tình yêu ngọt ngào của bạn..."></textarea>
         <div class="modal-buttons">
-          <button id="btn-play-youtube">Phát Nhạc</button>
-          <button id="btn-default-music">Nhạc Mặc Định</button>
+          <button id="btn-save-wishes">Lưu Danh Sách</button>
+          <button id="btn-reset-wishes">Khôi Phục Mặc Định</button>
+          <button id="btn-cancel-wishes">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Modal Chụp & Xuất Thiệp Ảnh Polaroid Kỷ Niệm -->
+    <div id="snapshot-modal" class="text-modal">
+      <div class="text-modal-content snapshot-card">
+        <h3>📸 Thiệp Vũ Trụ Kỷ Niệm</h3>
+        <div class="polaroid-wrapper">
+          <canvas id="snapshot-canvas"></canvas>
+        </div>
+        <div class="modal-buttons">
+          <button id="btn-download-snapshot">💾 Tải Ảnh Về Máy</button>
+          <button id="btn-close-snapshot">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Modal Đổi Nhạc & Preset Playlist -->
+    <div id="music-modal" class="text-modal">
+      <div class="text-modal-content music-modal-content">
+        <h3>📻 Chọn Nhạc Vũ Trụ Lãng Mạn</h3>
+        
+        <div class="music-presets-title">🌟 Danh Sách Phát Chọn Nhanh:</div>
+        <div class="music-presets-grid">
+          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=GxldQ9eX2wo">💖 Until I Found You</button>
+          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=HAa8d_eG_g8">✨ Golden Hour (Piano)</button>
+          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=p4vW7B4_69g">🌙 Can't Help Falling in Love</button>
+          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=2Vv-BfVoq4g">🪐 Ed Sheeran - Perfect</button>
+          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=5qap5aO4i9A">☕ Lofi Hip Hop / Chill Love</button>
+        </div>
+
+        <div class="music-custom-divider"><span>HOẶC DÁN LINK YOUTUBE</span></div>
+        <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
+        
+        <div class="modal-buttons">
+          <button id="btn-play-youtube">Phát Link Này</button>
+          <button id="btn-default-music">Nhạc Gốc</button>
           <button id="btn-cancel-music">Đóng</button>
         </div>
       </div>
@@ -88,7 +158,7 @@
 
     <!-- Hướng dẫn tương tác nhỏ xinh ở góc trái -->
     <div id="hint-box" class="hint-box">
-      <span>✨ Nhấp đúp để gọi sao băng | Click để bung pháo hoa tim</span>
+      <span>✨ <b>Click / Chạm:</b> Bung pháo hoa tim | <b>Nhấp đúp / Space:</b> Sao băng | <b>F:</b> Pháo hoa | <b>S:</b> Chụp ảnh</span>
     </div>
 
     <script type="module" src="/src/main.js"></script>

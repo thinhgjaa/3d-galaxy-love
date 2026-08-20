@@ -7,16 +7,75 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 
 /**
  * =========================================================================
- * 1. BASE SETUP & SCENES
+ * 1. COLOR THEMES (Bộ màu vũ trụ) & LOCALSTORAGE
+ * =========================================================================
+ */
+const colorThemes = [
+    {
+        name: 'Romance Pink',
+        insideColor: '#ff007f',
+        outsideColor: '#100030',
+        heartBase: '#ff0055',
+        heartGlow: '#ff77aa',
+        lightColor: '#ff007f',
+        nebulaPrimary: '#ff007f',
+        nebulaSecondary: '#9900ee'
+    },
+    {
+        name: 'Deep Cyberpunk',
+        insideColor: '#00f0ff',
+        outsideColor: '#0d0033',
+        heartBase: '#00d2ff',
+        heartGlow: '#a855f7',
+        lightColor: '#00e5ff',
+        nebulaPrimary: '#00d2ff',
+        nebulaSecondary: '#6c00ff'
+    },
+    {
+        name: 'Emerald Aurora',
+        insideColor: '#00ff88',
+        outsideColor: '#021815',
+        heartBase: '#00ffaa',
+        heartGlow: '#70ff00',
+        lightColor: '#00ff88',
+        nebulaPrimary: '#00ff88',
+        nebulaSecondary: '#00a3ff'
+    },
+    {
+        name: 'Golden Sunset',
+        insideColor: '#ffaa00',
+        outsideColor: '#250800',
+        heartBase: '#ff6600',
+        heartGlow: '#ffdd00',
+        lightColor: '#ffaa00',
+        nebulaPrimary: '#ffaa00',
+        nebulaSecondary: '#ff0055'
+    }
+];
+
+let currentThemeIndex = 0;
+try {
+    const savedTheme = localStorage.getItem('galaxy_theme_index');
+    if (savedTheme !== null) {
+        const idx = parseInt(savedTheme, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < colorThemes.length) {
+            currentThemeIndex = idx;
+        }
+    }
+} catch (e) {}
+
+/**
+ * =========================================================================
+ * 2. BASE SETUP & SCENES
  * =========================================================================
  */
 const canvas = document.createElement('canvas');
 document.querySelector('#app').appendChild(canvas);
 
-// Scene 1: Cho các vật thể phát sáng có hiệu ứng Bloom (Galaxy, Heart, Stars, Meteors, Text)
+// Scene 1: Cho các vật thể phát sáng có hiệu ứng Bloom (Galaxy, Heart, Nebula, Stars, Meteors, Fireworks)
 const scene = new THREE.Scene();
 
-// Scene 2: Scene riêng cho Sprites (ảnh, emoji) để không bị cháy sáng
+// Scene 2: Scene riêng cho Sprites (ảnh, emoji, nhãn chữ) để không bị cháy sáng
 const sceneSprites = new THREE.Scene();
 
 // Sizes
@@ -42,15 +101,17 @@ controls.update();
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
-const pointLight = new THREE.PointLight('#ff007f', 2, 20);
-pointLight.position.set(0, 3, 0);
+const initialTheme = colorThemes[currentThemeIndex];
+const pointLight = new THREE.PointLight(initialTheme.lightColor, 2.2, 22);
+pointLight.position.set(0, 2.8, 0);
 scene.add(pointLight);
 
-// Renderer (Tối ưu PixelRatio max 1.5 để mượt mà trên màn hình độ phân giải cao/Retina)
+// Renderer
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
-    powerPreference: "high-performance"
+    powerPreference: "high-performance",
+    preserveDrawingBuffer: true // Cho phép chụp ảnh canvas xuất sắc
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
@@ -58,17 +119,17 @@ renderer.setClearColor('#000000');
 renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.autoClear = false;
 
-// Post Processing (Chạy Bloom ở độ phân giải 1/2 để tăng tốc GPU gấp 4 lần)
+// Post Processing (Bloom Pass - Tối ưu êm dịu, không chói lóa)
 const renderScene = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2)),
-    1.2,
-    0.4,
+    0.85,
+    0.35,
     0.85
 );
-bloomPass.threshold = 0.0;
-bloomPass.strength = 1.2;
-bloomPass.radius = 0.5;
+bloomPass.threshold = 0.08;
+bloomPass.strength = 0.85;
+bloomPass.radius = 0.35;
 
 const composer = new EffectComposer(renderer);
 composer.addPass(renderScene);
@@ -89,63 +150,10 @@ window.addEventListener('resize', () => {
     bloomPass.setSize(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2));
 });
 
-/**
- * =========================================================================
- * 2. COLOR THEMES (Bộ màu vũ trụ)
- * =========================================================================
- */
-const colorThemes = [
-    {
-        name: 'Romance Pink',
-        insideColor: '#ff007f',
-        outsideColor: '#100030',
-        heartBase: '#ff0055',
-        heartGlow: '#ff77aa',
-        lightColor: '#ff007f'
-    },
-    {
-        name: 'Deep Cyberpunk',
-        insideColor: '#00f0ff',
-        outsideColor: '#0d0033',
-        heartBase: '#00d2ff',
-        heartGlow: '#a855f7',
-        lightColor: '#00e5ff'
-    },
-    {
-        name: 'Emerald Aurora',
-        insideColor: '#00ff88',
-        outsideColor: '#021815',
-        heartBase: '#00ffaa',
-        heartGlow: '#70ff00',
-        lightColor: '#00ff88'
-    },
-    {
-        name: 'Golden Sunset',
-        insideColor: '#ffaa00',
-        outsideColor: '#250800',
-        heartBase: '#ff6600',
-        heartGlow: '#ffdd00',
-        lightColor: '#ffaa00'
-    }
-];
-
-// Load saved theme index from localStorage if exists
-let currentThemeIndex = 0;
-try {
-    const savedTheme = localStorage.getItem('galaxy_theme_index');
-    if (savedTheme !== null) {
-        const idx = parseInt(savedTheme, 10);
-        if (!isNaN(idx) && idx >= 0 && idx < colorThemes.length) {
-            currentThemeIndex = idx;
-        }
-    }
-} catch (e) {
-    console.warn('LocalStorage error:', e);
-}
 
 /**
  * =========================================================================
- * 3. GALAXY GENERATION (Tối ưu 28.000 hạt với kích thước vừa vặn)
+ * 3. GALAXY GENERATION (28.000 hạt ngân hà xoắn ốc)
  * =========================================================================
  */
 const galaxyParams = {
@@ -218,7 +226,7 @@ generateGalaxy();
 
 /**
  * =========================================================================
- * 3.1 DEEP COSMIC STARFIELD (Vòm sao lung linh lấp đầy không gian phía trên)
+ * 3.1 DEEP COSMIC STARFIELD (Vòm sao lung linh hậu cảnh)
  * =========================================================================
  */
 const starfieldCount = 2200;
@@ -228,7 +236,6 @@ const starfieldColors = new Float32Array(starfieldCount * 3);
 
 for (let i = 0; i < starfieldCount; i++) {
     const i3 = i * 3;
-    // Phân bố sao trên hình cầu vòm bao quanh không gian vũ trụ
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos((Math.random() * 2) - 1);
     const radius = 18 + Math.random() * 22;
@@ -237,14 +244,13 @@ for (let i = 0; i < starfieldCount; i++) {
     starfieldPositions[i3 + 1] = Math.sin(phi) * Math.sin(theta) * radius + 1.5;
     starfieldPositions[i3 + 2] = Math.cos(phi) * radius;
 
-    // Màu sắc sao: xanh pastel, hồng tím, trắng lấp lánh
     const colType = Math.random();
     if (colType < 0.4) {
-        starfieldColors[i3] = 1.0; starfieldColors[i3 + 1] = 0.95; starfieldColors[i3 + 2] = 1.0; // Trắng sáng
+        starfieldColors[i3] = 1.0; starfieldColors[i3 + 1] = 0.95; starfieldColors[i3 + 2] = 1.0;
     } else if (colType < 0.7) {
-        starfieldColors[i3] = 0.6; starfieldColors[i3 + 1] = 0.85; starfieldColors[i3 + 2] = 1.0; // Xanh băng
+        starfieldColors[i3] = 0.6; starfieldColors[i3 + 1] = 0.85; starfieldColors[i3 + 2] = 1.0;
     } else {
-        starfieldColors[i3] = 1.0; starfieldColors[i3 + 1] = 0.65; starfieldColors[i3 + 2] = 0.9; // Hồng tím
+        starfieldColors[i3] = 1.0; starfieldColors[i3 + 1] = 0.65; starfieldColors[i3 + 2] = 0.9;
     }
 }
 
@@ -255,7 +261,7 @@ const starfieldMat = new THREE.PointsMaterial({
     size: 0.045,
     vertexColors: true,
     transparent: true,
-    opacity: 0.8,
+    opacity: 0.82,
     depthWrite: false,
     blending: THREE.AdditiveBlending
 });
@@ -265,7 +271,7 @@ scene.add(starfieldPoints);
 
 /**
  * =========================================================================
- * 4. 3D HEART SYSTEM (Tối ưu 6.000 hạt đẹp mắt)
+ * 4. 3D HEART SYSTEM (6.500 hạt trái tim tham số 3D)
  * =========================================================================
  */
 let heartPoints = null;
@@ -298,13 +304,9 @@ const generateHeart = () => {
         const val = a * a * a - (x * x * z * z * z) - (0.1125 * y * y * z * z * z);
 
         if (val <= 0.0) {
-            let tx = x * 1.0;
-            let ty = z * 1.0;
-            let tz = y * 1.0;
-
-            positions[count * 3] = tx;
-            positions[count * 3 + 1] = ty;
-            positions[count * 3 + 2] = tz;
+            positions[count * 3] = x * 1.0;
+            positions[count * 3 + 1] = z * 1.0;
+            positions[count * 3 + 2] = y * 1.0;
 
             const mixedColor = baseColor.clone();
             if (Math.random() > 0.5) mixedColor.lerp(glowColor, Math.random());
@@ -323,7 +325,7 @@ const generateHeart = () => {
     heartMaterial = new THREE.PointsMaterial({
         size: 0.018,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.58,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -339,7 +341,7 @@ generateHeart();
 
 /**
  * =========================================================================
- * 4.1 SATURN-LIKE PLANETARY RING (Vành đai Sao Thổ quanh Trái Tim)
+ * 4.1 SATURN-LIKE PLANETARY RING (Vành đai quanh Trái Tim)
  * =========================================================================
  */
 let heartRingPoints = null;
@@ -367,20 +369,18 @@ const generateHeartRing = () => {
 
     for (let i = 0; i < ringCount; i++) {
         const i3 = i * 3;
-        // Bán kính ngẫu nhiên với dải phân cách rãnh Cassini tinh tế
         let r = innerRadius + Math.random() * (outerRadius - innerRadius);
         if (r > 1.95 && r < 2.12 && Math.random() > 0.15) {
             r = (Math.random() > 0.5 ? 1.85 : 2.22) + Math.random() * 0.3;
         }
 
         const angle = Math.random() * Math.PI * 2;
-        const thickness = (Math.random() - 0.5) * 0.06; // Độ mỏng dẹt của vành đai
+        const thickness = (Math.random() - 0.5) * 0.06;
 
         positions[i3] = Math.cos(angle) * r;
         positions[i3 + 1] = thickness;
         positions[i3 + 2] = Math.sin(angle) * r;
 
-        // Gradient màu từ mép trong ra mép ngoài
         const ratio = (r - innerRadius) / (outerRadius - innerRadius);
         const col = innerColor.clone().lerp(outerColor, ratio);
 
@@ -403,10 +403,7 @@ const generateHeartRing = () => {
     });
 
     heartRingPoints = new THREE.Points(heartRingGeometry, heartRingMaterial);
-    heartRingPoints.position.y = 2.4; // Tọa độ tâm trái tim
-    // Vành đai nằm ngang hoàn toàn (song song mặt phẳng ngân hà)
-    heartRingPoints.rotation.x = 0;
-    heartRingPoints.rotation.z = 0;
+    heartRingPoints.position.y = 2.4;
     scene.add(heartRingPoints);
 };
 
@@ -428,13 +425,12 @@ const createTextTexture = (text) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const theme = colorThemes[currentThemeIndex];
-    ctx.font = '600 46px "Segoe UI", Roboto, sans-serif';
+    ctx.font = '600 46px "Outfit", "Segoe UI", Roboto, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Đổ bóng màu pastel nhẹ nhàng, không bị chói
     ctx.shadowColor = theme.heartGlow;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 14;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(text, 512, 128);
 
@@ -447,14 +443,13 @@ const updateFloatingText = (text) => {
         const material = new THREE.SpriteMaterial({
             map: texture,
             transparent: true,
-            opacity: 0.92,
+            opacity: 0.94,
             depthWrite: false,
-            blending: THREE.NormalBlending // Dùng NormalBlending để chữ rõ nét và dịu mắt
+            blending: THREE.NormalBlending
         });
         textSprite = new THREE.Sprite(material);
         textSprite.position.set(0, 3.6, 0);
         textSprite.scale.set(3.6, 0.9, 1);
-        // Đưa vào sceneSprites để không bị BloomPass làm lóa mắt
         sceneSprites.add(textSprite);
     } else {
         textSprite.material.map.dispose();
@@ -463,7 +458,6 @@ const updateFloatingText = (text) => {
     }
 };
 
-// Load initial text from localStorage
 let initialLoveText = 'Forever & Always 💖';
 try {
     const savedText = localStorage.getItem('galaxy_love_text');
@@ -518,7 +512,7 @@ const createConstellationLabelTexture = (text) => {
     canvas.width = 512;
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
-    ctx.font = '600 36px "Segoe UI", Roboto, sans-serif';
+    ctx.font = '600 36px "Outfit", Roboto, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = '#00f0ff';
@@ -531,9 +525,8 @@ const createConstellationLabelTexture = (text) => {
 const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') => {
     const group = new THREE.Group();
     group.position.copy(offset);
-    group.scale.set(0.48, 0.48, 0.48); // Thu nhỏ chòm sao vừa vặn, tinh tế
+    group.scale.set(0.48, 0.48, 0.48);
 
-    // 1. Đường nối các sao (thanh mảnh, tinh tế)
     const linePositions = [];
     lines.forEach(([i1, i2]) => {
         const p1 = stars[i1];
@@ -553,7 +546,6 @@ const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') 
     const lineMesh = new THREE.LineSegments(lineGeom, lineMat);
     group.add(lineMesh);
 
-    // 2. Các điểm sao phát sáng nhỏ xinh
     const starSprites = [];
     stars.forEach((s) => {
         const tex = s.isOrange ? constStarOrangeTex : constStarBlueTex;
@@ -565,14 +557,13 @@ const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') 
         });
         const sprite = new THREE.Sprite(mat);
         sprite.position.set(s.x, s.y, s.z);
-        const scale = (s.size || 0.45) * 0.55; // Thu nhỏ điểm sao
+        const scale = (s.size || 0.45) * 0.55;
         sprite.scale.set(scale, scale, scale);
         sprite.userData = { baseScale: scale, phase: Math.random() * Math.PI * 2 };
         group.add(sprite);
         starSprites.push(sprite);
     });
 
-    // 3. Nhãn tên chòm sao nhỏ gọn
     const labelTex = createConstellationLabelTexture(title);
     const labelMat = new THREE.SpriteMaterial({
         map: labelTex,
@@ -582,7 +573,7 @@ const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') 
     });
     const labelSprite = new THREE.Sprite(labelMat);
     labelSprite.position.set(offset.x, offset.y + 1.2, offset.z);
-    labelSprite.scale.set(1.5, 0.38, 1); // Thu nhỏ nhãn tên
+    labelSprite.scale.set(1.5, 0.38, 1);
     labelSprite.userData = { parentOffset: offset };
     sceneSprites.add(labelSprite);
 
@@ -590,9 +581,8 @@ const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') 
     return { group, starSprites, labelSprite };
 };
 
-// Chòm sao Xử Nữ (Virgo ♍)
 const virgoStars = [
-    { x: 0.0, y: -1.2, z: 0.0, size: 0.75, name: 'Spica' }, // Sao Giác (sáng nhất)
+    { x: 0.0, y: -1.2, z: 0.0, size: 0.75, name: 'Spica' },
     { x: -0.6, y: 0.2, z: 0.2, size: 0.5, name: 'Porrima' },
     { x: -1.1, y: 0.8, z: -0.1, size: 0.45, name: 'Auva' },
     { x: 0.4, y: 1.4, z: 0.3, size: 0.55, name: 'Vindemiatrix' },
@@ -606,15 +596,14 @@ const virgoLines = [
     [0, 1], [1, 2], [2, 3], [2, 4], [1, 5], [5, 0], [0, 6], [6, 7], [7, 8]
 ];
 
-// Chòm sao Kim Ngưu (Taurus ♉)
 const taurusStars = [
-    { x: 0.0, y: 0.0, z: 0.0, size: 0.85, isOrange: true, name: 'Aldebaran' }, // Mắt bò đỏ cam
+    { x: 0.0, y: 0.0, z: 0.0, size: 0.85, isOrange: true, name: 'Aldebaran' },
     { x: -0.7, y: 0.6, z: 0.1, size: 0.45, name: 'Ain' },
     { x: -0.4, y: -0.5, z: -0.1, size: 0.4, name: 'Hyadum I' },
     { x: -1.0, y: 0.2, z: 0.2, size: 0.4, name: 'Hyadum II' },
-    { x: 1.5, y: 1.8, z: 0.3, size: 0.55, name: 'Elnath' }, // Sừng bắc
-    { x: 1.8, y: 0.5, z: -0.2, size: 0.5, name: 'Tianguan' }, // Sừng nam
-    { x: -2.0, y: 1.5, z: 0.1, size: 0.6, name: 'Pleiades' } // Thất Tinh
+    { x: 1.5, y: 1.8, z: 0.3, size: 0.55, name: 'Elnath' },
+    { x: 1.8, y: 0.5, z: -0.2, size: 0.5, name: 'Tianguan' },
+    { x: -2.0, y: 1.5, z: 0.1, size: 0.6, name: 'Pleiades' }
 ];
 const taurusLines = [
     [0, 1], [1, 3], [3, 2], [2, 0], [0, 5], [1, 4], [1, 6]
@@ -625,15 +614,12 @@ const taurusConstellation = buildConstellation('♉ Kim Ngưu (Taurus)', taurusS
 
 /**
  * =========================================================================
- * 5.2 LOVE WORMHOLE PORTAL (Lỗ không gian 3D trong tâm Trái Tim)
+ * 5.2 LOVE WORMHOLE PORTAL (Lỗ không gian tại tâm Trái Tim)
  * =========================================================================
  */
 let isWarping = false;
 let warpProgress = 0;
-const warpStartCameraPos = new THREE.Vector3();
-const warpTargetPos = new THREE.Vector3(0, 2.4, 0.0);
 
-// Tạo đĩa xoáy lỗ không gian (Wormhole Portal Vortex)
 const createPortalVortexTexture = () => {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
@@ -681,14 +667,12 @@ const createPortalVortexTexture = () => {
 
 const portalVortexTexture = createPortalVortexTexture();
 
-// Group chứa Lỗ không gian đặt chính xác tại tâm quả tim (Y = 2.4)
 const wormholePortalGroup = new THREE.Group();
 wormholePortalGroup.position.set(0, 2.4, 0);
 wormholePortalGroup.scale.set(0.001, 0.001, 0.001);
 wormholePortalGroup.visible = false;
 scene.add(wormholePortalGroup);
 
-// 1. Mặt đĩa xoáy Sprite trung tâm
 const portalMat1 = new THREE.SpriteMaterial({
     map: portalVortexTexture,
     transparent: true,
@@ -699,7 +683,6 @@ const portalDisk1 = new THREE.Sprite(portalMat1);
 portalDisk1.scale.set(3.4, 3.4, 3.4);
 wormholePortalGroup.add(portalDisk1);
 
-// 2. Vành đai xoáy 3D Ring 1 (Xoay thuận chiều kim đồng hồ)
 const portalRingGeom = new THREE.RingGeometry(0.3, 2.0, 48);
 const portalRingMat = new THREE.MeshBasicMaterial({
     map: portalVortexTexture,
@@ -712,12 +695,10 @@ const portalRingMat = new THREE.MeshBasicMaterial({
 const portalRingMesh = new THREE.Mesh(portalRingGeom, portalRingMat);
 wormholePortalGroup.add(portalRingMesh);
 
-// 3. Vành đai xoáy 3D Ring 2 (Xoay ngược chiều, tạo chiều sâu hố đen)
 const portalRingMesh2 = new THREE.Mesh(portalRingGeom.clone(), portalRingMat.clone());
 portalRingMesh2.scale.set(0.65, 0.65, 0.65);
 wormholePortalGroup.add(portalRingMesh2);
 
-// Tia sao kéo dài tốc độ ánh sáng
 const warpStarsGroup = new THREE.Group();
 warpStarsGroup.visible = false;
 scene.add(warpStarsGroup);
@@ -754,7 +735,6 @@ const warpStarMat = new THREE.LineBasicMaterial({
 const warpStarsMesh = new THREE.LineSegments(warpStarGeom, warpStarMat);
 warpStarsGroup.add(warpStarsMesh);
 
-// Đường bay cong mượt mà chuẩn điện ảnh (Catmull-Rom Spline Curve)
 let warpFlightCurve = null;
 
 const triggerWormhole = () => {
@@ -762,7 +742,8 @@ const triggerWormhole = () => {
     isWarping = true;
     warpProgress = 0;
     
-    // Tạo đường cong CatmullRom liên tục mượt mà 100% từ vị trí hiện tại của camera
+    playWarpSound();
+
     const startP = camera.position.clone();
     const approachP = new THREE.Vector3(startP.x * 0.4, 2.4 + (startP.y - 2.4) * 0.3, Math.max(2.0, startP.z * 0.5));
     const heartCenterP = new THREE.Vector3(0, 2.4, 0.0);
@@ -779,7 +760,6 @@ const triggerWormhole = () => {
         endDefaultP
     ]);
 
-    // Kích hoạt hiển thị lỗ không gian mở to dần từ tâm trái tim
     wormholePortalGroup.visible = true;
     wormholePortalGroup.scale.set(0.01, 0.01, 0.01);
     warpStarsGroup.visible = true;
@@ -797,7 +777,6 @@ const triggerWormhole = () => {
 const meteorsGroup = new THREE.Group();
 scene.add(meteorsGroup);
 
-// Texture cho đầu phát sáng của sao băng
 const createMeteorHeadTexture = () => {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
@@ -826,12 +805,10 @@ class Meteor {
         this.group.visible = false;
         meteorsGroup.add(this.group);
 
-        // 1. Vệt đuôi sao băng (Line)
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(6);
         const colors = new Float32Array(6);
 
-        // Đầu trắng sáng, đuôi hòa vào màu tinh vân
         colors[0] = 1.0; colors[1] = 1.0; colors[2] = 1.0;
         colors[3] = 1.0; colors[4] = 0.4; colors[5] = 0.8;
 
@@ -848,7 +825,6 @@ class Meteor {
         this.line = new THREE.Line(geometry, lineMaterial);
         this.group.add(this.line);
 
-        // 2. Đầu sao băng phát sáng rực rỡ (Glow Sprite)
         const spriteMaterial = new THREE.SpriteMaterial({
             map: meteorHeadTexture,
             transparent: true,
@@ -867,7 +843,6 @@ class Meteor {
         this.group.visible = true;
 
         const theme = colorThemes[currentThemeIndex];
-        // Cập nhật màu đuôi theo theme
         const tailColor = new THREE.Color(theme.heartGlow);
         const colors = this.line.geometry.attributes.color;
         colors.setXYZ(0, 1.0, 1.0, 1.0);
@@ -877,14 +852,12 @@ class Meteor {
         if (customPos) {
             this.group.position.copy(customPos);
         } else {
-            // Xuất hiện trong tầm mắt camera: góc cao bên phải hoặc phía trên
             const startX = 4 + Math.random() * 8;
             const startY = 3.5 + Math.random() * 4.5;
             const startZ = -2 + (Math.random() - 0.5) * 8;
             this.group.position.set(startX, startY, startZ);
         }
 
-        // Hướng bay chéo từ trên xuống dưới, lướt ngang qua dải ngân hà
         this.direction.set(
             -1.0 - Math.random() * 0.4,
             -0.45 - Math.random() * 0.3,
@@ -899,8 +872,8 @@ class Meteor {
         const posAttr = this.line.geometry.attributes.position;
         const tail = this.direction.clone().multiplyScalar(-this.length);
         
-        posAttr.setXYZ(0, 0, 0, 0); // Head
-        posAttr.setXYZ(1, tail.x, tail.y, tail.z); // Tail
+        posAttr.setXYZ(0, 0, 0, 0);
+        posAttr.setXYZ(1, tail.x, tail.y, tail.z);
         posAttr.needsUpdate = true;
     }
 
@@ -909,7 +882,6 @@ class Meteor {
 
         this.group.position.addScaledVector(this.direction, this.speed);
 
-        // Biến mất khi bay ra khỏi tầm nhìn
         if (this.group.position.y < -3.5 || this.group.position.x < -12) {
             this.active = false;
             this.group.visible = false;
@@ -922,9 +894,10 @@ for (let i = 0; i < 10; i++) {
     meteorPool.push(new Meteor());
 }
 
-let nextMeteorTime = 1.5; // Xuất hiện sớm ngay sau khi mở web
+let nextMeteorTime = 1.5;
 
 const spawnMeteorShower = () => {
+    playSparkleChime();
     let count = 0;
     for (const m of meteorPool) {
         if (!m.active && count < 4) {
@@ -936,20 +909,18 @@ const spawnMeteorShower = () => {
 
 /**
  * =========================================================================
- * 6.1 MAJESTIC COMET (Sao Chổi Đuôi Lụa Ánh Sáng Kỳ Vĩ)
+ * 6.1 MAJESTIC COMET (Sao Chổi Đuôi Lụa Ánh Sáng)
  * =========================================================================
  */
 const cometGroup = new THREE.Group();
 scene.add(cometGroup);
 
-// Tạo Texture nhân sao chổi hình ngôi sao kim cương lấp lánh (Starburst Flare)
 const createCometStarTexture = () => {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    // Hào quang tròn trung tâm
     const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 120);
     grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
     grad.addColorStop(0.15, 'rgba(200, 245, 255, 0.9)');
@@ -958,7 +929,6 @@ const createCometStarTexture = () => {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
 
-    // Tia sáng ngang sắc nét (Lens flare spike)
     const flareH = ctx.createLinearGradient(0, 128, 256, 128);
     flareH.addColorStop(0, 'rgba(255, 255, 255, 0)');
     flareH.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
@@ -966,7 +936,6 @@ const createCometStarTexture = () => {
     ctx.fillStyle = flareH;
     ctx.fillRect(0, 125, 256, 6);
 
-    // Tia sáng dọc
     const flareV = ctx.createLinearGradient(128, 0, 128, 256);
     flareV.addColorStop(0, 'rgba(255, 255, 255, 0)');
     flareV.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
@@ -987,7 +956,6 @@ class MajesticComet {
         this.history = [];
         this.maxHistory = 35;
 
-        // 1. Đầu nhân sao chổi (Starburst Core)
         const headMat = new THREE.SpriteMaterial({
             map: cometStarTexture,
             transparent: true,
@@ -999,7 +967,6 @@ class MajesticComet {
         this.head.visible = false;
         cometGroup.add(this.head);
 
-        // 2. Dải đuôi ánh sáng mượt mà liên tục (Continuous Ribbon Mesh)
         this.ribbonSegments = 34;
         const ribbonGeom = new THREE.BufferGeometry();
         const positions = new Float32Array((this.ribbonSegments + 1) * 2 * 3);
@@ -1066,13 +1033,11 @@ class MajesticComet {
         const currentPos = this.getPosition(this.progress);
         this.head.position.copy(currentPos);
 
-        // Cập nhật mảng lịch sử vị trí để vẽ dải đuôi uốn lượn
         this.history.unshift(currentPos.clone());
         if (this.history.length > this.maxHistory) {
             this.history.pop();
         }
 
-        // Cập nhật hình học của Dải Đuôi Lụa (Ribbon)
         const posAttr = this.ribbonMesh.geometry.attributes.position;
         const colAttr = this.ribbonMesh.geometry.attributes.color;
         const theme = colorThemes[currentThemeIndex];
@@ -1086,11 +1051,9 @@ class MajesticComet {
             const tangent = nextP.clone().sub(p).normalize();
             if (tangent.lengthSq() < 0.001) tangent.set(1, 0, 0);
 
-            // Vector vuông góc để tạo độ rộng cho dải đuôi
             const side = new THREE.Vector3().crossVectors(tangent, up).normalize();
             if (side.lengthSq() < 0.001) side.set(0, 1, 0);
 
-            // Độ rộng dải đuôi mở rộng dần từ 0.1 (ở đầu) đến 1.2 (ở đuôi)
             const ratio = i / this.ribbonSegments;
             const width = (0.1 + ratio * 1.1);
 
@@ -1101,7 +1064,6 @@ class MajesticComet {
             posAttr.setXYZ(idx, v1.x, v1.y, v1.z);
             posAttr.setXYZ(idx + 1, v2.x, v2.y, v2.z);
 
-            // Màu sắc gradient: đầu trắng sáng rực, đuôi hòa dần thành màu theme và mờ đi
             const alpha = Math.pow(1.0 - ratio, 1.8);
             const r = THREE.MathUtils.lerp(1.0, tailColor.r, ratio) * alpha;
             const g = THREE.MathUtils.lerp(1.0, tailColor.g, ratio) * alpha;
@@ -1117,102 +1079,245 @@ class MajesticComet {
 }
 
 const majesticComet = new MajesticComet();
-let nextCometTime = 5.0; // Xuất hiện lần đầu sau 5 giây, sau đó định kỳ mỗi 18-28 giây
+let nextCometTime = 5.0;
 
 /**
  * =========================================================================
- * 7. CLICK PARTICLE BURST (Pháo hoa bung hạt khi click)
+ * 7. 3D HEART FIREWORKS & PARTICLE BURST ENGINE
  * =========================================================================
  */
-const burstParticles = [];
-const maxBursts = 80;
+const fireworksGroup = new THREE.Group();
+scene.add(fireworksGroup);
 
-// Tạo canvas texture hình ngôi sao / trái tim mini cho hạt pháo hoa
-const createSparkleTexture = () => {
+const createFireworkTexture = () => {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '40px sans-serif';
-    ctx.fillText('✨', 32, 34);
-    
+
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.3, 'rgba(255, 180, 230, 0.9)');
+    grad.addColorStop(0.7, 'rgba(255, 0, 127, 0.4)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
     return new THREE.CanvasTexture(canvas);
 };
 
-const sparkleTexture = createSparkleTexture();
-const burstMaterial = new THREE.SpriteMaterial({
-    map: sparkleTexture,
-    transparent: true,
-    opacity: 1.0,
-    blending: THREE.AdditiveBlending
-});
+const fireworkTexture = createFireworkTexture();
 
-class ParticleBurst {
+class HeartFirework {
     constructor() {
-        this.mesh = new THREE.Sprite(burstMaterial.clone());
-        this.mesh.visible = false;
-        this.velocity = new THREE.Vector3();
+        this.active = false;
+        this.particleCount = 90;
+        this.geometry = new THREE.BufferGeometry();
+        this.positions = new Float32Array(this.particleCount * 3);
+        this.colors = new Float32Array(this.particleCount * 3);
+        this.velocities = [];
         this.life = 0;
-        this.maxLife = 1.0;
-        scene.add(this.mesh);
+        this.maxLife = 1.4;
+
+        this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+        this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
+
+        this.material = new THREE.PointsMaterial({
+            size: 0.12,
+            map: fireworkTexture,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            vertexColors: true
+        });
+
+        this.points = new THREE.Points(this.geometry, this.material);
+        this.points.visible = false;
+        fireworksGroup.add(this.points);
     }
 
-    spawn(position, color) {
-        this.mesh.position.copy(position);
-        this.mesh.visible = true;
-        this.mesh.scale.set(0.2, 0.2, 0.2);
-        this.mesh.material.color.set(color);
-        this.mesh.material.opacity = 1.0;
+    spawn(originPos, hexColor) {
+        this.active = true;
+        this.points.visible = true;
         this.life = 1.0;
-        this.maxLife = 0.8 + Math.random() * 0.5;
+        this.maxLife = 1.2 + Math.random() * 0.4;
+        this.material.opacity = 1.0;
 
-        // Vận tốc bung tròn 3D
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos((Math.random() * 2) - 1);
-        const speed = 0.04 + Math.random() * 0.08;
+        const baseColor = new THREE.Color(hexColor);
+        const colAttr = this.geometry.attributes.color;
+        const posAttr = this.geometry.attributes.position;
+        this.velocities = [];
 
-        this.velocity.set(
-            Math.sin(phi) * Math.cos(theta) * speed,
-            Math.sin(phi) * Math.sin(theta) * speed,
-            Math.cos(phi) * speed
-        );
+        this.points.position.copy(originPos);
+
+        for (let i = 0; i < this.particleCount; i++) {
+            const i3 = i * 3;
+            posAttr.setXYZ(i3, 0, 0, 0);
+
+            // Công thức hình trái tim tham số 2D/3D bung nở
+            const t = (i / this.particleCount) * Math.PI * 2;
+            const hx = 16 * Math.pow(Math.sin(t), 3) / 16;
+            const hy = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16;
+            const hz = (Math.random() - 0.5) * 0.4;
+
+            const speed = 0.035 + Math.random() * 0.025;
+            this.velocities.push(new THREE.Vector3(hx * speed, hy * speed + 0.015, hz * speed));
+
+            const pCol = baseColor.clone();
+            if (Math.random() > 0.4) pCol.lerp(new THREE.Color('#ffffff'), Math.random() * 0.8);
+            colAttr.setXYZ(i3, pCol.r, pCol.g, pCol.b);
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
     }
 
     update(delta) {
-        if (this.life <= 0) return;
+        if (!this.active) return;
 
         this.life -= delta / this.maxLife;
-        this.mesh.position.add(this.velocity);
-        this.velocity.multiplyScalar(0.96); // Lực cản không khí
+        this.material.opacity = Math.max(0, this.life);
 
-        this.mesh.material.opacity = Math.max(0, this.life);
-        const s = 0.2 * this.life;
-        this.mesh.scale.set(s, s, s);
+        const posAttr = this.geometry.attributes.position;
+        for (let i = 0; i < this.particleCount; i++) {
+            const i3 = i * 3;
+            const v = this.velocities[i];
+            
+            posAttr.array[i3] += v.x;
+            posAttr.array[i3 + 1] += v.y;
+            posAttr.array[i3 + 2] += v.z;
+
+            // Trọng lực kéo hạt nhẹ xuống
+            v.y -= 0.0006;
+            v.multiplyScalar(0.975);
+        }
+        posAttr.needsUpdate = true;
 
         if (this.life <= 0) {
-            this.mesh.visible = false;
+            this.active = false;
+            this.points.visible = false;
         }
     }
 }
 
-for (let i = 0; i < maxBursts; i++) {
-    burstParticles.push(new ParticleBurst());
+const fireworkPool = [];
+for (let i = 0; i < 15; i++) {
+    fireworkPool.push(new HeartFirework());
 }
 
-const triggerClickBurst = (worldPos) => {
+const triggerHeartFirework = (worldPos = null) => {
+    playFireworkPop();
     const theme = colorThemes[currentThemeIndex];
-    let spawned = 0;
-    for (const p of burstParticles) {
-        if (p.life <= 0 && spawned < 18) {
-            const randomColor = Math.random() > 0.4 ? theme.heartBase : theme.heartGlow;
-            p.spawn(worldPos, randomColor);
-            spawned++;
-        }
+    const origin = worldPos ? worldPos.clone() : new THREE.Vector3(
+        (Math.random() - 0.5) * 6,
+        1.5 + Math.random() * 2.5,
+        (Math.random() - 0.5) * 4
+    );
+
+    const inactive = fireworkPool.find(f => !f.active);
+    if (inactive) {
+        const color = Math.random() > 0.4 ? theme.heartBase : theme.heartGlow;
+        inactive.spawn(origin, color);
     }
+};
+
+/**
+ * =========================================================================
+ * 7.1 WEB AUDIO SYNTHESIZER (Âm thanh hiệu ứng không gian)
+ * =========================================================================
+ */
+let sfxAudioCtx = null;
+let isSoundMuted = false;
+
+const initSFXContext = () => {
+    if (!sfxAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) sfxAudioCtx = new AudioCtx();
+    }
+    if (sfxAudioCtx && sfxAudioCtx.state === 'suspended') {
+        sfxAudioCtx.resume().catch(() => {});
+    }
+};
+
+const playFireworkPop = () => {
+    if (isSoundMuted) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+
+    try {
+        const now = sfxAudioCtx.currentTime;
+        const osc = sfxAudioCtx.createOscillator();
+        const gain = sfxAudioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420 + Math.random() * 200, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.35);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(sfxAudioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.36);
+    } catch (e) {}
+};
+
+const playSparkleChime = () => {
+    if (isSoundMuted) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+
+    try {
+        const now = sfxAudioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+            const osc = sfxAudioCtx.createOscillator();
+            const gain = sfxAudioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+            gain.gain.setValueAtTime(0, now + idx * 0.06);
+            gain.gain.linearRampToValueAtTime(0.08, now + idx * 0.06 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.45);
+
+            osc.connect(gain);
+            gain.connect(sfxAudioCtx.destination);
+
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.46);
+        });
+    } catch (e) {}
+};
+
+const playWarpSound = () => {
+    if (isSoundMuted) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+
+    try {
+        const now = sfxAudioCtx.currentTime;
+        const osc = sfxAudioCtx.createOscillator();
+        const gain = sfxAudioCtx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 1.2);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 2.5);
+
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.12, now + 1.0);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+
+        osc.connect(gain);
+        gain.connect(sfxAudioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 2.5);
+    } catch (e) {}
 };
 
 /**
@@ -1254,9 +1359,8 @@ const addSpriteToOrbit = (texture, isCustom = false) => {
     return sprite;
 };
 
-// Khởi tạo các emojis mặc định
 const initDefaultSprites = () => {
-    const emojis = ['🚀', '👨‍🚀', '🪐', '🌟', '🛸', '🛰️', '🐶', '💖'];
+    const emojis = ['🚀', '🪐', '🌟', '🛸', '🛰️', '🐱', '💖'];
     emojis.forEach((emoji) => {
         const c = document.createElement('canvas');
         c.width = 128;
@@ -1268,13 +1372,12 @@ const initDefaultSprites = () => {
         ctx.fillText(emoji, 64, 70);
 
         const tex = new THREE.CanvasTexture(c);
-        const count = 2 + Math.floor(Math.random() * 3);
+        const count = 2 + Math.floor(Math.random() * 2);
         for (let i = 0; i < count; i++) {
             addSpriteToOrbit(tex, false);
         }
     });
 
-    // Thêm ảnh cat.jpg mặc định
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load('/cat.jpg', (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -1282,11 +1385,45 @@ const initDefaultSprites = () => {
             addSpriteToOrbit(tex, true);
         }
     });
+
+    // Tải các ảnh người dùng đã lưu trong LocalStorage
+    loadSavedPhotos();
+};
+
+const saveUploadedPhoto = (dataUrl) => {
+    try {
+        let saved = JSON.parse(localStorage.getItem('galaxy_uploaded_photos') || '[]');
+        if (!Array.isArray(saved)) saved = [];
+        saved.push(dataUrl);
+        // Giới hạn lưu 6 ảnh để đảm bảo dung lượng LocalStorage luôn an toàn
+        if (saved.length > 6) saved = saved.slice(saved.length - 6);
+        localStorage.setItem('galaxy_uploaded_photos', JSON.stringify(saved));
+    } catch (e) {
+        console.warn('LocalStorage photo quota exceeded:', e);
+    }
+};
+
+const loadSavedPhotos = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('galaxy_uploaded_photos') || '[]');
+        if (Array.isArray(saved) && saved.length > 0) {
+            saved.forEach(dataUrl => {
+                const img = new Image();
+                img.src = dataUrl;
+                img.onload = () => {
+                    const tex = new THREE.Texture(img);
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.needsUpdate = true;
+                    addSpriteToOrbit(tex, true);
+                    addSpriteToOrbit(tex, true);
+                };
+            });
+        }
+    } catch (e) {}
 };
 
 initDefaultSprites();
 
-// Xử lý upload ảnh cá nhân
 const handlePhotoUpload = (files) => {
     Array.from(files).forEach((file) => {
         if (!file.type.startsWith('image/')) return;
@@ -1295,17 +1432,150 @@ const handlePhotoUpload = (files) => {
             const img = new Image();
             img.src = e.target.result;
             img.onload = () => {
-                const tex = new THREE.Texture(img);
+                // Tối ưu kích thước ảnh để lưu LocalStorage nhẹ và tải nhanh
+                const maxDim = 480;
+                let w = img.width;
+                let h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h * maxDim) / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w * maxDim) / h);
+                        h = maxDim;
+                    }
+                }
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = c.toDataURL('image/jpeg', 0.82);
+
+                const tex = new THREE.Texture(c);
                 tex.colorSpace = THREE.SRGBColorSpace;
                 tex.needsUpdate = true;
-                
-                // Thêm 2 bản thể bay trong không gian
                 addSpriteToOrbit(tex, true);
                 addSpriteToOrbit(tex, true);
+                saveUploadedPhoto(compressedDataUrl);
+                playSparkleChime();
             };
         };
         reader.readAsDataURL(file);
     });
+};
+
+/**
+ * =========================================================================
+ * 8.1 STAR WISHES / LOVE LETTERS CAPSULES (Những Vì Sao Ước Nguyện)
+ * =========================================================================
+ */
+const defaultRomanticQuotes = [
+    "Vũ trụ có hàng tỷ vì sao, nhưng với anh, em là ngôi sao sáng và đẹp nhất 💖",
+    "Gặp được em giữa ngân hà rộng lớn này là điều kỳ diệu nhất cuộc đời anh ✨",
+    "Mỗi nhịp đập của quả tim vũ trụ này đều là lời thì thầm: Anh Yêu Em 🪐",
+    "Nguyện cùng em đi qua vạn năm ánh sáng, tay trong tay chẳng rời xa 💫",
+    "Em là nguồn năng lượng rực rỡ nhất sưởi ấm cả dải ngân hà của anh 🌟",
+    "Dù thời gian có trôi hay vũ trụ giãn nở, tình cảm này vẫn vẹn nguyên như ngày đầu 💖"
+];
+
+let customRomanticQuotes = [...defaultRomanticQuotes];
+try {
+    const savedWishes = localStorage.getItem('galaxy_star_wishes');
+    if (savedWishes) {
+        const parsed = JSON.parse(savedWishes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            customRomanticQuotes = parsed;
+        }
+    }
+} catch (e) {}
+
+const starCapsulesGroup = new THREE.Group();
+sceneSprites.add(starCapsulesGroup);
+const starCapsulesList = [];
+
+// Không sinh các đĩa sao vàng to che tầm nhìn, người dùng có thể nhấp nút 🌟 trên thanh công cụ
+const initStarCapsules = () => {};
+initStarCapsules();
+
+const openStarWishModal = (quoteIndex = null) => {
+    playSparkleChime();
+    const wishModal = document.getElementById('star-wish-modal');
+    const quoteTextEl = document.getElementById('wish-quote-text');
+    const authorTextEl = document.getElementById('wish-author-text');
+    if (!wishModal || !quoteTextEl) return;
+
+    const list = customRomanticQuotes.length > 0 ? customRomanticQuotes : defaultRomanticQuotes;
+    const idx = (quoteIndex !== null && quoteIndex >= 0) ? (quoteIndex % list.length) : Math.floor(Math.random() * list.length);
+    quoteTextEl.textContent = `"${list[idx]}"`;
+
+    const names = localStorage.getItem('galaxy_partner_names') || 'Anh & Em 💖';
+    if (authorTextEl) authorTextEl.textContent = `💖 Gửi gắm từ: ${names}`;
+
+    wishModal.classList.add('show');
+};
+
+
+/**
+ * =========================================================================
+ * 8.3 POLAROID SPACE SNAPSHOT EXPORTER (Chụp Ảnh & Tạo Thiệp Kỷ Niệm)
+ * =========================================================================
+ */
+const generateSpaceSnapshot = () => {
+    playSparkleChime();
+    const snapshotModal = document.getElementById('snapshot-modal');
+    const snapshotCanvas = document.getElementById('snapshot-canvas');
+    if (!snapshotCanvas || !snapshotModal) return;
+
+    // Render cảnh 3D hiện tại sang canvas
+    renderer.clear();
+    composer.render();
+    renderer.clearDepth();
+    renderer.render(sceneSprites, camera);
+
+    const polaroidWidth = 1080;
+    const polaroidHeight = 1350;
+    snapshotCanvas.width = polaroidWidth;
+    snapshotCanvas.height = polaroidHeight;
+    const ctx = snapshotCanvas.getContext('2d');
+
+    // Khung Polaroid Trắng Sáng Cổ Điển
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, polaroidWidth, polaroidHeight);
+
+    // Vẽ ảnh vũ trụ 3D vào khung
+    const photoMarginX = 64;
+    const photoMarginY = 64;
+    const photoW = polaroidWidth - photoMarginX * 2;
+    const photoH = 920;
+
+    ctx.drawImage(renderer.domElement, photoMarginX, photoMarginY, photoW, photoH);
+
+    // Viền mỏng xung quanh ảnh chụp
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(photoMarginX, photoMarginY, photoW, photoH);
+
+    // Thêm chữ lãng mạn & Tên cặp đôi
+    const loveText = document.getElementById('custom-text-input')?.value || initialLoveText;
+    const partnerNames = localStorage.getItem('galaxy_partner_names') || 'Anh & Em 💖';
+    const now = new Date();
+    const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+    ctx.font = '700 48px "Playfair Display", serif';
+    ctx.fillStyle = '#111122';
+    ctx.textAlign = 'center';
+    ctx.fillText(loveText, polaroidWidth / 2, 1060);
+
+    ctx.font = '600 32px "Outfit", sans-serif';
+    ctx.fillStyle = '#ff007f';
+    ctx.fillText(partnerNames, polaroidWidth / 2, 1125);
+
+    ctx.font = '400 24px "Outfit", sans-serif';
+    ctx.fillStyle = '#888899';
+    ctx.fillText(`✨ Galaxy of Love • ${dateFormatted} ✨`, polaroidWidth / 2, 1180);
+
+    snapshotModal.classList.add('show');
 };
 
 /**
@@ -1328,10 +1598,9 @@ controls.addEventListener('start', () => {
 
 /**
  * =========================================================================
- * 10. AUDIO BACKGROUND & AUDIO VISUALIZER (Nhạc nhảy theo Beat)
+ * 10. AUDIO BACKGROUND & AUDIO VISUALIZER
  * =========================================================================
  */
-// 1. Nhạc mặc định nội bộ
 const bgMusic = new Audio('/music.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.65;
@@ -1341,7 +1610,6 @@ let audioContext = null;
 let analyser = null;
 let audioDataArray = null;
 
-// 2. Trình phát YouTube IFrame API
 let ytPlayer = null;
 let isUsingYouTube = false;
 let isYTMuted = false;
@@ -1386,6 +1654,17 @@ const updateMusicButtonState = (muted) => {
         btnM.innerText = '🎵';
     }
 };
+
+// Khôi phục trạng thái Âm Thanh Mute từ LocalStorage
+try {
+    const savedMuted = localStorage.getItem('galaxy_music_muted');
+    if (savedMuted === 'true') {
+        isSoundMuted = true;
+        bgMusic.muted = true;
+        isYTMuted = true;
+        updateMusicButtonState(true);
+    }
+} catch (e) {}
 
 const playYouTubeMusic = (videoId) => {
     loadYouTubeAPI(() => {
@@ -1456,12 +1735,11 @@ const initAudioAnalyser = () => {
         const source = audioContext.createMediaElementSource(bgMusic);
         source.connect(analyser);
         analyser.connect(audioContext.destination);
-    } catch (e) {
-        console.warn("Audio analyser info:", e);
-    }
+    } catch (e) {}
 };
 
 const startMusic = () => {
+    initSFXContext();
     if (isUsingYouTube) {
         if (ytPlayer && ytPlayer.playVideo) {
             ytPlayer.playVideo();
@@ -1477,12 +1755,9 @@ const startMusic = () => {
     bgMusic.play().then(() => {
         musicStarted = true;
         updateMusicButtonState(false);
-    }).catch(e => {
-        console.warn("Chờ tương tác từ người dùng để phát nhạc:", e);
-    });
+    }).catch(() => {});
 };
 
-// Tự động phát nhạc ngay khi người dùng chạm, click hoặc nhấn phím bất kỳ
 window.addEventListener('pointerdown', () => { if (!musicStarted) startMusic(); }, { once: true });
 window.addEventListener('click', () => { if (!musicStarted) startMusic(); }, { once: true });
 window.addEventListener('keydown', () => { if (!musicStarted) startMusic(); }, { once: true });
@@ -1509,7 +1784,6 @@ let lastFairyTime = 0;
 window.addEventListener('pointermove', (e) => {
     if (!fairyCtx) return;
     const now = performance.now();
-    // Giới hạn chỉ sinh hạt tối đa 1 lần mỗi 35ms để không làm nghẽn CPU
     if (now - lastFairyTime < 35 || fairyDust.length > 20) return;
     lastFairyTime = now;
 
@@ -1553,14 +1827,13 @@ const updateFairyDust = () => {
 
 /**
  * =========================================================================
- * 11. RAYCASTER & INTERACTION (Click / Double Click)
+ * 11. RAYCASTER & INTERACTION (Click / Double Click / Touch)
  * =========================================================================
  */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 window.addEventListener('click', (event) => {
-    // Nếu click vào UI elements thì không tương tác 3D
     if (event.target.closest('.ui-controls') || event.target.closest('.text-modal')) {
         return;
     }
@@ -1569,42 +1842,60 @@ window.addEventListener('click', (event) => {
     mouse.y = -(event.clientY / sizes.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
-    // Kiểm tra xem có click trúng Sprite không
-    const intersects = raycaster.intersectObjects(floatingSprites.children, false);
+    // 1. Kiểm tra xem có click vào Ngôi Sao Ước Nguyện không
+    const starIntersects = raycaster.intersectObjects(starCapsulesGroup.children, false);
+    if (starIntersects.length > 0) {
+        const clickedCap = starIntersects[0].object;
+        openStarWishModal(clickedCap.userData.index);
+        return;
+    }
+
+    // 2. Kiểm tra xem có click trúng ảnh cá nhân/emoji không
+    const spriteIntersects = raycaster.intersectObjects(floatingSprites.children, false);
     let clickedSprite = null;
 
-    if (intersects.length > 0) {
-        clickedSprite = intersects[0].object;
+    if (spriteIntersects.length > 0) {
+        clickedSprite = spriteIntersects[0].object;
     }
 
     floatingSprites.children.forEach(sprite => {
         if (sprite === clickedSprite) {
             sprite.userData.isZoomed = !sprite.userData.isZoomed;
+            if (sprite.userData.isZoomed) playSparkleChime();
         } else {
             sprite.userData.isZoomed = false;
         }
     });
 
-    // Tạo pháo hoa bung hạt tại vị trí click trong không gian 3D
+    // 3. Tạo Pháo Hoa Trái Tim 3D tại vị trí click
     const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const targetPoint = new THREE.Vector3();
     raycaster.ray.intersectPlane(plane, targetPoint);
     if (!targetPoint || isNaN(targetPoint.x)) {
         raycaster.ray.at(5, targetPoint);
     }
-    triggerClickBurst(targetPoint);
+    triggerHeartFirework(targetPoint);
 });
 
-// Click đúp gọi chùm sao băng
 window.addEventListener('dblclick', (e) => {
     if (e.target.closest('.ui-controls') || e.target.closest('.text-modal')) return;
     spawnMeteorShower();
 });
 
-// Phím Space gọi sao băng
+// Phím tắt bàn phím
 window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && !document.getElementById('text-modal').classList.contains('show')) {
+    if (document.querySelector('.text-modal.show')) return;
+
+    if (e.code === 'Space') {
         spawnMeteorShower();
+    } else if (e.code === 'KeyF') {
+        triggerHeartFirework();
+    } else if (e.code === 'KeyS') {
+        generateSpaceSnapshot();
+    } else if (e.code === 'KeyC') {
+        document.getElementById('btn-cinema')?.click();
+    } else if (e.code === 'KeyH') {
+        document.getElementById('btn-toggle-ui')?.click();
     }
 });
 
@@ -1623,7 +1914,7 @@ const tick = () => {
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // 0. Audio Visualizer (Phân tích tần số âm bass theo nhịp điệu)
+    // 0. Audio Visualizer (Phân tích tần số Bass)
     let rawBass = 0;
     if (analyser && !bgMusic.paused && !bgMusic.muted) {
         analyser.getByteFrequencyData(audioDataArray);
@@ -1632,51 +1923,46 @@ const tick = () => {
         for (let i = 0; i < binsToCheck; i++) {
             bassSum += audioDataArray[i];
         }
-        rawBass = bassSum / (binsToCheck * 255); // 0.0 đến 1.0
+        rawBass = bassSum / (binsToCheck * 255);
     }
 
-    // Làm mượt độ phản hồi của âm bass (nảy nhanh theo nhịp bass, nhả về êm dịu)
     if (rawBass > smoothedBass) {
         smoothedBass += (rawBass - smoothedBass) * 0.45;
     } else {
         smoothedBass += (rawBass - smoothedBass) * 0.14;
     }
 
-    // Hiệu ứng Bloom phát quang rực rỡ nhảy theo nhịp nhạc Bass
     if (bloomPass) {
-        bloomPass.strength = 1.15 + smoothedBass * 1.35;
+        bloomPass.strength = 0.85 + smoothedBass * 0.3;
     }
 
-    // Cập nhật vệt bụi sao ma thuật theo chuột
     updateFairyDust();
 
-    // 0.1 Cập nhật hiệu ứng chòm sao Xử Nữ & Kim Ngưu lấp lánh
+    // 0.3 Cập nhật Chòm sao Xử Nữ & Kim Ngưu (Nhấp nháy nhẹ nhàng, tinh tế)
     if (typeof virgoConstellation !== 'undefined' && typeof taurusConstellation !== 'undefined') {
         [virgoConstellation, taurusConstellation].forEach(c => {
             c.starSprites.forEach(s => {
-                const scale = s.userData.baseScale * (1.0 + Math.sin(elapsedTime * 3.0 + s.userData.phase) * 0.18);
+                const scale = s.userData.baseScale * (1.0 + Math.sin(elapsedTime * 1.8 + s.userData.phase) * 0.1);
                 s.scale.set(scale, scale, scale);
             });
             c.labelSprite.position.set(
                 c.labelSprite.userData.parentOffset.x,
-                c.labelSprite.userData.parentOffset.y + 1.2 + Math.sin(elapsedTime * 1.5) * 0.04,
+                c.labelSprite.userData.parentOffset.y + 1.2 + Math.sin(elapsedTime * 1.2) * 0.03,
                 c.labelSprite.userData.parentOffset.z
             );
         });
     }
 
-    // 0.2 Cập nhật hiệu ứng Cổng Dịch Chuyển Wormhole Ngay Tại Trái Tim (Spline Curve Flight)
+    // 0.4 Cập nhật Cổng Dịch Chuyển Wormhole
     if (isWarping && warpFlightCurve) {
-        warpProgress += delta * 0.38; // ~2.6 giây hành trình bay điện ảnh êm ru
+        warpProgress += delta * 0.38;
         
-        // Xoay đĩa lỗ không gian đa tầng với tốc độ cao
         if (typeof portalRingMesh !== 'undefined' && typeof portalRingMesh2 !== 'undefined' && typeof portalDisk1 !== 'undefined') {
             portalRingMesh.rotation.z -= delta * 5.5;
             portalRingMesh2.rotation.z += delta * 4.0;
             portalDisk1.material.rotation += delta * 3.5;
         }
 
-        // Cập nhật các tia sao bay vút
         const posAttr = warpStarsMesh.geometry.attributes.position;
         for (let i = 0; i < warpStarCount; i++) {
             const i6 = i * 6;
@@ -1690,13 +1976,10 @@ const tick = () => {
         posAttr.needsUpdate = true;
 
         const clampedT = Math.min(1.0, Math.max(0.0, warpProgress));
-        // Lấy tọa độ camera chính xác theo đường cong Spline liên tục mượt mà
         const currentCamPos = warpFlightCurve.getPointAt(clampedT);
         camera.position.copy(currentCamPos);
 
-        // Điều khiển kích thước lỗ không gian & góc nhìn FOV linh hoạt
         if (clampedT < 0.45) {
-            // Giai đoạn 1: Lao vào tâm - Portal mở rộng, FOV mở dãn
             const p1 = clampedT / 0.45;
             const portalScale = Math.sin(p1 * Math.PI * 0.5) * 1.9;
             wormholePortalGroup.scale.set(portalScale, portalScale, portalScale);
@@ -1704,7 +1987,6 @@ const tick = () => {
             camera.updateProjectionMatrix();
             controls.target.lerp(new THREE.Vector3(0, 2.4, 0), 0.15);
         } else if (clampedT < 0.58) {
-            // Giai đoạn 2: Xuyên qua hố đen - Chớp sáng nhẹ nhàng
             const flashEl = document.getElementById('wormhole-flash');
             if (flashEl && !flashEl.classList.contains('active')) {
                 flashEl.classList.add('active');
@@ -1713,7 +1995,6 @@ const tick = () => {
             camera.fov = 75;
             camera.updateProjectionMatrix();
         } else {
-            // Giai đoạn 3: Uốn lượn quay về - Portal khép lại, tiêu điểm hướng về tâm ngân hà
             const p2 = (clampedT - 0.58) / 0.42;
             const portalShrink = Math.max(0, (1.0 - p2) * 1.9);
             wormholePortalGroup.scale.set(portalShrink, portalShrink, portalShrink);
@@ -1736,7 +2017,7 @@ const tick = () => {
         }
     }
 
-    // 1. Rotate galaxy & deep starfield (Quay êm dịu, tĩnh lặng)
+    // 1. Rotate galaxy & starfield
     if (galaxyPoints) {
         galaxyPoints.rotation.y = elapsedTime * 0.08;
     }
@@ -1744,51 +2025,36 @@ const tick = () => {
         starfieldPoints.rotation.y = elapsedTime * 0.015;
     }
 
-    // 2. Rotate & Pulse Heart (Quả tim đập theo tiếng bass của nhạc HOẶC thở đều đặn êm ái)
+    // 2. Rotate & Pulse Heart (Thở êm dịu, uyển chuyển, không bị giật)
     if (heartPoints) {
-        heartPoints.rotation.y = elapsedTime * 0.12;
+        heartPoints.rotation.y = elapsedTime * 0.08;
 
-        let targetScale = 1.0;
-        if (smoothedBass > 0.04) {
-            // Khi có nhạc với tiếng bass: Đập nảy dứt khoát và sống động theo từng nhịp bass
-            const bassPunch = Math.pow(smoothedBass, 1.25) * 0.24;
-            const microBreathe = Math.sin(elapsedTime * 1.5) * 0.03;
-            targetScale = 1.0 + bassPunch + microBreathe;
-        } else {
-            // Khi nhạc êm, tắt tiếng hoặc không có bass: Quả tim thở đều đặn, nhịp nhàng tự nhiên
-            const steadyBreathe = Math.sin(elapsedTime * 1.6) * 0.075;
-            targetScale = 1.0 + steadyBreathe;
-        }
+        const steadyBreathe = Math.sin(elapsedTime * 1.4) * 0.05;
+        const bassAdd = smoothedBass * 0.08;
+        const targetScale = 1.0 + steadyBreathe + bassAdd;
 
-        // Nội suy mượt mà để quả tim chuyển động uyển chuyển không bị giật cục
-        currentHeartScale += (targetScale - currentHeartScale) * 0.22;
+        currentHeartScale += (targetScale - currentHeartScale) * 0.1;
         heartPoints.scale.set(currentHeartScale, currentHeartScale, currentHeartScale);
     }
 
-    // 2.1 Xoay vành đai Sao Thổ quanh Trái Tim lấp lánh & đồng điệu nhịp thở
+    // 2.1 Xoay Vành đai
     if (heartRingPoints) {
-        heartRingPoints.rotation.y = elapsedTime * 0.07;
-        const ringTarget = 1.0 + (currentHeartScale - 1.0) * 0.6;
-        currentRingScale += (ringTarget - currentRingScale) * 0.18;
+        heartRingPoints.rotation.y = elapsedTime * 0.05;
+        const ringTarget = 1.0 + (currentHeartScale - 1.0) * 0.5;
+        currentRingScale += (ringTarget - currentRingScale) * 0.08;
         heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
     }
 
-    // Đèn phát sáng ổn định, êm ái
-    if (pointLight) {
-        pointLight.intensity = 2.0;
-    }
-
-    // 3. Floating Text Bobbing & Facing Camera
+    // 3. Floating Text Bobbing
     if (textSprite) {
         textSprite.position.y = 3.6 + Math.sin(elapsedTime * 2.0) * 0.08;
     }
 
-    // 4. Meteors update & periodic random spawn (Tự động xuất hiện định kỳ mỗi 2 - 4.5 giây)
+    // 4. Meteors update
     if (elapsedTime > nextMeteorTime) {
         const inactiveMeteors = meteorPool.filter(m => !m.active);
         if (inactiveMeteors.length > 0) {
             inactiveMeteors[0].spawn();
-            // 25% cơ hội xuất hiện thêm 1 vệt sao băng nữa bay cùng lúc
             if (Math.random() > 0.75 && inactiveMeteors.length > 1) {
                 setTimeout(() => inactiveMeteors[1].spawn(), 300);
             }
@@ -1798,7 +2064,7 @@ const tick = () => {
 
     meteorPool.forEach(m => m.update());
 
-    // 4.1 Majestic Comet update (Sao Chổi kỳ vĩ lướt qua bầu trời mỗi 16 - 25 giây)
+    // 4.1 Majestic Comet update
     if (elapsedTime > nextCometTime) {
         if (!majesticComet.active) {
             majesticComet.spawn();
@@ -1807,10 +2073,10 @@ const tick = () => {
     }
     majesticComet.update(delta);
 
-    // 5. Particle Burst update
-    burstParticles.forEach(p => p.update(delta));
+    // 5. Pháo hoa Trái Tim 3D update
+    fireworkPool.forEach(f => f.update(delta));
 
-    // 6. Floating Sprites Orbit & Zooming
+    // 6. Floating Sprites Orbit
     floatingSprites.children.forEach(sprite => {
         const targetScale = sprite.userData.isZoomed ? (sprite.userData.isCustomPhoto ? 3.5 : 2.5) : sprite.userData.originalScale;
         sprite.scale.x += (targetScale - sprite.scale.x) * 0.1;
@@ -1826,7 +2092,7 @@ const tick = () => {
         sprite.position.y += Math.sin(elapsedTime * Math.abs(sprite.userData.speed) * 8) * 0.004;
     });
 
-    // 7. Cinema Tour Mode Animation
+    // 7. Cinema Tour Mode
     if (isCinemaMode) {
         controls.autoRotate = false;
         const ct = elapsedTime * 0.25;
@@ -1857,9 +2123,9 @@ const tick = () => {
 
     // 9. Multi-pass Rendering
     renderer.clear();
-    composer.render(); // Scene 1 (Ngân hà, Trái tim, Chữ, Sao băng với Bloom)
+    composer.render();
     renderer.clearDepth();
-    renderer.render(sceneSprites, camera); // Scene 2 (Hình ảnh rõ nét, không bị chói Bloom)
+    renderer.render(sceneSprites, camera);
 
     window.requestAnimationFrame(tick);
 };
@@ -1868,7 +2134,7 @@ tick();
 
 /**
  * =========================================================================
- * 13. UI CONTROLS WIRING & LOCALSTORAGE PERSISTENCE
+ * 13. UI CONTROLS WIRING & INTERACTIVE MODALS
  * =========================================================================
  */
 // 1. Nút đổi Theme màu
@@ -1883,17 +2149,15 @@ if (btnTheme) {
             localStorage.setItem('galaxy_theme_index', currentThemeIndex);
         } catch (err) {}
 
-        // Tái tạo lại Galaxy, Heart và Vành đai Sao Thổ theo theme mới
         generateGalaxy();
         generateHeart();
         generateHeartRing();
 
-        // Cập nhật màu đèn
         pointLight.color.set(theme.lightColor);
 
-        // Cập nhật lại màu phát sáng của chữ
         const currentText = document.getElementById('custom-text-input')?.value || initialLoveText;
         updateFloatingText(currentText);
+        playSparkleChime();
     });
 }
 
@@ -1936,6 +2200,7 @@ if (btnText && textModal) {
             } catch (err) {}
         }
         textModal.classList.remove('show');
+        playSparkleChime();
     });
 
     btnCancelText.addEventListener('click', (e) => {
@@ -1950,7 +2215,120 @@ if (btnText && textModal) {
     });
 }
 
-// 4. Nút Upload ảnh
+
+// 5. Nút Những Vì Sao Ước Nguyện & Modal Thư Tình
+const btnStarWishes = document.getElementById('btn-star-wishes');
+const starWishModal = document.getElementById('star-wish-modal');
+const btnNextWish = document.getElementById('btn-next-wish');
+const btnCloseWish = document.getElementById('btn-close-wish');
+const btnEditWishes = document.getElementById('btn-edit-wishes');
+const wishesEditModal = document.getElementById('wishes-edit-modal');
+const wishesTextarea = document.getElementById('wishes-textarea');
+const btnSaveWishes = document.getElementById('btn-save-wishes');
+const btnResetWishes = document.getElementById('btn-reset-wishes');
+const btnCancelWishes = document.getElementById('btn-cancel-wishes');
+
+if (btnStarWishes) {
+    btnStarWishes.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openStarWishModal();
+    });
+}
+
+if (btnNextWish) {
+    btnNextWish.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openStarWishModal();
+    });
+}
+
+if (btnCloseWish && starWishModal) {
+    btnCloseWish.addEventListener('click', (e) => {
+        e.stopPropagation();
+        starWishModal.classList.remove('show');
+    });
+}
+
+if (btnEditWishes && wishesEditModal && wishesTextarea) {
+    btnEditWishes.addEventListener('click', (e) => {
+        e.stopPropagation();
+        starWishModal?.classList.remove('show');
+        wishesTextarea.value = customRomanticQuotes.join('\n');
+        wishesEditModal.classList.add('show');
+    });
+
+    btnSaveWishes?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lines = wishesTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length > 0) {
+            customRomanticQuotes = lines.slice(0, 25);
+            try {
+                localStorage.setItem('galaxy_star_wishes', JSON.stringify(customRomanticQuotes));
+            } catch (err) {}
+        }
+        wishesEditModal.classList.remove('show');
+        openStarWishModal();
+    });
+
+    btnResetWishes?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        customRomanticQuotes = [...defaultRomanticQuotes];
+        try {
+            localStorage.removeItem('galaxy_star_wishes');
+        } catch (err) {}
+        wishesTextarea.value = customRomanticQuotes.join('\n');
+    });
+
+    btnCancelWishes?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wishesEditModal.classList.remove('show');
+    });
+}
+
+// 6. Nút Bắn Pháo Hoa Trái Tim 3D
+const btnFirework = document.getElementById('btn-firework');
+if (btnFirework) {
+    btnFirework.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerHeartFirework();
+        setTimeout(() => triggerHeartFirework(), 250);
+        setTimeout(() => triggerHeartFirework(), 500);
+    });
+}
+
+// 7. Nút Chụp Ảnh & Tạo Thiệp Polaroid Kỷ Niệm
+const btnSnapshot = document.getElementById('btn-snapshot');
+const snapshotModal = document.getElementById('snapshot-modal');
+const btnDownloadSnapshot = document.getElementById('btn-download-snapshot');
+const btnCloseSnapshot = document.getElementById('btn-close-snapshot');
+
+if (btnSnapshot) {
+    btnSnapshot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        generateSpaceSnapshot();
+    });
+}
+
+if (btnDownloadSnapshot) {
+    btnDownloadSnapshot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const canvasEl = document.getElementById('snapshot-canvas');
+        if (!canvasEl) return;
+        const link = document.createElement('a');
+        link.download = `Galaxy_Of_Love_${Date.now()}.png`;
+        link.href = canvasEl.toDataURL('image/png');
+        link.click();
+    });
+}
+
+if (btnCloseSnapshot && snapshotModal) {
+    btnCloseSnapshot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        snapshotModal.classList.remove('show');
+    });
+}
+
+// 8. Nút Upload ảnh cá nhân
 const btnUpload = document.getElementById('btn-upload');
 const imageUploadInput = document.getElementById('image-upload-input');
 if (btnUpload && imageUploadInput) {
@@ -1962,12 +2340,12 @@ if (btnUpload && imageUploadInput) {
     imageUploadInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
             handlePhotoUpload(e.target.files);
-            imageUploadInput.value = ''; // Reset input
+            imageUploadInput.value = '';
         }
     });
 }
 
-// 4.1 Nút mở Modal Đổi Nhạc YouTube
+// 9. Nút Đổi Nhạc & Presets
 const btnChangeMusic = document.getElementById('btn-change-music');
 const musicModal = document.getElementById('music-modal');
 const youtubeUrlInput = document.getElementById('youtube-url-input');
@@ -1975,19 +2353,27 @@ const btnPlayYouTube = document.getElementById('btn-play-youtube');
 const btnDefaultMusic = document.getElementById('btn-default-music');
 const btnCancelMusic = document.getElementById('btn-cancel-music');
 
-// Load saved YouTube link if exists
-try {
-    const savedYT = localStorage.getItem('galaxy_yt_music');
-    if (savedYT && youtubeUrlInput) {
-        youtubeUrlInput.value = savedYT;
-    }
-} catch (err) {}
-
 if (btnChangeMusic && musicModal) {
     btnChangeMusic.addEventListener('click', (e) => {
         e.stopPropagation();
         musicModal.classList.add('show');
         youtubeUrlInput.focus();
+    });
+
+    // Preset buttons
+    document.querySelectorAll('.btn-preset-song').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const url = btn.getAttribute('data-url');
+            const videoId = extractYouTubeId(url);
+            if (videoId) {
+                try {
+                    localStorage.setItem('galaxy_yt_music', url);
+                } catch (err) {}
+                playYouTubeMusic(videoId);
+                musicModal.classList.remove('show');
+            }
+        });
     });
 
     btnPlayYouTube.addEventListener('click', (e) => {
@@ -2026,7 +2412,7 @@ if (btnChangeMusic && musicModal) {
     });
 }
 
-// 5. Nút Bật/Tắt Âm thanh (Hỗ trợ cả MP3 và YouTube)
+// 10. Nút Bật/Tắt Âm thanh
 const btnMusic = document.getElementById('btn-music');
 if (btnMusic) {
     btnMusic.addEventListener('click', (e) => {
@@ -2035,15 +2421,21 @@ if (btnMusic) {
             if (isYTMuted) {
                 ytPlayer.unMute();
                 isYTMuted = false;
+                isSoundMuted = false;
                 updateMusicButtonState(false);
             } else {
                 ytPlayer.mute();
                 isYTMuted = true;
+                isSoundMuted = true;
                 updateMusicButtonState(true);
             }
         } else {
             bgMusic.muted = !bgMusic.muted;
+            isSoundMuted = bgMusic.muted;
             updateMusicButtonState(bgMusic.muted);
+            try {
+                localStorage.setItem('galaxy_music_muted', isSoundMuted ? 'true' : 'false');
+            } catch (err) {}
             if (!musicStarted && !bgMusic.muted) {
                 startMusic();
             }
@@ -2051,7 +2443,7 @@ if (btnMusic) {
     });
 }
 
-// 6. Nút Về toàn cảnh
+// 11. Nút Về toàn cảnh
 const btnReset = document.getElementById('btn-reset-view');
 if (btnReset) {
     btnReset.addEventListener('click', (e) => {
@@ -2061,15 +2453,13 @@ if (btnReset) {
             btnCinema?.classList.remove('active');
         }
         isResettingView = true;
-
-        // Thu nhỏ lại tất cả các hình ảnh nếu đang bị phóng to
         floatingSprites.children.forEach(sprite => {
             sprite.userData.isZoomed = false;
         });
     });
 }
 
-// 7. Nút Cổng Dịch Chuyển Không Gian (Wormhole Warp)
+// 12. Nút Cổng Dịch Chuyển Wormhole
 const btnWormhole = document.getElementById('btn-wormhole');
 if (btnWormhole) {
     btnWormhole.addEventListener('click', (e) => {
@@ -2078,18 +2468,31 @@ if (btnWormhole) {
     });
 }
 
-// 8. Nút Ẩn / Hiện Thanh Công Cụ & Hướng Dẫn (Zen Mode)
+// 13. Nút Ẩn/Hiện Thanh Công Cụ (Zen Mode)
 const btnToggleUI = document.getElementById('btn-toggle-ui');
 const btnRestoreUI = document.getElementById('btn-restore-ui');
 const uiControls = document.getElementById('ui-controls');
 const hintBox = document.getElementById('hint-box');
 
 if (btnToggleUI && btnRestoreUI && uiControls) {
+    // Khôi phục trạng thái Zen Mode từ LocalStorage
+    try {
+        const savedZen = localStorage.getItem('galaxy_zen_mode');
+        if (savedZen === 'true') {
+            uiControls.classList.add('hidden');
+            if (hintBox) hintBox.classList.add('hidden');
+            btnRestoreUI.classList.add('show');
+        }
+    } catch (e) {}
+
     btnToggleUI.addEventListener('click', (e) => {
         e.stopPropagation();
         uiControls.classList.add('hidden');
         if (hintBox) hintBox.classList.add('hidden');
         btnRestoreUI.classList.add('show');
+        try {
+            localStorage.setItem('galaxy_zen_mode', 'true');
+        } catch (err) {}
     });
 
     btnRestoreUI.addEventListener('click', (e) => {
@@ -2097,19 +2500,30 @@ if (btnToggleUI && btnRestoreUI && uiControls) {
         uiControls.classList.remove('hidden');
         if (hintBox) hintBox.classList.remove('hidden');
         btnRestoreUI.classList.remove('show');
+        try {
+            localStorage.setItem('galaxy_zen_mode', 'false');
+        } catch (err) {}
     });
 }
 
+// Đóng modal khi click ra ngoài vùng nội dung
+document.querySelectorAll('.text-modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('show');
+        }
+    });
+});
+
 /**
  * =========================================================================
- * 14. LOADING SCREEN CONTROLLER (Khởi tạo sao & Mở màn vũ trụ mượt mà)
+ * 14. LOADING SCREEN CONTROLLER
  * =========================================================================
  */
 const initLoadingScreen = () => {
     const loadingScreen = document.getElementById('loading-screen');
     if (!loadingScreen) return;
 
-    // Sinh các ngôi sao lấp lánh ngẫu nhiên trên màn hình chờ
     const starsBg = loadingScreen.querySelector('.loading-stars-bg');
     if (starsBg) {
         const starCount = 65;
@@ -2143,7 +2557,6 @@ const initLoadingScreen = () => {
             if (loadingBar) loadingBar.style.width = '100%';
             if (loadingPercent) loadingPercent.textContent = '100%';
 
-            // Hoàn tất tải: Mờ dần màn hình loading và giải phóng
             setTimeout(() => {
                 loadingScreen.classList.add('fade-out');
                 setTimeout(() => {
@@ -2158,4 +2571,3 @@ const initLoadingScreen = () => {
 };
 
 initLoadingScreen();
-
