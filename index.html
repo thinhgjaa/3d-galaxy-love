@@ -42,6 +42,7 @@
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="ui-controls" class="ui-controls">
       <button id="btn-settings" title="Cấu Hình Hiệu Ứng Vũ Trụ (Liên Tục)">⚙️</button>
+      <button id="btn-saturn-ring" title="Vòng Đai Sao Thổ Kỷ Niệm (Memory Saturn Rings)">🪐</button>
       <button id="btn-star-wishes" title="Những Vì Sao Ước Nguyện (Thư Tình)">🌟</button>
       <button id="btn-snapshot" title="Chụp Ảnh Kỷ Niệm & Xuất Thiệp">📸</button>
       <button id="btn-wormhole" title="Cổng Dịch Chuyển Không Gian (Wormhole Warp)">🌀</button>
@@ -159,120 +160,204 @@
     <!-- 7. Modal Cấu Hình Hiệu Ứng Vũ Trụ (Hiệu ứng liên tục) -->
     <div id="settings-modal" class="text-modal">
       <div class="text-modal-content settings-modal-content">
-        <h3>⚙️ Cấu Hình Hiệu Ứng Vũ Trụ</h3>
-        <p class="settings-subtitle">Bật các chế độ tự động và hiệu ứng liên tục</p>
+        <h3>⚙️ Cấu Hình Không Gian & Hiệu Ứng</h3>
+        <p class="settings-subtitle">Bật/Tắt các thành phần thiên hà và hiệu ứng vũ trụ</p>
+
+        <!-- Category Filter Tabs -->
+        <div class="settings-categories-tabs" id="settings-cat-tabs">
+          <button type="button" class="settings-cat-btn active" data-cat="all">🌟 Tất Cả</button>
+          <button type="button" class="settings-cat-btn" data-cat="galaxy">🌌 Thiên Hà 3D</button>
+          <button type="button" class="settings-cat-btn" data-cat="fx">✨ Hiệu Ứng</button>
+          <button type="button" class="settings-cat-btn" data-cat="media">🖼️ Kỷ Niệm</button>
+          <button type="button" class="settings-cat-btn" data-cat="audio">🎵 Âm Thanh</button>
+        </div>
 
         <div class="settings-list">
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🎆 Pháo hoa tim liên tục</span>
-              <span class="setting-desc">Tự động bung pháo hoa trái tim 3D không ngừng</span>
+          <!-- Nhóm 1: Không Gian & Ngân Hà 3D -->
+          <div class="settings-group-section" data-group="galaxy">
+            <div class="settings-group-title">🌌 1. Cấu Trúc Không Gian & Thiên Hà 3D</div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌀 Dải Ngân Hà xoắn ốc (Dưới đáy)</span>
+                <span class="setting-desc">Hàng ngàn hạt tinh vân xoay xoắn ốc dưới tâm vũ trụ</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-galaxy" checked />
+                <span class="slider"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-auto-fireworks" />
-              <span class="slider"></span>
-            </label>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">💖 Trái tim vũ trụ 3D</span>
+                <span class="setting-desc">Trái tim kết tinh từ 6.500 hạt phát sáng tại tâm</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-heart" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">💫 Vành đai hạt quanh Trái Tim</span>
+                <span class="setting-desc">Vành đai bụi sao hành tinh ôm sát quanh trái tim</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-heart-ring" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🪐 Vòng đai Sao Thổ Kỷ Niệm</span>
+                <span class="setting-desc">Vành đai ảnh kỷ niệm xoay quanh trái tim vũ trụ</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-saturn-rings" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌟 Vòm sao vũ trụ hậu cảnh</span>
+                <span class="setting-desc">Vòm 2.200 vì sao lấp lánh ở khoảng không xa</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-starfield" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🌠 Mưa sao băng liên tục</span>
-              <span class="setting-desc">Sao băng bay dày đặc liên hồi qua dải ngân hà</span>
+          <!-- Nhóm 2: Hiệu Ứng Thiên Văn & Chuyển Động -->
+          <div class="settings-group-section" data-group="fx">
+            <div class="settings-group-title">✨ 2. Hiệu Ứng Thiên Văn & Chuyển Động</div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🎆 Pháo hoa tim liên tục</span>
+                <span class="setting-desc">Tự động bung pháo hoa trái tim 3D không ngừng</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-auto-fireworks" />
+                <span class="slider"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-auto-meteors" />
-              <span class="slider"></span>
-            </label>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌠 Mưa sao băng liên tục</span>
+                <span class="setting-desc">Sao băng bay dày đặc liên hồi qua dải ngân hà</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-auto-meteors" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">☄️ Sao chổi bay thường xuyên</span>
+                <span class="setting-desc">Tăng tần suất sao chổi đuôi lụa kỳ vĩ</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-frequent-comets" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">✨ Vệt bụi sao theo chuột</span>
+                <span class="setting-desc">Phát ra bụi sao ma thuật khi di chuyển chuột</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-fairy-dust" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌀 Tốc độ xoay vũ trụ</span>
+                <span class="setting-desc">Điều chỉnh tốc độ tự xoay của góc nhìn</span>
+              </div>
+              <select id="select-rotation-speed" class="setting-select">
+                <option value="0">Dừng xoay (Tĩnh)</option>
+                <option value="0.3">Chậm êm đềm (0.5x)</option>
+                <option value="0.6" selected>Tiêu chuẩn (1.0x)</option>
+                <option value="1.4">Nhanh bay bổng (2.0x)</option>
+              </select>
+            </div>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">☄️ Sao chổi bay thường xuyên</span>
-              <span class="setting-desc">Tăng tần suất sao chổi đuôi lụa kỳ vĩ</span>
+          <!-- Nhóm 3: Nội Dung Kỷ Niệm & Icon -->
+          <div class="settings-group-section" data-group="media">
+            <div class="settings-group-title">🖼️ 3. Nội Dung & Biểu Tượng</div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🖼️ Ảnh thư mục & ảnh cá nhân</span>
+                <span class="setting-desc">Bật/Tắt ảnh trong thư mục photos và ảnh tải lên</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-photos" checked />
+                <span class="slider"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-frequent-comets" />
-              <span class="slider"></span>
-            </label>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌌 Chòm sao Xử Nữ & Kim Ngưu</span>
+                <span class="setting-desc">Bật/Tắt đường nối & tên chòm sao hoàng đạo</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-constellations" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🛸 Icon vũ trụ (Sao, Tàu bay, Emoji)</span>
+                <span class="setting-desc">Bật/Tắt các biểu tượng ngôi sao, phi thuyền bay quanh</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-show-space-icons" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">✨ Vệt bụi sao theo chuột</span>
-              <span class="setting-desc">Phát ra bụi sao ma thuật khi di chuyển chuột</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-fairy-dust" checked />
-              <span class="slider"></span>
-            </label>
-          </div>
+          <!-- Nhóm 4: Âm Thanh & Sóng Âm -->
+          <div class="settings-group-section" data-group="audio">
+            <div class="settings-group-title">🎵 4. Âm Nhạc & Âm Thanh</div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🖼️ Ảnh thư mục & ảnh cá nhân</span>
-              <span class="setting-desc">Bật/Tắt ảnh trong thư mục photos và ảnh tải lên</span>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🎵 Vòng sóng âm nhạc 3D</span>
+                <span class="setting-desc">Vành đai sóng âm uốn lượn nhảy múa quanh trái tim</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-audio-visualizer" checked />
+                <span class="slider"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-show-photos" checked />
-              <span class="slider"></span>
-            </label>
-          </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🌌 Chòm sao Xử Nữ & Kim Ngưu</span>
-              <span class="setting-desc">Bật/Tắt đường nối & tên chòm sao hoàng đạo</span>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🔊 Âm thanh hiệu ứng (SFX)</span>
+                <span class="setting-desc">Tiếng chuông gió & nổ pháo hoa ma thuật</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-sound-fx" checked />
+                <span class="slider"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-show-constellations" checked />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🛸 Icon vũ trụ (Sao, Tàu bay, Emoji)</span>
-              <span class="setting-desc">Bật/Tắt các biểu tượng ngôi sao, phi thuyền bay quanh</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-show-space-icons" checked />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🎵 Vòng sóng âm nhạc 3D</span>
-              <span class="setting-desc">Vành đai sóng âm uốn lượn nhảy múa quanh trái tim</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-audio-visualizer" checked />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🔊 Âm thanh hiệu ứng (SFX)</span>
-              <span class="setting-desc">Tiếng chuông gió & nổ pháo hoa ma thuật</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-sound-fx" checked />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <span class="setting-title">🌀 Tốc độ xoay vũ trụ</span>
-              <span class="setting-desc">Điều chỉnh tốc độ tự xoay của góc nhìn</span>
-            </div>
-            <select id="select-rotation-speed" class="setting-select">
-              <option value="0">Dừng xoay (Tĩnh)</option>
-              <option value="0.3">Chậm êm đềm (0.5x)</option>
-              <option value="0.6" selected>Tiêu chuẩn (1.0x)</option>
-              <option value="1.4">Nhanh bay bổng (2.0x)</option>
-            </select>
           </div>
         </div>
 
@@ -283,9 +368,139 @@
       </div>
     </div>
 
+    <!-- 8. Modal Quản Lý & Cài Đặt Vòng Đai Sao Thổ Kỷ Niệm -->
+    <div id="saturn-modal" class="text-modal">
+      <div class="text-modal-content saturn-modal-content">
+        <div class="saturn-modal-header">
+          <h3>🪐 Vòng Đai Sao Thổ Kỷ Niệm</h3>
+          <p class="settings-subtitle">Lưu giữ từng khoảnh khắc ngọt ngào trên vành đai vũ trụ</p>
+        </div>
+
+        <!-- Tab Điều Hướng -->
+        <div class="saturn-tabs">
+          <button class="saturn-tab-btn active" id="tab-btn-memories" type="button">📸 Danh Sách Kỷ Niệm</button>
+          <button class="saturn-tab-btn" id="tab-btn-settings" type="button">⚙️ Cài Đặt Vành Đai</button>
+        </div>
+
+        <!-- Tab 1: Danh Sách Kỷ Niệm -->
+        <div id="saturn-tab-pane-memories" class="saturn-tab-pane active">
+          <div class="saturn-memories-list" id="saturn-memories-list">
+            <!-- Render danh sách kỷ niệm từ JS -->
+          </div>
+
+          <div class="saturn-add-memory-box">
+            <h4>✨ Thêm Kỷ Niệm Mới Vào Vòng Đai</h4>
+            <div class="saturn-add-form">
+              <div class="saturn-upload-preview" id="saturn-upload-preview">
+                <span id="saturn-upload-label">➕ Chọn ảnh kỷ niệm</span>
+                <img id="saturn-preview-img" style="display: none;" alt="Preview" />
+              </div>
+              <input type="file" id="saturn-photo-file" accept="image/*" style="display: none;" />
+              
+              <div class="saturn-inputs">
+                <input type="text" id="saturn-memory-title" placeholder="Tiêu đề (VD: Lần đầu đi chơi, Kỷ niệm 100 ngày...)" maxlength="40" />
+                <input type="text" id="saturn-memory-date" placeholder="Ngày tháng / Địa điểm (VD: 14/02/2024 - Đà Lạt)" maxlength="40" />
+                <textarea id="saturn-memory-note" rows="2" placeholder="Dòng tâm sự ngọt ngào gửi gắm vào kỷ niệm này..." maxlength="140"></textarea>
+                <button type="button" id="btn-add-saturn-memory" class="btn-primary-gradient">💖 Thêm Vào Vòng Đai</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Cài Đặt Vành Đai -->
+        <div id="saturn-tab-pane-settings" class="saturn-tab-pane">
+          <div class="settings-list">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🪐 Hiển thị Vòng đai</span>
+                <span class="setting-desc">Bật/Tắt vành đai Sao Thổ trong không gian</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-saturn-enabled-tab" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🎨 Bảng màu Vành đai</span>
+                <span class="setting-desc">Tông màu bụi sao & hào quang vành đai</span>
+              </div>
+              <select id="select-saturn-theme" class="setting-select">
+                <option value="gold" selected>🌟 Vàng Kim Tinh Tú (Golden)</option>
+                <option value="pink">💖 Hồng Pha Lê (Rose Crystal)</option>
+                <option value="cyan">💎 Lam Ngọc Kỳ Ảo (Cyan Nebula)</option>
+                <option value="purple">🌌 Tím Huyền Bí (Deep Purple)</option>
+                <option value="rainbow">🌈 Cầu Vồng Vũ Trụ (Rainbow Dream)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌀 Tốc độ xoay Vòng đai</span>
+                <span class="setting-desc">Tốc độ chuyển động của các ảnh trên quỹ đạo</span>
+              </div>
+              <select id="select-saturn-speed" class="setting-select">
+                <option value="0">Tĩnh (Đứng yên)</option>
+                <option value="0.04">Chậm êm dịu (0.5x)</option>
+                <option value="0.08" selected>Tiêu chuẩn (1.0x)</option>
+                <option value="0.16">Nhanh bay bổng (2.0x)</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">📐 Góc nghiêng Vành đai</span>
+                <span class="setting-desc">Độ nghiêng chuẩn không gian của Sao Thổ</span>
+              </div>
+              <select id="select-saturn-tilt" class="setting-select">
+                <option value="saturn" selected>Nghiêng Sao Thổ Chuẩn (28°)</option>
+                <option value="deep">Nghiêng Sâu Điện Ảnh (45°)</option>
+                <option value="flat">Mặt Phẳng Ngang (0°)</option>
+                <option value="vertical">Thẳng Đứng (90°)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button id="btn-save-saturn-modal">Lưu Cấu Hình</button>
+          <button id="btn-reset-saturn-memories">Khôi Phục Mặc Định</button>
+          <button id="btn-close-saturn-modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Modal Xem Chi Tiết Kỷ Niệm (Khi bấm vào ảnh trên Vòng Đai) -->
+    <div id="memory-detail-modal" class="text-modal">
+      <div class="text-modal-content memory-detail-card">
+        <div class="memory-card-header">
+          <span class="memory-card-badge">🪐 KỶ NIỆM SAO THỔ</span>
+          <button class="btn-close-detail-corner" id="btn-close-memory-corner" title="Đóng">✕</button>
+        </div>
+        <div class="memory-detail-polaroid">
+          <div class="memory-img-wrapper">
+            <img id="detail-memory-img" src="/photos/cat.jpg" alt="Memory Photo" />
+          </div>
+          <div class="memory-detail-info">
+            <h3 id="detail-memory-title">Ngày Đầu Gặp Gỡ</h3>
+            <p class="detail-memory-date" id="detail-memory-date">🗓️ 14 Tháng 02 • Quán cà phê góc phố</p>
+            <div class="detail-memory-divider"></div>
+            <p class="detail-memory-quote" id="detail-memory-quote">"Khoảnh khắc ánh mắt ta chạm nhau, cả vũ trụ dường như ngừng quay."</p>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button id="btn-prev-memory">⏮️ Kỷ Niệm Trước</button>
+          <button id="btn-next-memory">Kỷ Niệm Kế Tiếp ⏭️</button>
+          <button id="btn-open-saturn-manager">⚙️ Quản Lý Vòng Đai</button>
+          <button id="btn-close-detail-modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Hướng dẫn tương tác nhỏ xinh ở góc trái -->
     <div id="hint-box" class="hint-box">
-      <span>✨ <b>Chạm / Click:</b> Pháo hoa tim | <b>Double Tap (Chạm 2 lần):</b> Pháo hoa đôi 🎆 | <b>Vuốt 2 ngón:</b> Phóng to/Thu nhỏ | <b>Space:</b> Sao băng</span>
+      <span>✨ <b>Chạm / Click:</b> Pháo hoa tim | <b>Nhấp ảnh trên Vành Đai:</b> Xem kỷ niệm 🪐 | <b>Vuốt 2 ngón:</b> Phóng to/Thu nhỏ | <b>Space:</b> Sao băng</span>
     </div>
 
     <script type="module" src="/src/main.js"></script>
