@@ -1,269 +1,73 @@
 import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 
 /**
- * Base
+ * =========================================================================
+ * 1. BASE SETUP & SCENES
+ * =========================================================================
  */
-// Canvas
 const canvas = document.createElement('canvas');
 document.querySelector('#app').appendChild(canvas);
 
-// Scene cho các vật thể phát sáng (Ngân hà, Trái tim)
+// Scene 1: Cho các vật thể phát sáng có hiệu ứng Bloom (Galaxy, Heart, Stars, Meteors, Text)
 const scene = new THREE.Scene();
 
-// Scene riêng cho các hình ảnh (Sprites) để không bị hiệu ứng chói lóa (Bloom)
+// Scene 2: Scene riêng cho Sprites (ảnh, emoji) để không bị cháy sáng
 const sceneSprites = new THREE.Scene();
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambientLight);
-const pointLight = new THREE.PointLight(0xff007f, 2);
-pointLight.position.set(0, 5, 0);
-scene.add(pointLight);
-
-/**
- * 1. Galaxy
- */
-const parameters = {};
-parameters.count = 60000;
-parameters.size = 0.01;
-parameters.radius = 6;
-parameters.branches = 4;
-parameters.spin = 1.2;
-parameters.randomness = 0.4;
-parameters.randomnessPower = 3.5;
-parameters.insideColor = '#ff007f'; 
-parameters.outsideColor = '#100030'; 
-
-let galaxyPoints = null;
-
-const generateGalaxy = () => {
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(parameters.count * 3);
-    const colors = new Float32Array(parameters.count * 3);
-
-    const colorInside = new THREE.Color(parameters.insideColor);
-    const colorOutside = new THREE.Color(parameters.outsideColor);
-
-    for(let i = 0; i < parameters.count; i++) {
-        const i3 = i * 3;
-        const radius = Math.random() * parameters.radius;
-        const spinAngle = radius * parameters.spin;
-        const branchAngle = (i % parameters.branches) / parameters.branches * Math.PI * 2;
-
-        const randomX = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : - 1) * parameters.randomness * radius;
-        const randomY = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : - 1) * parameters.randomness * radius;
-        const randomZ = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : - 1) * parameters.randomness * radius;
-
-        positions[i3    ] = Math.cos(branchAngle + spinAngle) * radius + randomX;
-        positions[i3 + 1] = randomY - 0.5; // Offset slightly down
-        positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
-
-        const mixedColor = colorInside.clone();
-        mixedColor.lerp(colorOutside, radius / parameters.radius);
-
-        colors[i3    ] = mixedColor.r;
-        colors[i3 + 1] = mixedColor.g;
-        colors[i3 + 2] = mixedColor.b;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-        size: parameters.size,
-        sizeAttenuation: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        vertexColors: true
-    });
-
-    galaxyPoints = new THREE.Points(geometry, material);
-    scene.add(galaxyPoints);
-};
-
-generateGalaxy();
-
-/**
- * 2. Heart Particle System
- */
-let heartPoints = null;
-const generateHeart = () => {
-    const heartGeometry = new THREE.BufferGeometry();
-    const heartCount = 15000;
-    const positions = new Float32Array(heartCount * 3);
-    const colors = new Float32Array(heartCount * 3);
-    
-    // Core color
-    const baseColor = new THREE.Color('#ff0055');
-    const glowColor = new THREE.Color('#ff77aa');
-
-    let count = 0;
-    while (count < heartCount) {
-        // Sinh tọa độ ngẫu nhiên trong bounding box [-1.5, 1.5]
-        const x = (Math.random() - 0.5) * 3;
-        const y = (Math.random() - 0.5) * 3;
-        const z = (Math.random() - 0.5) * 3;
-
-        // Phương trình 3D Heart: (x^2 + (9/4)y^2 + z^2 - 1)^3 - x^2*z^3 - (9/80)*y^2*z^3 <= 0
-        const a = x*x + 2.25*y*y + z*z - 1;
-        const val = a*a*a - (x*x*z*z*z) - (0.1125*y*y*z*z*z);
-
-        if (val <= 0.0) { // Điểm nằm trong thể tích trái tim
-            // Map sang tọa độ Three.js (Trục Z của phương trình trở thành trục Y của Three.js)
-            // Giảm hệ số nhân từ 1.5 xuống 1.0 để làm quả tim nhỏ lại một xíu
-            let tx = x * 1.0;
-            let ty = z * 1.0;
-            let tz = y * 1.0;
-            
-            // Đã bỏ dòng ty += 2.5 ở đây để tâm hình học (pivot) nằm đúng giữa quả tim
-
-            positions[count*3] = tx;
-            positions[count*3+1] = ty;
-            positions[count*3+2] = tz;
-
-            // Phối màu ngẫu nhiên
-            const mixedColor = baseColor.clone();
-            if (Math.random() > 0.6) mixedColor.lerp(glowColor, Math.random());
-
-            colors[count*3] = mixedColor.r;
-            colors[count*3+1] = mixedColor.g;
-            colors[count*3+2] = mixedColor.b;
-            
-            count++;
-        }
-    }
-
-    heartGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    heartGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-        size: 0.012, // Giảm kích thước hạt xuống một chút để bớt chói
-        transparent: true,
-        opacity: 0.4, // Giảm độ trong suốt để bớt vùng sáng đỏ gắt
-        sizeAttenuation: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        vertexColors: true
-    });
-
-    heartPoints = new THREE.Points(heartGeometry, material);
-    // Tịnh tiến toàn bộ object lên trên thay vì tịnh tiến từng vertex, giúp thao tác scale hoạt động chính xác từ tâm
-    heartPoints.position.y = 2.5;
-    scene.add(heartPoints);
-};
-
-generateHeart();
-
-
-/**
- * 3. Orbiting 3D Text (Đã xóa)
- */
-
-
-/**
- * 4. Rải rác các hình ảnh (Sprites) trong tinh hà
- */
-const scatterSprites = () => {
-    // Sử dụng Emojis vẽ lên Canvas để làm Texture cho nhanh và cute
-    const emojis = ['🚀', '👨‍🚀', '🪐', '🌟', '🛸', '🛰️', '🐶', '💖'];
-    const spritesGroup = new THREE.Group();
-    
-    emojis.forEach((emoji) => {
-        // Tạo canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 128;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        ctx.font = '80px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(emoji, 64, 70); // Y offset slightly for center
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.6 }); // Giảm opacity để bớt chói lóa
-        
-        // Tạo 3-5 hình cho mỗi loại emoji
-        const count = 3 + Math.floor(Math.random() * 3);
-        for(let i=0; i<count; i++) {
-            const sprite = new THREE.Sprite(material);
-            
-            // Vị trí ngẫu nhiên rải rác xung quanh ngân hà
-            const radius = 2 + Math.random() * 6; // Bán kính quỹ đạo
-            const angle = Math.random() * Math.PI * 2;
-            sprite.position.x = Math.cos(angle) * radius;
-            sprite.position.z = Math.sin(angle) * radius;
-            sprite.position.y = (Math.random() - 0.5) * 5; // Cao thấp ngẫu nhiên
-            
-            // Kích thước ngẫu nhiên (nhỏ lại để đỡ rối)
-            const scale = 0.15 + Math.random() * 0.25;
-            sprite.scale.set(scale, scale, scale);
-            
-            // Lưu trữ dữ liệu để dùng cho animation
-            sprite.userData = {
-                radius: radius,
-                angle: angle,
-                speed: (Math.random() > 0.5 ? 1 : -1) * (0.05 + Math.random() * 0.15),
-                originalScale: scale,
-                isZoomed: false
-            };
-            
-            spritesGroup.add(sprite);
-        }
-    });
-    
-    sceneSprites.add(spritesGroup);
-    
-    // --- Thêm hình mèo (cat.jpg) ---
-    const textureLoader = new THREE.TextureLoader();
-    const photoTexture = textureLoader.load('/cat.jpg');
-    photoTexture.colorSpace = THREE.SRGBColorSpace;
-    const photoMaterial = new THREE.SpriteMaterial({ map: photoTexture, transparent: true, opacity: 0.95 });
-    
-    for(let i=0; i<4; i++) { // Thêm 4 khung ảnh
-        const photoSprite = new THREE.Sprite(photoMaterial);
-        
-        const radius = 4 + Math.random() * 3; 
-        const angle = Math.random() * Math.PI * 2;
-        photoSprite.position.x = Math.cos(angle) * radius;
-        photoSprite.position.z = Math.sin(angle) * radius;
-        photoSprite.position.y = (Math.random() - 0.5) * 3;
-        
-        // Khung ảnh to hơn một chút so với các emoji nhưng vẫn nhỏ gọn
-        const scale = 0.6 + Math.random() * 0.3;
-        photoSprite.scale.set(scale, scale, scale);
-        
-        photoSprite.userData = {
-            radius: radius,
-            angle: angle,
-            speed: (Math.random() > 0.5 ? 1 : -1) * (0.02 + Math.random() * 0.05),
-            originalScale: scale,
-            isZoomed: false
-        };
-        
-        spritesGroup.add(photoSprite);
-    }
-    // ----------------------------------------
-
-    return spritesGroup;
-};
-
-const floatingSprites = scatterSprites();
-
-/**
- * Sizes
- */
+// Sizes
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 };
 
+// Camera
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
+camera.position.set(0, 3, 7);
+scene.add(camera);
+
+// OrbitControls
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.6;
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+
+const pointLight = new THREE.PointLight('#ff007f', 2, 20);
+pointLight.position.set(0, 3, 0);
+scene.add(pointLight);
+
+// Renderer
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    powerPreference: "high-performance"
+});
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor('#000000');
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.autoClear = false;
+
+// Post Processing (UnrealBloomPass)
+const renderScene = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(sizes.width, sizes.height), 1.4, 0.4, 0.85);
+bloomPass.threshold = 0.0;
+bloomPass.strength = 1.3;
+bloomPass.radius = 0.5;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(renderScene);
+composer.addPass(bloomPass);
+
+// Resize handler
 window.addEventListener('resize', () => {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
@@ -273,178 +77,733 @@ window.addEventListener('resize', () => {
 
     renderer.setSize(sizes.width, sizes.height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    
+
     composer.setSize(sizes.width, sizes.height);
 });
 
 /**
- * Camera
+ * =========================================================================
+ * 2. COLOR THEMES (Bộ màu vũ trụ)
+ * =========================================================================
  */
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
-camera.position.set(0, 3, 7);
-scene.add(camera);
+const colorThemes = [
+    {
+        name: 'Romance Pink',
+        insideColor: '#ff007f',
+        outsideColor: '#100030',
+        heartBase: '#ff0055',
+        heartGlow: '#ff77aa',
+        lightColor: '#ff007f'
+    },
+    {
+        name: 'Deep Cyberpunk',
+        insideColor: '#00f0ff',
+        outsideColor: '#0d0033',
+        heartBase: '#00d2ff',
+        heartGlow: '#a855f7',
+        lightColor: '#00e5ff'
+    },
+    {
+        name: 'Emerald Aurora',
+        insideColor: '#00ff88',
+        outsideColor: '#021815',
+        heartBase: '#00ffaa',
+        heartGlow: '#70ff00',
+        lightColor: '#00ff88'
+    },
+    {
+        name: 'Golden Sunset',
+        insideColor: '#ffaa00',
+        outsideColor: '#250800',
+        heartBase: '#ff6600',
+        heartGlow: '#ffdd00',
+        lightColor: '#ffaa00'
+    }
+];
 
-// Controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
-controls.autoRotate = true; 
-controls.autoRotateSpeed = 0.8;
+let currentThemeIndex = 0;
 
-// Hủy bỏ quá trình tự động lướt về toàn cảnh nếu người dùng chủ động vuốt/kéo màn hình
+/**
+ * =========================================================================
+ * 3. GALAXY GENERATION
+ * =========================================================================
+ */
+const galaxyParams = {
+    count: 65000,
+    size: 0.01,
+    radius: 6.5,
+    branches: 4,
+    spin: 1.2,
+    randomness: 0.4,
+    randomnessPower: 3.5
+};
+
+let galaxyGeometry = null;
+let galaxyMaterial = null;
+let galaxyPoints = null;
+
+const generateGalaxy = () => {
+    if (galaxyPoints !== null) {
+        galaxyGeometry.dispose();
+        galaxyMaterial.dispose();
+        scene.remove(galaxyPoints);
+    }
+
+    const theme = colorThemes[currentThemeIndex];
+    galaxyGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(galaxyParams.count * 3);
+    const colors = new Float32Array(galaxyParams.count * 3);
+
+    const colorInside = new THREE.Color(theme.insideColor);
+    const colorOutside = new THREE.Color(theme.outsideColor);
+
+    for (let i = 0; i < galaxyParams.count; i++) {
+        const i3 = i * 3;
+        const radius = Math.random() * galaxyParams.radius;
+        const spinAngle = radius * galaxyParams.spin;
+        const branchAngle = (i % galaxyParams.branches) / galaxyParams.branches * Math.PI * 2;
+
+        const randomX = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+        const randomY = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+        const randomZ = Math.pow(Math.random(), galaxyParams.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+
+        positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+        positions[i3 + 1] = randomY - 0.5;
+        positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+        const mixedColor = colorInside.clone();
+        mixedColor.lerp(colorOutside, radius / galaxyParams.radius);
+
+        colors[i3] = mixedColor.r;
+        colors[i3 + 1] = mixedColor.g;
+        colors[i3 + 2] = mixedColor.b;
+    }
+
+    galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    galaxyMaterial = new THREE.PointsMaterial({
+        size: galaxyParams.size,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
+    scene.add(galaxyPoints);
+};
+
+generateGalaxy();
+
+/**
+ * =========================================================================
+ * 4. 3D HEART SYSTEM
+ * =========================================================================
+ */
+let heartPoints = null;
+let heartGeometry = null;
+let heartMaterial = null;
+
+const generateHeart = () => {
+    if (heartPoints !== null) {
+        heartGeometry.dispose();
+        heartMaterial.dispose();
+        scene.remove(heartPoints);
+    }
+
+    const theme = colorThemes[currentThemeIndex];
+    heartGeometry = new THREE.BufferGeometry();
+    const heartCount = 14000;
+    const positions = new Float32Array(heartCount * 3);
+    const colors = new Float32Array(heartCount * 3);
+
+    const baseColor = new THREE.Color(theme.heartBase);
+    const glowColor = new THREE.Color(theme.heartGlow);
+
+    let count = 0;
+    while (count < heartCount) {
+        const x = (Math.random() - 0.5) * 3;
+        const y = (Math.random() - 0.5) * 3;
+        const z = (Math.random() - 0.5) * 3;
+
+        // Phương trình 3D Heart: (x^2 + 2.25y^2 + z^2 - 1)^3 - x^2*z^3 - 0.1125*y^2*z^3 <= 0
+        const a = x * x + 2.25 * y * y + z * z - 1;
+        const val = a * a * a - (x * x * z * z * z) - (0.1125 * y * y * z * z * z);
+
+        if (val <= 0.0) {
+            let tx = x * 1.0;
+            let ty = z * 1.0;
+            let tz = y * 1.0;
+
+            positions[count * 3] = tx;
+            positions[count * 3 + 1] = ty;
+            positions[count * 3 + 2] = tz;
+
+            const mixedColor = baseColor.clone();
+            if (Math.random() > 0.5) mixedColor.lerp(glowColor, Math.random());
+
+            colors[count * 3] = mixedColor.r;
+            colors[count * 3 + 1] = mixedColor.g;
+            colors[count * 3 + 2] = mixedColor.b;
+
+            count++;
+        }
+    }
+
+    heartGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    heartGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    heartMaterial = new THREE.PointsMaterial({
+        size: 0.013,
+        transparent: true,
+        opacity: 0.45,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    heartPoints = new THREE.Points(heartGeometry, heartMaterial);
+    heartPoints.position.y = 2.4; // Tọa độ tâm trái tim phía trên ngân hà
+    scene.add(heartPoints);
+};
+
+generateHeart();
+
+/**
+ * =========================================================================
+ * 5. DYNAMIC FLOATING 3D NEON TEXT (Dòng chữ phát sáng)
+ * =========================================================================
+ */
+let textSprite = null;
+
+const createTextTexture = (text) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Hiệu ứng phát sáng Neon cho chữ
+    const theme = colorThemes[currentThemeIndex];
+    ctx.font = 'bold 54px "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Glow layers
+    ctx.shadowColor = theme.heartBase;
+    ctx.shadowBlur = 25;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, 512, 128);
+
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, 512, 128);
+
+    return new THREE.CanvasTexture(canvas);
+};
+
+const updateFloatingText = (text) => {
+    const texture = createTextTexture(text);
+    if (!textSprite) {
+        const material = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            opacity: 0.9,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        textSprite = new THREE.Sprite(material);
+        textSprite.position.set(0, 3.8, 0);
+        textSprite.scale.set(3.8, 0.95, 1);
+        scene.add(textSprite);
+    } else {
+        textSprite.material.map.dispose();
+        textSprite.material.map = texture;
+        textSprite.material.needsUpdate = true;
+    }
+};
+
+updateFloatingText('Forever & Always 💖');
+
+/**
+ * =========================================================================
+ * 6. SHOOTING STARS / METEORS (Hệ thống Sao Băng)
+ * =========================================================================
+ */
+const meteorsGroup = new THREE.Group();
+scene.add(meteorsGroup);
+
+class Meteor {
+    constructor() {
+        this.active = false;
+        this.speed = 0.4;
+        this.length = 2.5;
+
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(6); // 2 points (head, tail)
+        const colors = new Float32Array(6);
+
+        // Head bright white, tail theme-glow
+        colors[0] = 1.0; colors[1] = 1.0; colors[2] = 1.0; // head
+        colors[3] = 1.0; colors[4] = 0.3; colors[5] = 0.7; // tail
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.85,
+            blending: THREE.AdditiveBlending,
+            linewidth: 2
+        });
+
+        this.mesh = new THREE.Line(geometry, material);
+        this.mesh.visible = false;
+        meteorsGroup.add(this.mesh);
+
+        this.direction = new THREE.Vector3(-1, -0.6, -0.8).normalize();
+    }
+
+    spawn(customPos = null) {
+        this.active = true;
+        this.mesh.visible = true;
+
+        if (customPos) {
+            this.mesh.position.copy(customPos);
+        } else {
+            // Random start position high and wide
+            this.mesh.position.set(
+                (Math.random() - 0.3) * 16,
+                6 + Math.random() * 6,
+                (Math.random() - 0.5) * 16
+            );
+        }
+
+        this.speed = 0.25 + Math.random() * 0.25;
+        this.updateGeometry();
+    }
+
+    updateGeometry() {
+        const posAttr = this.mesh.geometry.attributes.position;
+        const tail = this.direction.clone().multiplyScalar(-this.length);
+        
+        posAttr.setXYZ(0, 0, 0, 0); // Head
+        posAttr.setXYZ(1, tail.x, tail.y, tail.z); // Tail
+        posAttr.needsUpdate = true;
+    }
+
+    update() {
+        if (!this.active) return;
+
+        this.mesh.position.addScaledVector(this.direction, this.speed);
+
+        // If it goes too far down/away, reset
+        if (this.mesh.position.y < -4 || this.mesh.position.length() > 25) {
+            this.active = false;
+            this.mesh.visible = false;
+        }
+    }
+}
+
+const meteorPool = [];
+for (let i = 0; i < 12; i++) {
+    meteorPool.push(new Meteor());
+}
+
+let nextMeteorTime = 0;
+
+const spawnMeteorShower = () => {
+    let count = 0;
+    for (const m of meteorPool) {
+        if (!m.active && count < 4) {
+            setTimeout(() => m.spawn(), count * 150);
+            count++;
+        }
+    }
+};
+
+/**
+ * =========================================================================
+ * 7. CLICK PARTICLE BURST (Pháo hoa bung hạt khi click)
+ * =========================================================================
+ */
+const burstParticles = [];
+const maxBursts = 80;
+
+// Tạo canvas texture hình ngôi sao / trái tim mini cho hạt pháo hoa
+const createSparkleTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '40px sans-serif';
+    ctx.fillText('✨', 32, 34);
+    
+    return new THREE.CanvasTexture(canvas);
+};
+
+const sparkleTexture = createSparkleTexture();
+const burstMaterial = new THREE.SpriteMaterial({
+    map: sparkleTexture,
+    transparent: true,
+    opacity: 1.0,
+    blending: THREE.AdditiveBlending
+});
+
+class ParticleBurst {
+    constructor() {
+        this.mesh = new THREE.Sprite(burstMaterial.clone());
+        this.mesh.visible = false;
+        this.velocity = new THREE.Vector3();
+        this.life = 0;
+        this.maxLife = 1.0;
+        scene.add(this.mesh);
+    }
+
+    spawn(position, color) {
+        this.mesh.position.copy(position);
+        this.mesh.visible = true;
+        this.mesh.scale.set(0.2, 0.2, 0.2);
+        this.mesh.material.color.set(color);
+        this.mesh.material.opacity = 1.0;
+        this.life = 1.0;
+        this.maxLife = 0.8 + Math.random() * 0.5;
+
+        // Vận tốc bung tròn 3D
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const speed = 0.04 + Math.random() * 0.08;
+
+        this.velocity.set(
+            Math.sin(phi) * Math.cos(theta) * speed,
+            Math.sin(phi) * Math.sin(theta) * speed,
+            Math.cos(phi) * speed
+        );
+    }
+
+    update(delta) {
+        if (this.life <= 0) return;
+
+        this.life -= delta / this.maxLife;
+        this.mesh.position.add(this.velocity);
+        this.velocity.multiplyScalar(0.96); // Lực cản không khí
+
+        this.mesh.material.opacity = Math.max(0, this.life);
+        const s = 0.2 * this.life;
+        this.mesh.scale.set(s, s, s);
+
+        if (this.life <= 0) {
+            this.mesh.visible = false;
+        }
+    }
+}
+
+for (let i = 0; i < maxBursts; i++) {
+    burstParticles.push(new ParticleBurst());
+}
+
+const triggerClickBurst = (worldPos) => {
+    const theme = colorThemes[currentThemeIndex];
+    let spawned = 0;
+    for (const p of burstParticles) {
+        if (p.life <= 0 && spawned < 18) {
+            const randomColor = Math.random() > 0.4 ? theme.heartBase : theme.heartGlow;
+            p.spawn(worldPos, randomColor);
+            spawned++;
+        }
+    }
+};
+
+/**
+ * =========================================================================
+ * 8. ORBITING SPRITES & CUSTOM PHOTO SYSTEM
+ * =========================================================================
+ */
+let floatingSprites = new THREE.Group();
+sceneSprites.add(floatingSprites);
+
+const addSpriteToOrbit = (texture, isCustom = false) => {
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: isCustom ? 0.95 : 0.65
+    });
+
+    const sprite = new THREE.Sprite(material);
+    const radius = 2.5 + Math.random() * 5.5;
+    const angle = Math.random() * Math.PI * 2;
+    
+    sprite.position.x = Math.cos(angle) * radius;
+    sprite.position.z = Math.sin(angle) * radius;
+    sprite.position.y = (Math.random() - 0.5) * 4.5;
+
+    const baseScale = isCustom ? (0.7 + Math.random() * 0.3) : (0.18 + Math.random() * 0.25);
+    sprite.scale.set(baseScale, baseScale, baseScale);
+
+    sprite.userData = {
+        radius: radius,
+        angle: angle,
+        speed: (Math.random() > 0.5 ? 1 : -1) * (0.04 + Math.random() * 0.1),
+        originalScale: baseScale,
+        isZoomed: false,
+        isCustomPhoto: isCustom
+    };
+
+    floatingSprites.add(sprite);
+    return sprite;
+};
+
+// Khởi tạo các emojis mặc định
+const initDefaultSprites = () => {
+    const emojis = ['🚀', '👨‍🚀', '🪐', '🌟', '🛸', '🛰️', '🐶', '💖'];
+    emojis.forEach((emoji) => {
+        const c = document.createElement('canvas');
+        c.width = 128;
+        c.height = 128;
+        const ctx = c.getContext('2d');
+        ctx.font = '80px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(emoji, 64, 70);
+
+        const tex = new THREE.CanvasTexture(c);
+        const count = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < count; i++) {
+            addSpriteToOrbit(tex, false);
+        }
+    });
+
+    // Thêm ảnh cat.jpg mặc định
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('/cat.jpg', (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        for (let i = 0; i < 3; i++) {
+            addSpriteToOrbit(tex, true);
+        }
+    });
+};
+
+initDefaultSprites();
+
+// Xử lý upload ảnh cá nhân
+const handlePhotoUpload = (files) => {
+    Array.from(files).forEach((file) => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const tex = new THREE.Texture(img);
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.needsUpdate = true;
+                
+                // Thêm 2 bản thể bay trong không gian
+                addSpriteToOrbit(tex, true);
+                addSpriteToOrbit(tex, true);
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+/**
+ * =========================================================================
+ * 9. CINEMA TOUR & SMOOTH RESET CONTROLLER
+ * =========================================================================
+ */
+let isCinemaMode = false;
+let isResettingView = false;
+const defaultCameraPos = new THREE.Vector3(0, 3, 7);
+const defaultTarget = new THREE.Vector3(0, 0, 0);
+
 controls.addEventListener('start', () => {
-    if (typeof isResettingView !== 'undefined') {
-        isResettingView = false;
+    isResettingView = false;
+    if (isCinemaMode) {
+        isCinemaMode = false;
+        document.getElementById('btn-cinema')?.classList.remove('active');
     }
 });
 
 /**
- * Tương tác click chuột (Raycaster) & Âm thanh
+ * =========================================================================
+ * 10. AUDIO BACKGROUND
+ * =========================================================================
  */
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-// Tạo đối tượng âm thanh nền (nhạc mp3 ambient không gian êm ái, lãng mạn hơn)
 const bgMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc48af67b2.mp3?filename=space-ambience-108861.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
 let musicStarted = false;
 
-// Lắng nghe cả pointerdown (chuột/cảm ứng) thay vì chỉ click, vì OrbitControls đôi khi chặn sự kiện click
 const startMusic = () => {
     if (!musicStarted) {
         bgMusic.play().then(() => {
-            console.log("Nhạc đã phát thành công!");
-        }).catch(e => {
-            console.warn("Lỗi phát nhạc (trình duyệt chặn autoplay):", e);
-        });
-        musicStarted = true;
+            musicStarted = true;
+        }).catch(e => console.warn(e));
         window.removeEventListener('pointerdown', startMusic);
     }
 };
 window.addEventListener('pointerdown', startMusic);
 
+/**
+ * =========================================================================
+ * 11. RAYCASTER & INTERACTION (Click / Double Click)
+ * =========================================================================
+ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
 window.addEventListener('click', (event) => {
-    // Tính toán tọa độ chuột chuẩn hóa (-1 đến +1)
+    // Nếu click vào UI elements thì không tương tác 3D
+    if (event.target.closest('.ui-controls') || event.target.closest('.text-modal')) {
+        return;
+    }
+
     mouse.x = (event.clientX / sizes.width) * 2 - 1;
     mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-
     raycaster.setFromCamera(mouse, camera);
 
-    if (floatingSprites) {
-        const intersects = raycaster.intersectObjects(floatingSprites.children, false);
-        
-        let clickedSprite = null;
-        if (intersects.length > 0) {
-            clickedSprite = intersects[0].object;
-        }
+    // Kiểm tra xem có click trúng Sprite không
+    const intersects = raycaster.intersectObjects(floatingSprites.children, false);
+    let clickedSprite = null;
 
-        floatingSprites.children.forEach(sprite => {
-            if (sprite === clickedSprite) {
-                // Bật/tắt trạng thái phóng to khi click trúng
-                sprite.userData.isZoomed = !sprite.userData.isZoomed;
-            } else {
-                // Thu nhỏ tất cả các hình khác
-                sprite.userData.isZoomed = false; 
-            }
-        });
+    if (intersects.length > 0) {
+        clickedSprite = intersects[0].object;
+    }
+
+    floatingSprites.children.forEach(sprite => {
+        if (sprite === clickedSprite) {
+            sprite.userData.isZoomed = !sprite.userData.isZoomed;
+        } else {
+            sprite.userData.isZoomed = false;
+        }
+    });
+
+    // Tạo pháo hoa bung hạt tại vị trí click trong không gian 3D
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const targetPoint = new THREE.Vector3();
+    raycaster.ray.intersectPlane(plane, targetPoint);
+    if (!targetPoint || isNaN(targetPoint.x)) {
+        raycaster.ray.at(5, targetPoint);
+    }
+    triggerClickBurst(targetPoint);
+});
+
+// Click đúp gọi chùm sao băng
+window.addEventListener('dblclick', (e) => {
+    if (e.target.closest('.ui-controls') || e.target.closest('.text-modal')) return;
+    spawnMeteorShower();
+});
+
+// Phím Space gọi sao băng
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !document.getElementById('text-modal').classList.contains('show')) {
+        spawnMeteorShower();
     }
 });
 
 /**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    antialias: true
-});
-renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor('#000000');
-renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.autoClear = false; // Rất quan trọng để render 2 scene đè lên nhau
-
-/**
- * Post Processing (Bloom for Neon effect)
- */
-const renderScene = new RenderPass(scene, camera);
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(sizes.width, sizes.height), 1.5, 0.4, 0.85);
-bloomPass.threshold = 0.0; // Cho phép các điểm sáng nhỏ cũng glow
-bloomPass.strength = 1.5; // Tăng cường độ phát sáng của ngân hà và trái tim
-bloomPass.radius = 0.5;
-
-const composer = new EffectComposer(renderer);
-composer.addPass(renderScene);
-composer.addPass(bloomPass);
-
-/**
- * Animate
+ * =========================================================================
+ * 12. ANIMATION LOOP (tick)
+ * =========================================================================
  */
 const clock = new THREE.Clock();
 
-let isResettingView = false;
-const defaultCameraPos = new THREE.Vector3(0, 3, 7);
-const defaultTarget = new THREE.Vector3(0, 0, 0);
-
 const tick = () => {
+    const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // Rotate galaxy
-    if(galaxyPoints) {
-        galaxyPoints.rotation.y = elapsedTime * 0.1;
+    // 1. Rotate galaxy
+    if (galaxyPoints) {
+        galaxyPoints.rotation.y = elapsedTime * 0.08;
     }
-    
-    // Rotate and pulse heart
-    if(heartPoints) {
-        // Xoay nhẹ nhàng quanh trục Y
-        heartPoints.rotation.y = elapsedTime * 0.15;
+
+    // 2. Rotate & Breathe Heart
+    if (heartPoints) {
+        heartPoints.rotation.y = elapsedTime * 0.12;
+
+        // Hiệu ứng thở (phồng lên xẹp xuống mượt mà từ giữa)
+        const breatheScale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.08;
+        heartPoints.scale.set(breatheScale, breatheScale, breatheScale);
+    }
+
+    // 3. Floating Text Bobbing & Facing Camera
+    if (textSprite) {
+        textSprite.position.y = 3.8 + Math.sin(elapsedTime * 2.0) * 0.08;
+    }
+
+    // 4. Meteors update & periodic random spawn
+    if (elapsedTime > nextMeteorTime) {
+        const inactiveMeteor = meteorPool.find(m => !m.active);
+        if (inactiveMeteor) {
+            inactiveMeteor.spawn();
+        }
+        nextMeteorTime = elapsedTime + 2.5 + Math.random() * 4.0;
+    }
+
+    meteorPool.forEach(m => m.update());
+
+    // 5. Particle Burst update
+    burstParticles.forEach(p => p.update(delta));
+
+    // 6. Floating Sprites Orbit & Zooming
+    floatingSprites.children.forEach(sprite => {
+        const targetScale = sprite.userData.isZoomed ? (sprite.userData.isCustomPhoto ? 3.5 : 2.5) : sprite.userData.originalScale;
+        sprite.scale.x += (targetScale - sprite.scale.x) * 0.1;
+        sprite.scale.y += (targetScale - sprite.scale.y) * 0.1;
+        sprite.scale.z += (targetScale - sprite.scale.z) * 0.1;
+
+        if (!sprite.userData.isZoomed) {
+            sprite.userData.angle += sprite.userData.speed * 0.02;
+        }
+
+        sprite.position.x = Math.cos(sprite.userData.angle) * sprite.userData.radius;
+        sprite.position.z = Math.sin(sprite.userData.angle) * sprite.userData.radius;
+        sprite.position.y += Math.sin(elapsedTime * Math.abs(sprite.userData.speed) * 8) * 0.004;
+    });
+
+    // 7. Cinema Tour Mode Animation
+    if (isCinemaMode) {
+        controls.autoRotate = false;
+        const ct = elapsedTime * 0.25;
+        const radius = 6.5 + Math.sin(ct * 0.7) * 2.0;
         
-        // Hiệu ứng thở (Breathing effect)
-        // Dùng hàm sin mượt mà để tạo cảm giác phồng lên xẹp xuống từ từ, êm ái
-        // Tăng biên độ lên 0.1 để nhịp thở trông rõ ràng và mạnh mẽ hơn
-        const scale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.1;
-        heartPoints.scale.set(scale, scale, scale);
-    }
-    
-    // Animation cho các hình ảnh linh tinh (bay quanh ngân hà)
-    if(floatingSprites) {
-        floatingSprites.children.forEach(sprite => {
-            // Xử lý phóng to/thu nhỏ mượt mà
-            const targetScale = sprite.userData.isZoomed ? 3.0 : sprite.userData.originalScale;
-            sprite.scale.x += (targetScale - sprite.scale.x) * 0.1;
-            sprite.scale.y += (targetScale - sprite.scale.y) * 0.1;
-            sprite.scale.z += (targetScale - sprite.scale.z) * 0.1;
+        camera.position.x = Math.sin(ct) * radius;
+        camera.position.z = Math.cos(ct) * radius;
+        camera.position.y = 2.4 + Math.sin(ct * 1.3) * 1.8;
 
-            if (!sprite.userData.isZoomed) {
-                // Chỉ bay tiếp khi không bị phóng to
-                sprite.userData.angle += sprite.userData.speed * 0.02; 
-            }
-            
-            // Cập nhật tọa độ X, Z tạo quỹ đạo tròn
-            sprite.position.x = Math.cos(sprite.userData.angle) * sprite.userData.radius;
-            sprite.position.z = Math.sin(sprite.userData.angle) * sprite.userData.radius;
-            
-            // Hiệu ứng nhấp nhô (bobbing) trên trục Y
-            sprite.position.y += Math.sin(elapsedTime * Math.abs(sprite.userData.speed) * 10) * 0.005;
-        });
+        controls.target.lerp(new THREE.Vector3(0, 2.2, 0), 0.05);
+        controls.update();
+    } else {
+        controls.autoRotate = !isResettingView;
     }
 
-    // Di chuyển mượt mà về góc nhìn toàn cảnh nếu người dùng bấm nút
+    // 8. Smooth Camera Reset View
     if (isResettingView) {
         camera.position.lerp(defaultCameraPos, 0.05);
         controls.target.lerp(defaultTarget, 0.05);
-        // Dừng nội suy khi đã đến rất gần (nới lỏng threshold để không bị kẹt với autoRotate)
         if (camera.position.distanceTo(defaultCameraPos) < 0.1) {
             isResettingView = false;
         }
     }
 
-    controls.update();
-    
-    // Render 2 lớp: Lớp 1 (Ngân hà phát sáng), Lớp 2 (Hình ảnh bình thường)
+    if (!isCinemaMode) {
+        controls.update();
+    }
+
+    // 9. Multi-pass Rendering
     renderer.clear();
-    composer.render(); // Render scene 1 với Bloom
-    renderer.clearDepth(); // Xóa depth buffer để hình ảnh đè lên trên
-    renderer.render(sceneSprites, camera); // Render scene 2 không có Bloom
+    composer.render(); // Scene 1 (Ngân hà, Trái tim, Chữ, Sao băng với Bloom)
+    renderer.clearDepth();
+    renderer.render(sceneSprites, camera); // Scene 2 (Hình ảnh rõ nét, không bị chói Bloom)
 
     window.requestAnimationFrame(tick);
 };
@@ -452,14 +811,103 @@ const tick = () => {
 tick();
 
 /**
- * UI Controls Logic
+ * =========================================================================
+ * 13. UI CONTROLS WIRING
+ * =========================================================================
  */
-const btnMusic = document.getElementById('btn-music');
-const btnReset = document.getElementById('btn-reset-view');
+// 1. Nút đổi Theme màu
+const btnTheme = document.getElementById('btn-theme');
+if (btnTheme) {
+    btnTheme.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentThemeIndex = (currentThemeIndex + 1) % colorThemes.length;
+        const theme = colorThemes[currentThemeIndex];
 
+        // Tái tạo lại Galaxy và Heart theo theme mới
+        generateGalaxy();
+        generateHeart();
+
+        // Cập nhật màu đèn
+        pointLight.color.set(theme.lightColor);
+
+        // Cập nhật lại màu phát sáng của chữ
+        const currentText = document.getElementById('custom-text-input')?.value || 'Forever & Always 💖';
+        updateFloatingText(currentText);
+    });
+}
+
+// 2. Nút Cinema Tour
+const btnCinema = document.getElementById('btn-cinema');
+if (btnCinema) {
+    btnCinema.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isCinemaMode = !isCinemaMode;
+        if (isCinemaMode) {
+            btnCinema.classList.add('active');
+            isResettingView = false;
+        } else {
+            btnCinema.classList.remove('active');
+        }
+    });
+}
+
+// 3. Nút mở Modal đổi lời nhắn
+const btnText = document.getElementById('btn-text');
+const textModal = document.getElementById('text-modal');
+const customTextInput = document.getElementById('custom-text-input');
+const btnSaveText = document.getElementById('btn-save-text');
+const btnCancelText = document.getElementById('btn-cancel-text');
+
+if (btnText && textModal) {
+    btnText.addEventListener('click', (e) => {
+        e.stopPropagation();
+        textModal.classList.add('show');
+        customTextInput.focus();
+    });
+
+    btnSaveText.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const textVal = customTextInput.value.trim();
+        if (textVal) {
+            updateFloatingText(textVal);
+        }
+        textModal.classList.remove('show');
+    });
+
+    btnCancelText.addEventListener('click', (e) => {
+        e.stopPropagation();
+        textModal.classList.remove('show');
+    });
+
+    customTextInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            btnSaveText.click();
+        }
+    });
+}
+
+// 4. Nút Upload ảnh
+const btnUpload = document.getElementById('btn-upload');
+const imageUploadInput = document.getElementById('image-upload-input');
+if (btnUpload && imageUploadInput) {
+    btnUpload.addEventListener('click', (e) => {
+        e.stopPropagation();
+        imageUploadInput.click();
+    });
+
+    imageUploadInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handlePhotoUpload(e.target.files);
+            imageUploadInput.value = ''; // Reset input
+        }
+    });
+}
+
+// 5. Nút Bật/Tắt nhạc
+const btnMusic = document.getElementById('btn-music');
 if (btnMusic) {
-    const toggleMusic = (e) => {
-        e.stopPropagation(); // Tránh bị dính click vào scene 3D
+    btnMusic.addEventListener('click', (e) => {
+        e.stopPropagation();
         bgMusic.muted = !bgMusic.muted;
         if (bgMusic.muted) {
             btnMusic.classList.add('muted');
@@ -468,26 +916,26 @@ if (btnMusic) {
             btnMusic.classList.remove('muted');
             btnMusic.innerText = '🎵';
             if (!musicStarted) {
-                bgMusic.play().catch(e => console.warn(e));
-                musicStarted = true;
+                startMusic();
             }
         }
-    };
-    btnMusic.addEventListener('click', toggleMusic);
+    });
 }
 
+// 6. Nút Về toàn cảnh
+const btnReset = document.getElementById('btn-reset-view');
 if (btnReset) {
-    const resetView = (e) => {
+    btnReset.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Bật cờ để camera từ từ lướt về vị trí ban đầu trong vòng lặp tick()
-        isResettingView = true;
-        
-        // Thu nhỏ lại tất cả các hình ảnh nếu đang bị phóng to
-        if (floatingSprites) {
-            floatingSprites.children.forEach(sprite => {
-                sprite.userData.isZoomed = false;
-            });
+        if (isCinemaMode) {
+            isCinemaMode = false;
+            btnCinema?.classList.remove('active');
         }
-    };
-    btnReset.addEventListener('click', resetView);
+        isResettingView = true;
+
+        // Thu nhỏ lại tất cả các hình ảnh nếu đang bị phóng to
+        floatingSprites.children.forEach(sprite => {
+            sprite.userData.isZoomed = false;
+        });
+    });
 }

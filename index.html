@@ -9,9 +9,34 @@
   <body>
     <div id="app"></div>
     <div id="ui-controls" class="ui-controls">
-      <button id="btn-music" title="Bật/Tắt Nhạc">🎵</button>
-      <button id="btn-reset-view" title="Về Toàn Cảnh">🌐</button>
+      <button id="btn-theme" title="Đổi Bảng Màu Vũ Trụ (Theme)">🎨</button>
+      <button id="btn-cinema" title="Chế Độ Điện Ảnh (Cinema Tour)">🎥</button>
+      <button id="btn-text" title="Đổi Lời Nhắn Tình Yêu">💌</button>
+      <button id="btn-upload" title="Tải Ảnh Cá Nhân Lên">🖼️</button>
+      <button id="btn-music" title="Bật/Tắt Nhạc Nền">🎵</button>
+      <button id="btn-reset-view" title="Về Góc Nhìn Toàn Cảnh">🌐</button>
     </div>
+
+    <!-- Ẩn input chọn file ảnh -->
+    <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;" />
+
+    <!-- Modal nhập lời nhắn -->
+    <div id="text-modal" class="text-modal">
+      <div class="text-modal-content">
+        <h3>💌 Lời nhắn gửi tới Vũ Trụ</h3>
+        <input type="text" id="custom-text-input" placeholder="Nhập tên hoặc lời nhắn..." maxlength="35" value="Forever & Always 💖" />
+        <div class="modal-buttons">
+          <button id="btn-save-text">Cập Nhật</button>
+          <button id="btn-cancel-text">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hướng dẫn tương tác nhỏ xinh ở góc trái -->
+    <div id="hint-box" class="hint-box">
+      <span>✨ Nhấp đúp để gọi sao băng | Click để bung pháo hoa tim</span>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
