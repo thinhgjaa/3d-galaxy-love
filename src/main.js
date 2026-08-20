@@ -337,59 +337,106 @@ updateFloatingText('Forever & Always 💖');
 const meteorsGroup = new THREE.Group();
 scene.add(meteorsGroup);
 
+// Texture cho đầu phát sáng của sao băng
+const createMeteorHeadTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.3, 'rgba(255, 200, 240, 0.8)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(canvas);
+};
+
+const meteorHeadTexture = createMeteorHeadTexture();
+
 class Meteor {
     constructor() {
         this.active = false;
-        this.speed = 0.4;
-        this.length = 2.5;
+        this.speed = 0.35;
+        this.length = 3.8;
 
+        this.group = new THREE.Group();
+        this.group.visible = false;
+        meteorsGroup.add(this.group);
+
+        // 1. Vệt đuôi sao băng (Line)
         const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(6); // 2 points (head, tail)
+        const positions = new Float32Array(6);
         const colors = new Float32Array(6);
 
-        // Head bright white, tail theme-glow
-        colors[0] = 1.0; colors[1] = 1.0; colors[2] = 1.0; // head
-        colors[3] = 1.0; colors[4] = 0.3; colors[5] = 0.7; // tail
+        // Đầu trắng sáng, đuôi hòa vào màu tinh vân
+        colors[0] = 1.0; colors[1] = 1.0; colors[2] = 1.0;
+        colors[3] = 1.0; colors[4] = 0.4; colors[5] = 0.8;
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        const material = new THREE.LineBasicMaterial({
+        const lineMaterial = new THREE.LineBasicMaterial({
             vertexColors: true,
             transparent: true,
-            opacity: 0.85,
-            blending: THREE.AdditiveBlending,
-            linewidth: 2
+            opacity: 0.95,
+            blending: THREE.AdditiveBlending
         });
 
-        this.mesh = new THREE.Line(geometry, material);
-        this.mesh.visible = false;
-        meteorsGroup.add(this.mesh);
+        this.line = new THREE.Line(geometry, lineMaterial);
+        this.group.add(this.line);
 
-        this.direction = new THREE.Vector3(-1, -0.6, -0.8).normalize();
+        // 2. Đầu sao băng phát sáng rực rỡ (Glow Sprite)
+        const spriteMaterial = new THREE.SpriteMaterial({
+            map: meteorHeadTexture,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending
+        });
+        this.head = new THREE.Sprite(spriteMaterial);
+        this.head.scale.set(0.4, 0.4, 0.4);
+        this.group.add(this.head);
+
+        this.direction = new THREE.Vector3(-1, -0.5, -0.6).normalize();
     }
 
     spawn(customPos = null) {
         this.active = true;
-        this.mesh.visible = true;
+        this.group.visible = true;
+
+        const theme = colorThemes[currentThemeIndex];
+        // Cập nhật màu đuôi theo theme
+        const tailColor = new THREE.Color(theme.heartGlow);
+        const colors = this.line.geometry.attributes.color;
+        colors.setXYZ(0, 1.0, 1.0, 1.0);
+        colors.setXYZ(1, tailColor.r, tailColor.g, tailColor.b);
+        colors.needsUpdate = true;
 
         if (customPos) {
-            this.mesh.position.copy(customPos);
+            this.group.position.copy(customPos);
         } else {
-            // Random start position high and wide
-            this.mesh.position.set(
-                (Math.random() - 0.3) * 16,
-                6 + Math.random() * 6,
-                (Math.random() - 0.5) * 16
-            );
+            // Xuất hiện trong tầm mắt camera: góc cao bên phải hoặc phía trên
+            const startX = 4 + Math.random() * 8;
+            const startY = 3.5 + Math.random() * 4.5;
+            const startZ = -2 + (Math.random() - 0.5) * 8;
+            this.group.position.set(startX, startY, startZ);
         }
 
-        this.speed = 0.25 + Math.random() * 0.25;
+        // Hướng bay chéo từ trên xuống dưới, lướt ngang qua dải ngân hà
+        this.direction.set(
+            -1.0 - Math.random() * 0.4,
+            -0.45 - Math.random() * 0.3,
+            -0.4 - Math.random() * 0.4
+        ).normalize();
+
+        this.speed = 0.28 + Math.random() * 0.22;
         this.updateGeometry();
     }
 
     updateGeometry() {
-        const posAttr = this.mesh.geometry.attributes.position;
+        const posAttr = this.line.geometry.attributes.position;
         const tail = this.direction.clone().multiplyScalar(-this.length);
         
         posAttr.setXYZ(0, 0, 0, 0); // Head
@@ -400,32 +447,217 @@ class Meteor {
     update() {
         if (!this.active) return;
 
-        this.mesh.position.addScaledVector(this.direction, this.speed);
+        this.group.position.addScaledVector(this.direction, this.speed);
 
-        // If it goes too far down/away, reset
-        if (this.mesh.position.y < -4 || this.mesh.position.length() > 25) {
+        // Biến mất khi bay ra khỏi tầm nhìn
+        if (this.group.position.y < -3.5 || this.group.position.x < -12) {
             this.active = false;
-            this.mesh.visible = false;
+            this.group.visible = false;
         }
     }
 }
 
 const meteorPool = [];
-for (let i = 0; i < 12; i++) {
+for (let i = 0; i < 10; i++) {
     meteorPool.push(new Meteor());
 }
 
-let nextMeteorTime = 0;
+let nextMeteorTime = 1.5; // Xuất hiện sớm ngay sau khi mở web
 
 const spawnMeteorShower = () => {
     let count = 0;
     for (const m of meteorPool) {
         if (!m.active && count < 4) {
-            setTimeout(() => m.spawn(), count * 150);
+            setTimeout(() => m.spawn(), count * 200);
             count++;
         }
     }
 };
+
+/**
+ * =========================================================================
+ * 6.1 MAJESTIC COMET (Sao Chổi Đuôi Lụa Ánh Sáng Kỳ Vĩ)
+ * =========================================================================
+ */
+const cometGroup = new THREE.Group();
+scene.add(cometGroup);
+
+// Tạo Texture nhân sao chổi hình ngôi sao kim cương lấp lánh (Starburst Flare)
+const createCometStarTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    // Hào quang tròn trung tâm
+    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 120);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.15, 'rgba(200, 245, 255, 0.9)');
+    grad.addColorStop(0.4, 'rgba(80, 180, 255, 0.4)');
+    grad.addColorStop(1, 'rgba(0, 100, 255, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Tia sáng ngang sắc nét (Lens flare spike)
+    const flareH = ctx.createLinearGradient(0, 128, 256, 128);
+    flareH.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    flareH.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
+    flareH.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = flareH;
+    ctx.fillRect(0, 125, 256, 6);
+
+    // Tia sáng dọc
+    const flareV = ctx.createLinearGradient(128, 0, 128, 256);
+    flareV.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    flareV.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
+    flareV.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = flareV;
+    ctx.fillRect(125, 0, 6, 256);
+
+    return new THREE.CanvasTexture(canvas);
+};
+
+const cometStarTexture = createCometStarTexture();
+
+class MajesticComet {
+    constructor() {
+        this.active = false;
+        this.progress = 0;
+        this.duration = 10.0;
+        this.history = [];
+        this.maxHistory = 35;
+
+        // 1. Đầu nhân sao chổi (Starburst Core)
+        const headMat = new THREE.SpriteMaterial({
+            map: cometStarTexture,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending
+        });
+        this.head = new THREE.Sprite(headMat);
+        this.head.scale.set(1.4, 1.4, 1.4);
+        this.head.visible = false;
+        cometGroup.add(this.head);
+
+        // 2. Dải đuôi ánh sáng mượt mà liên tục (Continuous Ribbon Mesh)
+        this.ribbonSegments = 34;
+        const ribbonGeom = new THREE.BufferGeometry();
+        const positions = new Float32Array((this.ribbonSegments + 1) * 2 * 3);
+        const colors = new Float32Array((this.ribbonSegments + 1) * 2 * 3);
+
+        ribbonGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        ribbonGeom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const ribbonMat = new THREE.MeshBasicMaterial({
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        this.ribbonMesh = new THREE.Mesh(ribbonGeom, ribbonMat);
+        this.ribbonMesh.visible = false;
+        cometGroup.add(this.ribbonMesh);
+
+        this.startPos = new THREE.Vector3(15, 6.5, -9);
+        this.midPos = new THREE.Vector3(0, 3.5, 0);
+        this.endPos = new THREE.Vector3(-15, 5.5, 8);
+    }
+
+    spawn() {
+        this.active = true;
+        this.progress = 0;
+        this.history = [];
+        this.head.visible = true;
+        this.ribbonMesh.visible = true;
+
+        const flip = Math.random() > 0.5 ? 1 : -1;
+        this.startPos.set(15 * flip, 5.5 + Math.random() * 2.5, -8 - Math.random() * 3);
+        this.midPos.set(0, 2.8 + Math.random() * 1.5, (Math.random() - 0.5) * 3);
+        this.endPos.set(-15 * flip, 4.5 + Math.random() * 2.5, 6 + Math.random() * 4);
+
+        const initialPos = this.getPosition(0);
+        for (let i = 0; i < this.maxHistory; i++) {
+            this.history.push(initialPos.clone());
+        }
+    }
+
+    getPosition(t) {
+        const oneMinusT = 1 - t;
+        const x = oneMinusT * oneMinusT * this.startPos.x + 2 * oneMinusT * t * this.midPos.x + t * t * this.endPos.x;
+        const y = oneMinusT * oneMinusT * this.startPos.y + 2 * oneMinusT * t * this.midPos.y + t * t * this.endPos.y;
+        const z = oneMinusT * oneMinusT * this.startPos.z + 2 * oneMinusT * t * this.midPos.z + t * t * this.endPos.z;
+        return new THREE.Vector3(x, y, z);
+    }
+
+    update(delta) {
+        if (!this.active) return;
+
+        this.progress += delta / this.duration;
+        if (this.progress >= 1.0) {
+            this.active = false;
+            this.head.visible = false;
+            this.ribbonMesh.visible = false;
+            return;
+        }
+
+        const currentPos = this.getPosition(this.progress);
+        this.head.position.copy(currentPos);
+
+        // Cập nhật mảng lịch sử vị trí để vẽ dải đuôi uốn lượn
+        this.history.unshift(currentPos.clone());
+        if (this.history.length > this.maxHistory) {
+            this.history.pop();
+        }
+
+        // Cập nhật hình học của Dải Đuôi Lụa (Ribbon)
+        const posAttr = this.ribbonMesh.geometry.attributes.position;
+        const colAttr = this.ribbonMesh.geometry.attributes.color;
+        const theme = colorThemes[currentThemeIndex];
+        const tailColor = new THREE.Color(theme.heartGlow);
+
+        const up = new THREE.Vector3(0, 1, 0);
+
+        for (let i = 0; i < this.ribbonSegments; i++) {
+            const p = this.history[i] || currentPos;
+            const nextP = this.history[i + 1] || p;
+            const tangent = nextP.clone().sub(p).normalize();
+            if (tangent.lengthSq() < 0.001) tangent.set(1, 0, 0);
+
+            // Vector vuông góc để tạo độ rộng cho dải đuôi
+            const side = new THREE.Vector3().crossVectors(tangent, up).normalize();
+            if (side.lengthSq() < 0.001) side.set(0, 1, 0);
+
+            // Độ rộng dải đuôi mở rộng dần từ 0.1 (ở đầu) đến 1.2 (ở đuôi)
+            const ratio = i / this.ribbonSegments;
+            const width = (0.1 + ratio * 1.1);
+
+            const v1 = p.clone().addScaledVector(side, width * 0.5);
+            const v2 = p.clone().addScaledVector(side, -width * 0.5);
+
+            const idx = i * 2;
+            posAttr.setXYZ(idx, v1.x, v1.y, v1.z);
+            posAttr.setXYZ(idx + 1, v2.x, v2.y, v2.z);
+
+            // Màu sắc gradient: đầu trắng sáng rực, đuôi hòa dần thành màu theme và mờ đi
+            const alpha = Math.pow(1.0 - ratio, 1.8);
+            const r = THREE.MathUtils.lerp(1.0, tailColor.r, ratio) * alpha;
+            const g = THREE.MathUtils.lerp(1.0, tailColor.g, ratio) * alpha;
+            const b = THREE.MathUtils.lerp(1.0, tailColor.b, ratio) * alpha;
+
+            colAttr.setXYZ(idx, r, g, b);
+            colAttr.setXYZ(idx + 1, r, g, b);
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+    }
+}
+
+const majesticComet = new MajesticComet();
+let nextCometTime = 5.0; // Xuất hiện lần đầu sau 5 giây, sau đó định kỳ mỗi 18-28 giây
 
 /**
  * =========================================================================
@@ -853,16 +1085,29 @@ const tick = () => {
         textSprite.position.y = 3.6 + Math.sin(elapsedTime * 2.0) * 0.08;
     }
 
-    // 4. Meteors update & periodic random spawn
+    // 4. Meteors update & periodic random spawn (Tự động xuất hiện định kỳ mỗi 2 - 4.5 giây)
     if (elapsedTime > nextMeteorTime) {
-        const inactiveMeteor = meteorPool.find(m => !m.active);
-        if (inactiveMeteor) {
-            inactiveMeteor.spawn();
+        const inactiveMeteors = meteorPool.filter(m => !m.active);
+        if (inactiveMeteors.length > 0) {
+            inactiveMeteors[0].spawn();
+            // 25% cơ hội xuất hiện thêm 1 vệt sao băng nữa bay cùng lúc
+            if (Math.random() > 0.75 && inactiveMeteors.length > 1) {
+                setTimeout(() => inactiveMeteors[1].spawn(), 300);
+            }
         }
-        nextMeteorTime = elapsedTime + 2.5 + Math.random() * 4.0;
+        nextMeteorTime = elapsedTime + 2.0 + Math.random() * 3.0;
     }
 
     meteorPool.forEach(m => m.update());
+
+    // 4.1 Majestic Comet update (Sao Chổi kỳ vĩ lướt qua bầu trời mỗi 16 - 25 giây)
+    if (elapsedTime > nextCometTime) {
+        if (!majesticComet.active) {
+            majesticComet.spawn();
+        }
+        nextCometTime = elapsedTime + 16.0 + Math.random() * 9.0;
+    }
+    majesticComet.update(delta);
 
     // 5. Particle Burst update
     burstParticles.forEach(p => p.update(delta));
