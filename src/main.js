@@ -1542,19 +1542,31 @@ window.addEventListener('keydown', (e) => {
  */
 const clock = new THREE.Clock();
 
+let currentHeartScale = 1.0;
+let currentRingScale = 1.0;
+let smoothedBass = 0.0;
+
 const tick = () => {
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // 0. Audio Visualizer (Phân tích tần số âm thanh)
-    let bassFactor = 0;
+    // 0. Audio Visualizer (Phân tích tần số âm bass theo nhịp điệu)
+    let rawBass = 0;
     if (analyser && !bgMusic.paused && !bgMusic.muted) {
         analyser.getByteFrequencyData(audioDataArray);
         let bassSum = 0;
-        for (let i = 0; i < 4; i++) {
+        const binsToCheck = Math.min(6, audioDataArray.length);
+        for (let i = 0; i < binsToCheck; i++) {
             bassSum += audioDataArray[i];
         }
-        bassFactor = bassSum / (4 * 255); // 0.0 đến 1.0
+        rawBass = bassSum / (binsToCheck * 255); // 0.0 đến 1.0
+    }
+
+    // Làm mượt độ phản hồi của âm bass (nảy nhanh theo nhịp bass, nhả về êm dịu)
+    if (rawBass > smoothedBass) {
+        smoothedBass += (rawBass - smoothedBass) * 0.45;
+    } else {
+        smoothedBass += (rawBass - smoothedBass) * 0.14;
     }
 
     // Cập nhật vệt bụi sao ma thuật theo chuột
@@ -1651,21 +1663,33 @@ const tick = () => {
         galaxyPoints.rotation.y = elapsedTime * 0.08;
     }
 
-    // 2. Rotate & Pulse Heart (Chỉ riêng quả tim thở nhịp nhàng kết hợp điệu nhạc)
+    // 2. Rotate & Pulse Heart (Quả tim đập theo tiếng bass của nhạc HOẶC thở đều đặn êm ái)
     if (heartPoints) {
         heartPoints.rotation.y = elapsedTime * 0.12;
 
-        // Nhịp thở êm ái của quả tim kết hợp nhịp bass nhẹ nhàng
-        const audioPulse = bassFactor * 0.12;
-        const breatheScale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.06 + audioPulse;
-        heartPoints.scale.set(breatheScale, breatheScale, breatheScale);
+        let targetScale = 1.0;
+        if (smoothedBass > 0.04) {
+            // Khi có nhạc với tiếng bass: Đập nảy dứt khoát và sống động theo từng nhịp bass
+            const bassPunch = Math.pow(smoothedBass, 1.25) * 0.24;
+            const microBreathe = Math.sin(elapsedTime * 1.5) * 0.03;
+            targetScale = 1.0 + bassPunch + microBreathe;
+        } else {
+            // Khi nhạc êm, tắt tiếng hoặc không có bass: Quả tim thở đều đặn, nhịp nhàng tự nhiên
+            const steadyBreathe = Math.sin(elapsedTime * 1.6) * 0.075;
+            targetScale = 1.0 + steadyBreathe;
+        }
+
+        // Nội suy mượt mà để quả tim chuyển động uyển chuyển không bị giật cục
+        currentHeartScale += (targetScale - currentHeartScale) * 0.22;
+        heartPoints.scale.set(currentHeartScale, currentHeartScale, currentHeartScale);
     }
 
-    // 2.1 Xoay vành đai Sao Thổ quanh Trái Tim lấp lánh
+    // 2.1 Xoay vành đai Sao Thổ quanh Trái Tim lấp lánh & đồng điệu nhịp thở
     if (heartRingPoints) {
         heartRingPoints.rotation.y = elapsedTime * 0.07;
-        const ringPulse = 1.0 + Math.sin(elapsedTime * 1.5) * 0.04 + (bassFactor * 0.08);
-        heartRingPoints.scale.set(ringPulse, ringPulse, ringPulse);
+        const ringTarget = 1.0 + (currentHeartScale - 1.0) * 0.6;
+        currentRingScale += (ringTarget - currentRingScale) * 0.18;
+        heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
     }
 
     // Đèn phát sáng ổn định, êm ái
@@ -1952,21 +1976,24 @@ if (btnWormhole) {
     });
 }
 
-// 8. Nút Ẩn / Hiện Thanh Công Cụ (Zen Mode)
+// 8. Nút Ẩn / Hiện Thanh Công Cụ & Hướng Dẫn (Zen Mode)
 const btnToggleUI = document.getElementById('btn-toggle-ui');
 const btnRestoreUI = document.getElementById('btn-restore-ui');
 const uiControls = document.getElementById('ui-controls');
+const hintBox = document.getElementById('hint-box');
 
 if (btnToggleUI && btnRestoreUI && uiControls) {
     btnToggleUI.addEventListener('click', (e) => {
         e.stopPropagation();
         uiControls.classList.add('hidden');
+        if (hintBox) hintBox.classList.add('hidden');
         btnRestoreUI.classList.add('show');
     });
 
     btnRestoreUI.addEventListener('click', (e) => {
         e.stopPropagation();
         uiControls.classList.remove('hidden');
+        if (hintBox) hintBox.classList.remove('hidden');
         btnRestoreUI.classList.remove('show');
     });
 }
