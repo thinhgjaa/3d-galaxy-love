@@ -144,7 +144,9 @@ const generateHeart = () => {
     heartGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-        size: 0.02,
+        size: 0.012, // Giảm kích thước hạt xuống một chút để bớt chói
+        transparent: true,
+        opacity: 0.4, // Giảm độ trong suốt để bớt vùng sáng đỏ gắt
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -294,8 +296,8 @@ controls.autoRotateSpeed = 0.8;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// Tạo đối tượng âm thanh nền (nhạc mp3 để tương thích tốt với mọi trình duyệt)
-const bgMusic = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3');
+// Tạo đối tượng âm thanh nền (nhạc mp3 ambient không gian êm ái, lãng mạn hơn)
+const bgMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc48af67b2.mp3?filename=space-ambience-108861.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
 let musicStarted = false;
@@ -387,7 +389,8 @@ const tick = () => {
         
         // Hiệu ứng thở (Breathing effect)
         // Dùng hàm sin mượt mà để tạo cảm giác phồng lên xẹp xuống từ từ, êm ái
-        const scale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.04;
+        // Tăng biên độ lên 0.1 để nhịp thở trông rõ ràng và mạnh mẽ hơn
+        const scale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.1;
         heartPoints.scale.set(scale, scale, scale);
     }
     
