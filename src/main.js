@@ -868,25 +868,31 @@ const triggerWormhole = () => {
     playWarpSound();
 
     const startP = camera.position.clone();
-    const approachP = new THREE.Vector3(startP.x * 0.4, 2.4 + (startP.y - 2.4) * 0.3, Math.max(2.0, startP.z * 0.5));
-    const heartCenterP = new THREE.Vector3(0, 2.4, 0.0);
-    const exitBackP = new THREE.Vector3(0, 1.8, -4.5);
-    const sweepSideP = new THREE.Vector3(4.2, 2.8, 2.0);
+    // Khởi tạo các điểm mốc mượt mà chuẩn điện ảnh
+    const approachP = new THREE.Vector3(startP.x * 0.45, 2.4 + (startP.y - 2.4) * 0.4, Math.max(3.2, startP.z * 0.55));
+    const entryP = new THREE.Vector3(0, 2.4, 1.4);
+    const heartCenterP = new THREE.Vector3(0, 2.4, -0.4);
+    const exitBackP = new THREE.Vector3(0, 2.1, -4.8);
+    const sweepSideP = new THREE.Vector3(4.6, 2.7, 1.8);
+    const settleP = new THREE.Vector3(1.8, 2.6, 6.4);
     const endDefaultP = defaultCameraPos.clone();
 
     warpFlightCurve = new THREE.CatmullRomCurve3([
         startP,
         approachP,
+        entryP,
         heartCenterP,
         exitBackP,
         sweepSideP,
+        settleP,
         endDefaultP
-    ]);
+    ], false, 'centripetal', 0.5);
 
     wormholePortalGroup.visible = true;
     wormholePortalGroup.scale.set(0.01, 0.01, 0.01);
     warpStarsGroup.visible = true;
 
+    controls.enabled = false;
     isCinemaMode = false;
     isResettingView = false;
     document.getElementById('btn-cinema')?.classList.remove('active');
@@ -1429,7 +1435,7 @@ const playSparkleChime = () => {
 };
 
 const playWarpSound = () => {
-    if (isSoundMuted) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
 
@@ -2554,6 +2560,8 @@ window.addEventListener('keydown', (e) => {
         spawnMeteorShower();
     } else if (e.code === 'KeyF') {
         triggerHeartFirework();
+    } else if (e.code === 'KeyW') {
+        triggerWormhole();
     } else if (e.code === 'KeyB' || e.code === 'KeyX') {
         triggerSupernovaLoveBurst();
     } else if (e.code === 'KeyS') {
@@ -2632,52 +2640,76 @@ const tick = () => {
         });
     }
 
-    // 0.4 Cập nhật Cổng Dịch Chuyển Wormhole
+    // 0.4 Cập nhật Cổng Dịch Chuyển Wormhole (Cinematic Smooth Flight & FOV Interpolation)
     if (isWarping && warpFlightCurve) {
-        warpProgress += delta * 0.38;
-        
+        warpProgress += delta * 0.30;
+        const p = Math.min(1.0, Math.max(0.0, warpProgress));
+        // S-curve EaseInOut for hyper-smooth speed profile
+        const easeT = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+
         if (typeof portalRingMesh !== 'undefined' && typeof portalRingMesh2 !== 'undefined' && typeof portalDisk1 !== 'undefined') {
-            portalRingMesh.rotation.z -= delta * 5.5;
-            portalRingMesh2.rotation.z += delta * 4.0;
-            portalDisk1.material.rotation += delta * 3.5;
+            const spinMult = 1.0 + Math.sin(easeT * Math.PI) * 2.5;
+            portalRingMesh.rotation.z -= delta * 5.0 * spinMult;
+            portalRingMesh2.rotation.z += delta * 4.0 * spinMult;
+            portalDisk1.material.rotation += delta * 3.5 * spinMult;
         }
 
-        const posAttr = warpStarsMesh.geometry.attributes.position;
-        for (let i = 0; i < warpStarCount; i++) {
-            const i6 = i * 6;
-            posAttr.array[i6 + 2] += (0.8 + warpProgress * 3.5);
-            posAttr.array[i6 + 5] += (0.8 + warpProgress * 3.5);
-            if (posAttr.array[i6 + 2] > 16) {
-                posAttr.array[i6 + 2] -= 32;
-                posAttr.array[i6 + 5] -= 32;
+        // Warp stars particle motion & opacity
+        if (warpStarsMesh && warpStarsMesh.geometry) {
+            const posAttr = warpStarsMesh.geometry.attributes.position;
+            const starSpeed = (0.8 + Math.sin(easeT * Math.PI) * 4.2);
+            for (let i = 0; i < warpStarCount; i++) {
+                const i6 = i * 6;
+                posAttr.array[i6 + 2] += starSpeed;
+                posAttr.array[i6 + 5] += starSpeed;
+                if (posAttr.array[i6 + 2] > 16) {
+                    posAttr.array[i6 + 2] -= 32;
+                    posAttr.array[i6 + 5] -= 32;
+                }
+            }
+            posAttr.needsUpdate = true;
+            if (warpStarMat) {
+                warpStarMat.opacity = Math.sin(easeT * Math.PI) * 0.95;
             }
         }
-        posAttr.needsUpdate = true;
 
-        const clampedT = Math.min(1.0, Math.max(0.0, warpProgress));
-        const currentCamPos = warpFlightCurve.getPointAt(clampedT);
+        // Camera position along curve
+        const currentCamPos = warpFlightCurve.getPointAt(easeT);
         camera.position.copy(currentCamPos);
 
-        if (clampedT < 0.45) {
-            const p1 = clampedT / 0.45;
-            const portalScale = Math.sin(p1 * Math.PI * 0.5) * 1.9;
-            wormholePortalGroup.scale.set(portalScale, portalScale, portalScale);
-            camera.fov = 75 + p1 * 30;
-            camera.updateProjectionMatrix();
-            controls.target.lerp(new THREE.Vector3(0, 2.4, 0), 0.15);
-        } else if (clampedT < 0.58) {
+        // Dynamic forward-facing camera look target
+        if (easeT < 0.72) {
+            const forwardT = Math.min(1.0, easeT + 0.08);
+            const forwardLook = warpFlightCurve.getPointAt(forwardT);
+            controls.target.lerp(forwardLook, 0.22);
+        } else {
+            const returnP = (easeT - 0.72) / 0.28;
+            controls.target.lerp(defaultTarget, returnP * 0.15 + 0.08);
+        }
+        camera.lookAt(controls.target);
+
+        // Smooth cinematic FOV breathing (no sudden jumps!)
+        const fovSpread = Math.sin(easeT * Math.PI) * 26.0;
+        camera.fov = 75 + fovSpread;
+        camera.updateProjectionMatrix();
+
+        // Portal scale expansion & collapse
+        if (easeT < 0.55) {
+            const pScale = Math.sin((easeT / 0.55) * Math.PI * 0.5) * 2.2;
+            wormholePortalGroup.scale.set(pScale, pScale, pScale);
+        } else {
+            const shrinkRatio = Math.max(0, (1.0 - (easeT - 0.55) / 0.45));
+            const pScale = shrinkRatio * 2.2;
+            wormholePortalGroup.scale.set(pScale, pScale, pScale);
+        }
+
+        // Event Horizon flash trigger (clean 1-time trigger)
+        if (easeT >= 0.44 && easeT <= 0.54) {
             const flashEl = document.getElementById('wormhole-flash');
             if (flashEl && !flashEl.classList.contains('active')) {
                 flashEl.classList.add('active');
-                setTimeout(() => flashEl.classList.remove('active'), 550);
+                setTimeout(() => flashEl.classList.remove('active'), 600);
             }
-            camera.fov = 75;
-            camera.updateProjectionMatrix();
-        } else {
-            const p2 = (clampedT - 0.58) / 0.42;
-            const portalShrink = Math.max(0, (1.0 - p2) * 1.9);
-            wormholePortalGroup.scale.set(portalShrink, portalShrink, portalShrink);
-            controls.target.lerp(defaultTarget, 0.08);
         }
 
         if (warpProgress >= 1.0) {
@@ -2686,6 +2718,7 @@ const tick = () => {
             warpStarsGroup.visible = false;
             warpFlightCurve = null;
 
+            controls.enabled = true;
             camera.position.copy(defaultCameraPos);
             controls.target.copy(defaultTarget);
             camera.fov = 75;
@@ -3070,7 +3103,7 @@ const tick = () => {
         }
     }
 
-    if (!isCinemaMode) {
+    if (!isCinemaMode && !isWarping) {
         controls.update();
     }
 
