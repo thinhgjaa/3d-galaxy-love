@@ -75,6 +75,7 @@ let fxConfig = {
     showHeartRing: true,
     showStarfield: true,
     showSaturnRings: true,
+    cosmicSeason: 'spring',
     autoFireworks: false,
     autoMeteors: false,
     frequentComets: false,
@@ -577,7 +578,12 @@ let initialLoveText = 'Forever & Always 💖';
 try {
     const savedText = localStorage.getItem('galaxy_love_text');
     if (savedText && savedText.trim()) {
-        initialLoveText = savedText.trim();
+        if (savedText.includes('NỔ TUNG') || savedText.includes('BÙNG NỔ')) {
+            initialLoveText = 'Forever & Always 💖';
+            localStorage.setItem('galaxy_love_text', initialLoveText);
+        } else {
+            initialLoveText = savedText.trim();
+        }
     }
 } catch (e) {}
 updateFloatingText(initialLoveText);
@@ -1897,6 +1903,346 @@ const generateSpaceSnapshot = () => {
 
 /**
  * =========================================================================
+ * 8.4 COSMIC SEASONS SYSTEM (Bốn Mùa Thiên Hà: Xuân 🌸 / Hạ 🌌 / Thu 🍂 / Đông ❄️)
+ * =========================================================================
+ */
+const cosmicSeasonsGroup = new THREE.Group();
+scene.add(cosmicSeasonsGroup);
+
+let seasonalParticles = [];
+let seasonalGeometry = null;
+let seasonalMaterial = null;
+let seasonalPoints = null;
+let seasonalType = 'spring';
+
+// Tạo texture cho từng mùa bằng HTML5 Canvas thủ tục
+const createSeasonTexture = (season) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    if (season === 'spring') {
+        // Cánh hoa anh đào màu hồng phấn mềm mại
+        ctx.save();
+        ctx.translate(64, 64);
+        ctx.beginPath();
+        ctx.moveTo(0, -38);
+        ctx.bezierCurveTo(28, -38, 38, -10, 24, 25);
+        ctx.bezierCurveTo(12, 45, 0, 50, 0, 50);
+        ctx.bezierCurveTo(0, 50, -12, 45, -24, 25);
+        ctx.bezierCurveTo(-38, -10, -28, -38, 0, -38);
+        ctx.closePath();
+
+        const grad = ctx.createRadialGradient(0, -10, 5, 0, 10, 48);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.35, '#ffb7d5');
+        grad.addColorStop(0.85, '#ff4fa7');
+        grad.addColorStop(1, 'rgba(255, 0, 127, 0.9)');
+        ctx.fillStyle = grad;
+        ctx.shadowColor = 'rgba(255, 105, 180, 0.8)';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.restore();
+    } else if (season === 'summer') {
+        // Đom đóm vũ trụ phát quang ngọc bích / hoàng kim
+        const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 58);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.2, '#70ff94');
+        grad.addColorStop(0.55, '#00e5ff');
+        grad.addColorStop(0.85, 'rgba(0, 229, 255, 0.35)');
+        grad.addColorStop(1, 'rgba(0, 255, 140, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(64, 64, 60, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (season === 'autumn') {
+        // Chiếc lá phong vàng kim / đỏ cam ánh sáng
+        ctx.save();
+        ctx.translate(64, 64);
+        ctx.beginPath();
+        ctx.moveTo(0, -42);
+        ctx.lineTo(14, -20);
+        ctx.lineTo(38, -26);
+        ctx.lineTo(26, -4);
+        ctx.lineTo(44, 18);
+        ctx.lineTo(18, 16);
+        ctx.lineTo(22, 38);
+        ctx.lineTo(0, 28);
+        ctx.lineTo(-22, 38);
+        ctx.lineTo(-18, 16);
+        ctx.lineTo(-44, 18);
+        ctx.lineTo(-26, -4);
+        ctx.lineTo(-38, -26);
+        ctx.lineTo(-14, -20);
+        ctx.closePath();
+
+        const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 45);
+        grad.addColorStop(0, '#fff3a8');
+        grad.addColorStop(0.4, '#ff9900');
+        grad.addColorStop(0.85, '#e62200');
+        grad.addColorStop(1, 'rgba(230, 34, 0, 0.9)');
+        ctx.fillStyle = grad;
+        ctx.shadowColor = 'rgba(255, 140, 0, 0.85)';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.restore();
+    } else if (season === 'winter') {
+        // Tinh thể bông tuyết pha lê 6 cánh phát sáng lung linh
+        ctx.save();
+        ctx.translate(64, 64);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = 'rgba(150, 230, 255, 0.95)';
+        ctx.shadowBlur = 14;
+
+        for (let i = 0; i < 6; i++) {
+            ctx.rotate(Math.PI / 3);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -44);
+            // Nhánh phụ 1
+            ctx.moveTo(0, -22);
+            ctx.lineTo(14, -32);
+            ctx.moveTo(0, -22);
+            ctx.lineTo(-14, -32);
+            // Nhánh phụ 2
+            ctx.moveTo(0, -34);
+            ctx.lineTo(10, -42);
+            ctx.moveTo(0, -34);
+            ctx.lineTo(-10, -42);
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+};
+
+const setCosmicSeason = (seasonKey) => {
+    seasonalType = seasonKey;
+    fxConfig.cosmicSeason = seasonKey;
+
+    while (cosmicSeasonsGroup.children.length > 0) {
+        const obj = cosmicSeasonsGroup.children[0];
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+            if (obj.material.map) obj.material.map.dispose();
+            obj.material.dispose();
+        }
+        cosmicSeasonsGroup.remove(obj);
+    }
+    seasonalParticles = [];
+
+    if (seasonKey === 'none') {
+        return;
+    }
+
+    let count = 650;
+    let size = 0.18;
+    if (seasonKey === 'summer') { count = 450; size = 0.22; }
+    if (seasonKey === 'autumn') { count = 550; size = 0.20; }
+    if (seasonKey === 'winter') { count = 800; size = 0.16; }
+
+    seasonalGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const radius = 2.5 + Math.random() * 12.5;
+        const angle = Math.random() * Math.PI * 2;
+        const y = (Math.random() - 0.5) * 10 + 2.0;
+
+        positions[i3] = Math.cos(angle) * radius;
+        positions[i3 + 1] = y;
+        positions[i3 + 2] = Math.sin(angle) * radius;
+
+        colors[i3] = 1.0;
+        colors[i3 + 1] = 1.0;
+        colors[i3 + 2] = 1.0;
+
+        seasonalParticles.push({
+            radius: radius,
+            angle: angle,
+            speed: (0.15 + Math.random() * 0.45) * (Math.random() > 0.4 ? 1 : -1),
+            verticalSpeed: 0.15 + Math.random() * 0.45,
+            wobbleSpeed: 1.0 + Math.random() * 3.0,
+            wobbleOffset: Math.random() * Math.PI * 2,
+            wobbleAmp: 0.08 + Math.random() * 0.18,
+            blinkSpeed: 1.5 + Math.random() * 4.0,
+            y: y
+        });
+    }
+
+    seasonalGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    seasonalGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const tex = createSeasonTexture(seasonKey);
+    seasonalMaterial = new THREE.PointsMaterial({
+        size: size,
+        map: tex,
+        transparent: true,
+        opacity: 0.88,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true
+    });
+
+    seasonalPoints = new THREE.Points(seasonalGeometry, seasonalMaterial);
+    cosmicSeasonsGroup.add(seasonalPoints);
+};
+
+setCosmicSeason(fxConfig.cosmicSeason || 'spring');
+
+/**
+ * =========================================================================
+ * 8.5 SUPERNOVA LOVE BURST ENGINE (Siêu Tân Tinh Bùng Nổ Tình Yêu)
+ * =========================================================================
+ */
+let isSupernovaRunning = false;
+let supernovaState = 'idle'; // 'implosion' | 'explosion' | 'rebirth'
+let supernovaTimer = 0;
+
+// Shockwave Ring 3D
+const shockwaveGeom = new THREE.RingGeometry(0.1, 0.45, 64);
+const shockwaveMat = new THREE.MeshBasicMaterial({
+    color: 0xff00aa,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+});
+const supernovaShockwave = new THREE.Mesh(shockwaveGeom, shockwaveMat);
+supernovaShockwave.position.set(0, 2.4, 0);
+supernovaShockwave.rotation.x = Math.PI / 2;
+scene.add(supernovaShockwave);
+
+// Supernova Explosion Particles
+const supernovaParticleCount = 4500;
+const supernovaGeom = new THREE.BufferGeometry();
+const supernovaPositions = new Float32Array(supernovaParticleCount * 3);
+const supernovaColors = new Float32Array(supernovaParticleCount * 3);
+const supernovaVelocities = [];
+
+for (let i = 0; i < supernovaParticleCount; i++) {
+    supernovaPositions[i * 3] = 0;
+    supernovaPositions[i * 3 + 1] = 2.4;
+    supernovaPositions[i * 3 + 2] = 0;
+
+    supernovaColors[i * 3] = 1;
+    supernovaColors[i * 3 + 1] = 0.2;
+    supernovaColors[i * 3 + 2] = 0.8;
+
+    supernovaVelocities.push({
+        vx: 0, vy: 0, vz: 0,
+        drag: 0.965,
+        life: 0,
+        maxLife: 1
+    });
+}
+
+supernovaGeom.setAttribute('position', new THREE.BufferAttribute(supernovaPositions, 3));
+supernovaGeom.setAttribute('color', new THREE.BufferAttribute(supernovaColors, 3));
+
+const supernovaMat = new THREE.PointsMaterial({
+    size: 0.035,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true
+});
+
+const supernovaPoints = new THREE.Points(supernovaGeom, supernovaMat);
+scene.add(supernovaPoints);
+
+// Âm thanh Siêu Tân Tinh (Implosion Sweep + Detonation Boom)
+const playSupernovaImplosionSound = () => {
+    if (!fxConfig.soundFx) return;
+    try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(38, now + 1.25);
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.45, now + 0.9);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.35);
+    } catch (e) {}
+};
+
+const playSupernovaDetonationSound = () => {
+    if (!fxConfig.soundFx) return;
+    try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        
+        // Deep sub boom
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 1.8);
+        gain.gain.setValueAtTime(0.9, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 2.3);
+
+        // Sparkle arpeggio
+        [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00].forEach((freq, idx) => {
+            const sOsc = ctx.createOscillator();
+            const sGain = ctx.createGain();
+            sOsc.type = 'triangle';
+            sOsc.frequency.setValueAtTime(freq, now + idx * 0.09);
+            sGain.gain.setValueAtTime(0.28, now + idx * 0.09);
+            sGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.9);
+            sOsc.connect(sGain);
+            sGain.connect(ctx.destination);
+            sOsc.start(now + idx * 0.09);
+            sOsc.stop(now + idx * 0.09 + 1.0);
+        });
+    } catch (e) {}
+};
+
+const triggerSupernovaLoveBurst = () => {
+    if (isSupernovaRunning) return;
+    isSupernovaRunning = true;
+    supernovaState = 'implosion';
+    supernovaTimer = 0;
+
+    playSupernovaImplosionSound();
+
+    // Rung lắc màn hình
+    const appEl = document.getElementById('app');
+    if (appEl) {
+        appEl.classList.remove('screen-shake');
+        void appEl.offsetWidth;
+        appEl.classList.add('screen-shake');
+    }
+};
+
+/**
+ * =========================================================================
  * 9. CINEMA TOUR & SMOOTH RESET CONTROLLER
  * =========================================================================
  */
@@ -2208,6 +2554,8 @@ window.addEventListener('keydown', (e) => {
         spawnMeteorShower();
     } else if (e.code === 'KeyF') {
         triggerHeartFirework();
+    } else if (e.code === 'KeyB' || e.code === 'KeyX') {
+        triggerSupernovaLoveBurst();
     } else if (e.code === 'KeyS') {
         generateSpaceSnapshot();
     } else if (e.code === 'KeyC') {
@@ -2485,15 +2833,190 @@ const tick = () => {
         sprite.position.y += Math.sin(elapsedTime * Math.abs(sprite.userData.speed) * 8) * 0.004;
     });
 
-    // 6.5 Saturn Rings Rotation & Audio Response
+    // 6.5 Saturn Rings Smooth Rotation (Không đập theo nhạc)
     if (fxConfig.showSaturnRings !== false && saturnMainGroup) {
         const saturnSpeed = (typeof fxConfig.saturnSpeed === 'number') ? fxConfig.saturnSpeed : 0.08;
         saturnMainGroup.rotation.y += saturnSpeed * delta;
-        if (fxConfig.audioVisualizer && smoothedBass > 0.05 && saturnDustGroup) {
-            const scaleAudio = 1.0 + smoothedBass * 0.06;
-            saturnDustGroup.scale.set(scaleAudio, 1.0, scaleAudio);
-        } else if (saturnDustGroup) {
-            saturnDustGroup.scale.set(1.0, 1.0, 1.0);
+    }
+
+    // 6.6 Cosmic Seasons Simulation (Bốn Mùa Thiên Hà)
+    if (seasonalPoints && seasonalParticles.length > 0 && fxConfig.cosmicSeason !== 'none') {
+        const posAttr = seasonalGeometry.attributes.position;
+        const count = seasonalParticles.length;
+
+        for (let i = 0; i < count; i++) {
+            const p = seasonalParticles[i];
+            p.angle += p.speed * delta * 0.4;
+            
+            if (seasonalType === 'spring') {
+                // Cánh hoa anh đào lượn sóng và rơi chầm chậm
+                p.y -= p.verticalSpeed * delta * 0.75;
+                const wobble = Math.sin(elapsedTime * p.wobbleSpeed + p.wobbleOffset) * p.wobbleAmp;
+                const r = p.radius + wobble;
+                posAttr.setXYZ(i, Math.cos(p.angle) * r, p.y, Math.sin(p.angle) * r);
+                if (p.y < -3.5) p.y = 8.5;
+            } else if (seasonalType === 'summer') {
+                // Đom đóm dập dờn 3D
+                const wobbleY = Math.sin(elapsedTime * p.wobbleSpeed + p.wobbleOffset) * 0.02;
+                p.y += wobbleY;
+                const r = p.radius + Math.cos(elapsedTime * p.blinkSpeed + p.wobbleOffset) * 0.15;
+                posAttr.setXYZ(i, Math.cos(p.angle) * r, p.y, Math.sin(p.angle) * r);
+                if (p.y < -2.0) p.y = 7.0;
+                if (p.y > 7.5) p.y = -1.5;
+            } else if (seasonalType === 'autumn') {
+                // Lá phong xoay và rơi cuốn theo gió thu
+                p.y -= p.verticalSpeed * delta * 0.85;
+                const r = p.radius + Math.sin(elapsedTime * 2.5 + p.wobbleOffset) * 0.25;
+                posAttr.setXYZ(i, Math.cos(p.angle) * r, p.y, Math.sin(p.angle) * r);
+                if (p.y < -3.5) p.y = 8.5;
+            } else if (seasonalType === 'winter') {
+                // Bông tuyết pha lê rơi thẳng đều lấp lánh
+                p.y -= p.verticalSpeed * delta * 0.9;
+                const r = p.radius + Math.sin(elapsedTime * 1.5 + p.wobbleOffset) * 0.08;
+                posAttr.setXYZ(i, Math.cos(p.angle) * r, p.y, Math.sin(p.angle) * r);
+                if (p.y < -4.0) p.y = 9.0;
+            }
+        }
+        posAttr.needsUpdate = true;
+    }
+
+    // 6.7 Supernova Love Burst Physics Simulation
+    if (isSupernovaRunning) {
+        supernovaTimer += delta;
+
+        if (supernovaState === 'implosion') {
+            // Giai đoạn 1: Hút toàn bộ vào tâm (0 -> 1.3s)
+            const progress = Math.min(1.0, supernovaTimer / 1.3);
+            const scaleDown = 1.0 - Math.pow(progress, 2.5) * 0.92;
+
+            if (heartPoints) heartPoints.scale.set(scaleDown, scaleDown, scaleDown);
+            if (heartRingPoints) heartRingPoints.scale.set(scaleDown, scaleDown, scaleDown);
+            if (galaxyPoints) galaxyPoints.scale.set(scaleDown, scaleDown, scaleDown);
+            if (saturnMainGroup) saturnMainGroup.scale.set(scaleDown, scaleDown, scaleDown);
+
+            if (supernovaShockwave) {
+                supernovaShockwave.material.opacity = progress * 0.8;
+                supernovaShockwave.scale.set(1.0 - progress * 0.7, 1.0 - progress * 0.7, 1.0);
+            }
+
+            if (supernovaTimer >= 1.3) {
+                // CHUYỂN SANG BÙNG NỔ!
+                supernovaState = 'explosion';
+                supernovaTimer = 0;
+
+                playSupernovaDetonationSound();
+
+                // Flash
+                const flashEl = document.getElementById('supernova-flash');
+                if (flashEl) {
+                    flashEl.classList.remove('fade-out');
+                    flashEl.classList.add('active');
+                    setTimeout(() => {
+                        flashEl.classList.remove('active');
+                        flashEl.classList.add('fade-out');
+                    }, 200);
+                }
+
+                // Kích nổ 4.500 hạt Siêu Tân Tinh
+                supernovaMat.opacity = 1.0;
+                const posAttr = supernovaGeom.attributes.position;
+                const colAttr = supernovaGeom.attributes.color;
+
+                for (let i = 0; i < supernovaParticleCount; i++) {
+                    const i3 = i * 3;
+                    posAttr.setXYZ(i, 0, 2.4, 0);
+
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos((Math.random() * 2) - 1);
+                    const speed = 7.0 + Math.random() * 22.0;
+
+                    supernovaVelocities[i] = {
+                        vx: Math.sin(phi) * Math.cos(theta) * speed,
+                        vy: Math.sin(phi) * Math.sin(theta) * speed * 0.85 + (Math.random() - 0.2) * 4.0,
+                        vz: Math.cos(phi) * speed,
+                        drag: 0.955 + Math.random() * 0.025,
+                        life: 1.0,
+                        maxLife: 2.5 + Math.random() * 2.5
+                    };
+
+                    const colorChoice = Math.random();
+                    if (colorChoice < 0.35) {
+                        colAttr.setXYZ(i, 1.0, 0.0, 0.5); // Neon Pink
+                    } else if (colorChoice < 0.65) {
+                        colAttr.setXYZ(i, 1.0, 0.85, 0.0); // Gold
+                    } else if (colorChoice < 0.85) {
+                        colAttr.setXYZ(i, 0.0, 0.95, 1.0); // Cyan
+                    } else {
+                        colAttr.setXYZ(i, 1.0, 1.0, 1.0); // Pure Light
+                    }
+                }
+                posAttr.needsUpdate = true;
+                colAttr.needsUpdate = true;
+
+                // Tăng Bloom rực rỡ
+                if (bloomPass) bloomPass.strength = 2.8;
+            }
+        } else if (supernovaState === 'explosion') {
+            // Giai đoạn 2: Bùng nổ hạt & lan tỏa sóng xung kích (0 -> 3.2s)
+            const posAttr = supernovaGeom.attributes.position;
+
+            for (let i = 0; i < supernovaParticleCount; i++) {
+                const v = supernovaVelocities[i];
+                if (v.life > 0) {
+                    posAttr.setXYZ(
+                        i,
+                        posAttr.getX(i) + v.vx * delta,
+                        posAttr.getY(i) + v.vy * delta,
+                        posAttr.getZ(i) + v.vz * delta
+                    );
+                    v.vx *= v.drag;
+                    v.vy *= v.drag;
+                    v.vz *= v.drag;
+                    v.life -= delta / v.maxLife;
+                }
+            }
+            posAttr.needsUpdate = true;
+
+            // Mở rộng shockwave ring
+            if (supernovaShockwave) {
+                const shockScale = 1.0 + supernovaTimer * 28.0;
+                supernovaShockwave.scale.set(shockScale, shockScale, shockScale);
+                supernovaShockwave.material.opacity = Math.max(0, 1.0 - supernovaTimer / 2.2);
+            }
+
+            // Hồi phục dần độ sáng bloom
+            if (bloomPass && bloomPass.strength > 0.85) {
+                bloomPass.strength -= delta * 0.65;
+            }
+
+            if (supernovaTimer >= 3.2) {
+                supernovaState = 'rebirth';
+                supernovaTimer = 0;
+            }
+        } else if (supernovaState === 'rebirth') {
+            // Giai đoạn 3: Tái sinh & Trở về trạng thái thanh bình (0 -> 2.0s)
+            const rebProgress = Math.min(1.0, supernovaTimer / 1.8);
+            const smoothScale = 0.08 + (1.0 - 0.08) * Math.sin(rebProgress * Math.PI * 0.5);
+
+            if (heartPoints) heartPoints.scale.set(smoothScale, smoothScale, smoothScale);
+            if (heartRingPoints) heartRingPoints.scale.set(smoothScale, smoothScale, smoothScale);
+            if (galaxyPoints) galaxyPoints.scale.set(smoothScale, smoothScale, smoothScale);
+            if (saturnMainGroup) saturnMainGroup.scale.set(smoothScale, smoothScale, smoothScale);
+
+            supernovaMat.opacity = Math.max(0, 1.0 - rebProgress);
+
+            if (supernovaTimer >= 1.8) {
+                isSupernovaRunning = false;
+                supernovaState = 'idle';
+                supernovaMat.opacity = 0;
+                if (supernovaShockwave) supernovaShockwave.material.opacity = 0;
+
+                if (heartPoints) heartPoints.scale.set(1, 1, 1);
+                if (heartRingPoints) heartRingPoints.scale.set(1, 1, 1);
+                if (galaxyPoints) galaxyPoints.scale.set(1, 1, 1);
+                if (saturnMainGroup) saturnMainGroup.scale.set(1, 1, 1);
+                playSparkleChime();
+            }
         }
     }
 
@@ -2626,6 +3149,10 @@ if (btnText && textModal) {
 // 0. Nút Mở & Quản Lý Cấu Hình Hiệu Ứng Vũ Trụ (Liên Tục)
 const btnSettings = document.getElementById('btn-settings');
 const settingsModal = document.getElementById('settings-modal');
+const btnSeason = document.getElementById('btn-season');
+const btnSupernova = document.getElementById('btn-supernova');
+const selectCosmicSeason = document.getElementById('select-cosmic-season');
+const btnTriggerSupernovaSettings = document.getElementById('btn-trigger-supernova-settings');
 const toggleShowGalaxy = document.getElementById('toggle-show-galaxy');
 const toggleShowHeart = document.getElementById('toggle-show-heart');
 const toggleShowHeartRing = document.getElementById('toggle-show-heart-ring');
@@ -2643,6 +3170,46 @@ const toggleSoundFx = document.getElementById('toggle-sound-fx');
 const selectRotationSpeed = document.getElementById('select-rotation-speed');
 const btnSaveSettings = document.getElementById('btn-save-settings');
 const btnCloseSettings = document.getElementById('btn-close-settings');
+
+const seasonOrder = ['spring', 'summer', 'autumn', 'winter', 'none'];
+const seasonIcons = { spring: '🌸', summer: '🌌', autumn: '🍂', winter: '❄️', none: '✨' };
+
+const updateSeasonButtonUI = () => {
+    if (btnSeason) {
+        btnSeason.textContent = seasonIcons[fxConfig.cosmicSeason] || '🌸';
+    }
+};
+updateSeasonButtonUI();
+
+if (btnSeason) {
+    btnSeason.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const currentIdx = seasonOrder.indexOf(fxConfig.cosmicSeason || 'spring');
+        const nextSeason = seasonOrder[(currentIdx + 1) % seasonOrder.length];
+        setCosmicSeason(nextSeason);
+        updateSeasonButtonUI();
+        if (selectCosmicSeason) selectCosmicSeason.value = nextSeason;
+        try {
+            localStorage.setItem('galaxy_fx_config', JSON.stringify(fxConfig));
+        } catch (err) {}
+        playSparkleChime();
+    });
+}
+
+if (btnSupernova) {
+    btnSupernova.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerSupernovaLoveBurst();
+    });
+}
+
+if (btnTriggerSupernovaSettings) {
+    btnTriggerSupernovaSettings.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsModal?.classList.remove('show');
+        triggerSupernovaLoveBurst();
+    });
+}
 
 const settingsCatBtns = document.querySelectorAll('.settings-cat-btn');
 const settingsGroupSections = document.querySelectorAll('.settings-group-section');
@@ -2667,6 +3234,7 @@ settingsCatBtns.forEach(btn => {
 });
 
 const syncSettingsModalUI = () => {
+    if (selectCosmicSeason) selectCosmicSeason.value = fxConfig.cosmicSeason || 'spring';
     if (toggleShowGalaxy) toggleShowGalaxy.checked = (fxConfig.showGalaxy !== false);
     if (toggleShowHeart) toggleShowHeart.checked = (fxConfig.showHeart !== false);
     if (toggleShowHeartRing) toggleShowHeartRing.checked = (fxConfig.showHeartRing !== false);
@@ -2694,6 +3262,11 @@ if (btnSettings && settingsModal) {
     });
 
     const applyAndSaveSettings = () => {
+        if (selectCosmicSeason) {
+            fxConfig.cosmicSeason = selectCosmicSeason.value;
+            setCosmicSeason(fxConfig.cosmicSeason);
+            updateSeasonButtonUI();
+        }
         if (toggleShowGalaxy) {
             fxConfig.showGalaxy = toggleShowGalaxy.checked;
             if (galaxyPoints) galaxyPoints.visible = fxConfig.showGalaxy;
@@ -2713,7 +3286,6 @@ if (btnSettings && settingsModal) {
         if (toggleSaturnRings) {
             fxConfig.showSaturnRings = toggleSaturnRings.checked;
             if (saturnMainGroup) saturnMainGroup.visible = fxConfig.showSaturnRings;
-            if (saturnPhotosContainer) saturnPhotosContainer.visible = fxConfig.showSaturnRings;
         }
         if (toggleAutoFireworks) fxConfig.autoFireworks = toggleAutoFireworks.checked;
         if (toggleAutoMeteors) fxConfig.autoMeteors = toggleAutoMeteors.checked;
@@ -2752,7 +3324,7 @@ if (btnSettings && settingsModal) {
         } catch (err) {}
     };
 
-    [toggleShowGalaxy, toggleShowHeart, toggleShowHeartRing, toggleShowStarfield, toggleSaturnRings, toggleAutoFireworks, toggleAutoMeteors, toggleFrequentComets, toggleFairyDust, toggleShowPhotos, toggleShowConstellations, toggleShowSpaceIcons, toggleAudioVisualizer, toggleSoundFx, selectRotationSpeed].forEach(el => {
+    [selectCosmicSeason, toggleShowGalaxy, toggleShowHeart, toggleShowHeartRing, toggleShowStarfield, toggleSaturnRings, toggleAutoFireworks, toggleAutoMeteors, toggleFrequentComets, toggleFairyDust, toggleShowPhotos, toggleShowConstellations, toggleShowSpaceIcons, toggleAudioVisualizer, toggleSoundFx, selectRotationSpeed].forEach(el => {
         el?.addEventListener('change', () => {
             applyAndSaveSettings();
         });

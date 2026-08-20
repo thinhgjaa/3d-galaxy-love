@@ -42,7 +42,9 @@
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="ui-controls" class="ui-controls">
       <button id="btn-settings" title="Cấu Hình Hiệu Ứng Vũ Trụ (Liên Tục)">⚙️</button>
-      <button id="btn-saturn-ring" title="Vòng Đai Sao Thổ Kỷ Niệm (Memory Saturn Rings)">🪐</button>
+      <button id="btn-season" title="Bốn Mùa Thiên Hà (Cosmic Seasons: Xuân 🌸 / Hạ 🌌 / Thu 🍂 / Đông ❄️)">🌸</button>
+      <button id="btn-supernova" title="Siêu Tân Tinh Tình Yêu (Supernova Love Burst)">💥</button>
+      <button id="btn-saturn-ring" title="Vòng Đai Sao Thổ (Saturn Rings 3D)">🪐</button>
       <button id="btn-star-wishes" title="Những Vì Sao Ước Nguyện (Thư Tình)">🌟</button>
       <button id="btn-snapshot" title="Chụp Ảnh Kỷ Niệm & Xuất Thiệp">📸</button>
       <button id="btn-wormhole" title="Cổng Dịch Chuyển Không Gian (Wormhole Warp)">🌀</button>
@@ -59,8 +61,9 @@
     <!-- Nút nhỏ hiện lại thanh công cụ khi đang ẩn -->
     <button id="btn-restore-ui" class="btn-restore-ui" title="Hiện lại thanh công cụ">✨</button>
 
-    <!-- Màn chớp sáng khi dịch chuyển qua Cổng Không Gian -->
+    <!-- Màn chớp sáng khi dịch chuyển qua Cổng Không Gian & Siêu Tân Tinh -->
     <div id="wormhole-flash" class="wormhole-flash"></div>
+    <div id="supernova-flash" class="supernova-flash"></div>
 
     <!-- Ẩn input chọn file ảnh -->
     <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;" />
@@ -236,6 +239,28 @@
           <!-- Nhóm 2: Hiệu Ứng Thiên Văn & Chuyển Động -->
           <div class="settings-group-section" data-group="fx">
             <div class="settings-group-title">✨ 2. Hiệu Ứng Thiên Văn & Chuyển Động</div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">🌸 Bốn Mùa Thiên Hà (Cosmic Seasons)</span>
+                <span class="setting-desc">Hoa anh đào, đom đóm, lá phong hoặc tuyết pha lê</span>
+              </div>
+              <select id="select-cosmic-season" class="setting-select">
+                <option value="spring" selected>🌸 Mùa Xuân (Hoa Anh Đào)</option>
+                <option value="summer">🌌 Mùa Hạ (Đom Đóm Tinh Vân)</option>
+                <option value="autumn">🍂 Mùa Thu (Lá Phong Vàng Kim)</option>
+                <option value="winter">❄️ Mùa Đông (Tuyết Pha Lê)</option>
+                <option value="none">✨ Tắt Hiệu Ứng Mùa</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-title">💥 Siêu Tân Tinh (Supernova Love Burst)</span>
+                <span class="setting-desc">Bùng nổ toàn bộ thiên hà thành biển hoa tim rực rỡ</span>
+              </div>
+              <button type="button" id="btn-trigger-supernova-settings" class="btn-primary-gradient" style="padding: 6px 12px; font-size: 0.8rem;">💥 Kích Hoạt Ngay</button>
+            </div>
 
             <div class="setting-item">
               <div class="setting-info">
