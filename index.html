@@ -16,7 +16,8 @@
       <button id="btn-cinema" title="Chế Độ Điện Ảnh (Cinema Tour)">🎥</button>
       <button id="btn-text" title="Đổi Lời Nhắn Tình Yêu">💌</button>
       <button id="btn-upload" title="Tải Ảnh Cá Nhân Lên">🖼️</button>
-      <button id="btn-music" title="Bật/Tắt Nhạc Nền">🎵</button>
+      <button id="btn-change-music" title="Đổi Nhạc (Dán Link YouTube)">📻</button>
+      <button id="btn-music" title="Bật/Tắt Âm Thanh">🎵</button>
       <button id="btn-reset-view" title="Về Góc Nhìn Toàn Cảnh">🌐</button>
       <button id="btn-toggle-ui" title="Ẩn Thanh Công Cụ (Zen Mode)">👁️</button>
     </div>
@@ -30,6 +31,11 @@
     <!-- Ẩn input chọn file ảnh -->
     <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;" />
 
+    <!-- Container cho trình phát YouTube ngầm -->
+    <div id="youtube-player-container" style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
+      <div id="yt-player"></div>
+    </div>
+
     <!-- Modal nhập lời nhắn -->
     <div id="text-modal" class="text-modal">
       <div class="text-modal-content">
@@ -38,6 +44,19 @@
         <div class="modal-buttons">
           <button id="btn-save-text">Cập Nhật</button>
           <button id="btn-cancel-text">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal đổi nhạc YouTube -->
+    <div id="music-modal" class="text-modal">
+      <div class="text-modal-content">
+        <h3>📻 Đổi Nhạc Nền (Link YouTube)</h3>
+        <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
+        <div class="modal-buttons">
+          <button id="btn-play-youtube">Phát Nhạc</button>
+          <button id="btn-default-music">Nhạc Mặc Định</button>
+          <button id="btn-cancel-music">Đóng</button>
         </div>
       </div>
     </div>

@@ -1258,7 +1258,7 @@ controls.addEventListener('start', () => {
  * 10. AUDIO BACKGROUND & AUDIO VISUALIZER (Nhạc nhảy theo Beat)
  * =========================================================================
  */
-// Sử dụng file nhạc nội bộ được lưu tại public/music.mp3 (100% ổn định, không lo lỗi mạng/CORS)
+// 1. Nhạc mặc định nội bộ
 const bgMusic = new Audio('/music.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.65;
@@ -1267,6 +1267,107 @@ let musicStarted = false;
 let audioContext = null;
 let analyser = null;
 let audioDataArray = null;
+
+// 2. Trình phát YouTube IFrame API
+let ytPlayer = null;
+let isUsingYouTube = false;
+let isYTMuted = false;
+
+const extractYouTubeId = (url) => {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (trimmed.length === 11 && !trimmed.includes('/') && !trimmed.includes('.')) {
+        return trimmed;
+    }
+    const match = trimmed.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/);
+    return match ? match[1] : null;
+};
+
+const loadYouTubeAPI = (callback) => {
+    if (window.YT && window.YT.Player) {
+        callback();
+        return;
+    }
+    if (!document.getElementById('yt-iframe-script')) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    }
+    const prevCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+        if (prevCallback) prevCallback();
+        callback();
+    };
+};
+
+const updateMusicButtonState = (muted) => {
+    const btnM = document.getElementById('btn-music');
+    if (!btnM) return;
+    if (muted) {
+        btnM.classList.add('muted');
+        btnM.innerText = '🔇';
+    } else {
+        btnM.classList.remove('muted');
+        btnM.innerText = '🎵';
+    }
+};
+
+const playYouTubeMusic = (videoId) => {
+    loadYouTubeAPI(() => {
+        bgMusic.pause();
+        isUsingYouTube = true;
+        isYTMuted = false;
+
+        if (!ytPlayer) {
+            ytPlayer = new window.YT.Player('yt-player', {
+                height: '100',
+                width: '100',
+                videoId: videoId,
+                playerVars: {
+                    autoplay: 1,
+                    loop: 1,
+                    playlist: videoId,
+                    controls: 0
+                },
+                events: {
+                    onReady: (event) => {
+                        event.target.setVolume(70);
+                        event.target.playVideo();
+                        musicStarted = true;
+                        updateMusicButtonState(false);
+                    },
+                    onStateChange: (event) => {
+                        if (event.data === window.YT.PlayerState.ENDED) {
+                            event.target.playVideo();
+                        }
+                    }
+                }
+            });
+        } else {
+            ytPlayer.loadVideoById(videoId);
+            ytPlayer.setVolume(70);
+            ytPlayer.unMute();
+            ytPlayer.playVideo();
+            musicStarted = true;
+            updateMusicButtonState(false);
+        }
+    });
+};
+
+const switchToDefaultMusic = () => {
+    isUsingYouTube = false;
+    if (ytPlayer && ytPlayer.pauseVideo) {
+        ytPlayer.pauseVideo();
+    }
+    bgMusic.currentTime = 0;
+    bgMusic.muted = false;
+    bgMusic.play().then(() => {
+        musicStarted = true;
+        updateMusicButtonState(false);
+    }).catch(() => {});
+};
 
 const initAudioAnalyser = () => {
     if (audioContext) return;
@@ -1288,17 +1389,21 @@ const initAudioAnalyser = () => {
 };
 
 const startMusic = () => {
+    if (isUsingYouTube) {
+        if (ytPlayer && ytPlayer.playVideo) {
+            ytPlayer.playVideo();
+            musicStarted = true;
+            updateMusicButtonState(false);
+        }
+        return;
+    }
     initAudioAnalyser();
     if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume().catch(() => {});
     }
     bgMusic.play().then(() => {
         musicStarted = true;
-        const btnM = document.getElementById('btn-music');
-        if (btnM) {
-            btnM.classList.remove('muted');
-            btnM.innerText = '🎵';
-        }
+        updateMusicButtonState(false);
     }).catch(e => {
         console.warn("Chờ tương tác từ người dùng để phát nhạc:", e);
     });
@@ -1750,19 +1855,70 @@ if (btnUpload && imageUploadInput) {
     });
 }
 
-// 5. Nút Bật/Tắt nhạc
+// 4.1 Nút mở Modal Đổi Nhạc YouTube
+const btnChangeMusic = document.getElementById('btn-change-music');
+const musicModal = document.getElementById('music-modal');
+const youtubeUrlInput = document.getElementById('youtube-url-input');
+const btnPlayYouTube = document.getElementById('btn-play-youtube');
+const btnDefaultMusic = document.getElementById('btn-default-music');
+const btnCancelMusic = document.getElementById('btn-cancel-music');
+
+if (btnChangeMusic && musicModal) {
+    btnChangeMusic.addEventListener('click', (e) => {
+        e.stopPropagation();
+        musicModal.classList.add('show');
+        youtubeUrlInput.focus();
+    });
+
+    btnPlayYouTube.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = youtubeUrlInput.value.trim();
+        const videoId = extractYouTubeId(url);
+        if (videoId) {
+            playYouTubeMusic(videoId);
+            musicModal.classList.remove('show');
+        } else {
+            alert('Vui lòng nhập link YouTube hợp lệ!');
+        }
+    });
+
+    btnDefaultMusic.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchToDefaultMusic();
+        musicModal.classList.remove('show');
+    });
+
+    btnCancelMusic.addEventListener('click', (e) => {
+        e.stopPropagation();
+        musicModal.classList.remove('show');
+    });
+
+    youtubeUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            btnPlayYouTube.click();
+        }
+    });
+}
+
+// 5. Nút Bật/Tắt Âm thanh (Hỗ trợ cả MP3 và YouTube)
 const btnMusic = document.getElementById('btn-music');
 if (btnMusic) {
     btnMusic.addEventListener('click', (e) => {
         e.stopPropagation();
-        bgMusic.muted = !bgMusic.muted;
-        if (bgMusic.muted) {
-            btnMusic.classList.add('muted');
-            btnMusic.innerText = '🔇';
+        if (isUsingYouTube && ytPlayer) {
+            if (isYTMuted) {
+                ytPlayer.unMute();
+                isYTMuted = false;
+                updateMusicButtonState(false);
+            } else {
+                ytPlayer.mute();
+                isYTMuted = true;
+                updateMusicButtonState(true);
+            }
         } else {
-            btnMusic.classList.remove('muted');
-            btnMusic.innerText = '🎵';
-            if (!musicStarted) {
+            bgMusic.muted = !bgMusic.muted;
+            updateMusicButtonState(bgMusic.muted);
+            if (!musicStarted && !bgMusic.muted) {
                 startMusic();
             }
         }
