@@ -1952,21 +1952,24 @@ if (btnWormhole) {
     });
 }
 
-// 8. Nút Ẩn / Hiện Thanh Công Cụ (Zen Mode)
+// 8. Nút Ẩn / Hiện Thanh Công Cụ & Hướng Dẫn (Zen Mode)
 const btnToggleUI = document.getElementById('btn-toggle-ui');
 const btnRestoreUI = document.getElementById('btn-restore-ui');
 const uiControls = document.getElementById('ui-controls');
+const hintBox = document.getElementById('hint-box');
 
 if (btnToggleUI && btnRestoreUI && uiControls) {
     btnToggleUI.addEventListener('click', (e) => {
         e.stopPropagation();
         uiControls.classList.add('hidden');
+        if (hintBox) hintBox.classList.add('hidden');
         btnRestoreUI.classList.add('show');
     });
 
     btnRestoreUI.addEventListener('click', (e) => {
         e.stopPropagation();
         uiControls.classList.remove('hidden');
+        if (hintBox) hintBox.classList.remove('hidden');
         btnRestoreUI.classList.remove('show');
     });
 }

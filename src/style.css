@@ -194,7 +194,13 @@ canvas {
   font-size: 0.85rem;
   pointer-events: none;
   z-index: 90;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.hint-box.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
 }
 
 @keyframes fadeIn {
