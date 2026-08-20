@@ -2589,17 +2589,6 @@ if (btnEditWishes && wishesEditModal && wishesTextarea) {
     });
 }
 
-// 6. Nút Bắn Pháo Hoa Trái Tim 3D
-const btnFirework = document.getElementById('btn-firework');
-if (btnFirework) {
-    btnFirework.addEventListener('click', (e) => {
-        e.stopPropagation();
-        triggerHeartFirework();
-        setTimeout(() => triggerHeartFirework(), 250);
-        setTimeout(() => triggerHeartFirework(), 500);
-    });
-}
-
 // 7. Nút Chụp Ảnh & Tạo Thiệp Polaroid Kỷ Niệm
 const btnSnapshot = document.getElementById('btn-snapshot');
 const snapshotModal = document.getElementById('snapshot-modal');
