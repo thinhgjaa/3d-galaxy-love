@@ -117,12 +117,12 @@ const generateHeart = () => {
 
         if (val <= 0.0) { // Điểm nằm trong thể tích trái tim
             // Map sang tọa độ Three.js (Trục Z của phương trình trở thành trục Y của Three.js)
-            let tx = x * 1.5;
-            let ty = z * 1.5;
-            let tz = y * 1.5;
+            // Giảm hệ số nhân từ 1.5 xuống 1.0 để làm quả tim nhỏ lại một xíu
+            let tx = x * 1.0;
+            let ty = z * 1.0;
+            let tz = y * 1.0;
             
-            // Đẩy lên cao phía trên dải ngân hà
-            ty += 2.5;
+            // Đã bỏ dòng ty += 2.5 ở đây để tâm hình học (pivot) nằm đúng giữa quả tim
 
             positions[count*3] = tx;
             positions[count*3+1] = ty;
@@ -152,6 +152,8 @@ const generateHeart = () => {
     });
 
     heartPoints = new THREE.Points(heartGeometry, material);
+    // Tịnh tiến toàn bộ object lên trên thay vì tịnh tiến từng vertex, giúp thao tác scale hoạt động chính xác từ tâm
+    heartPoints.position.y = 2.5;
     scene.add(heartPoints);
 };
 
@@ -287,10 +289,30 @@ controls.autoRotate = true;
 controls.autoRotateSpeed = 0.8;
 
 /**
- * Tương tác click chuột (Raycaster)
+ * Tương tác click chuột (Raycaster) & Âm thanh
  */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+
+// Tạo đối tượng âm thanh nền (nhạc mp3 để tương thích tốt với mọi trình duyệt)
+const bgMusic = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
+let musicStarted = false;
+
+// Lắng nghe cả pointerdown (chuột/cảm ứng) thay vì chỉ click, vì OrbitControls đôi khi chặn sự kiện click
+const startMusic = () => {
+    if (!musicStarted) {
+        bgMusic.play().then(() => {
+            console.log("Nhạc đã phát thành công!");
+        }).catch(e => {
+            console.warn("Lỗi phát nhạc (trình duyệt chặn autoplay):", e);
+        });
+        musicStarted = true;
+        window.removeEventListener('pointerdown', startMusic);
+    }
+};
+window.addEventListener('pointerdown', startMusic);
 
 window.addEventListener('click', (event) => {
     // Tính toán tọa độ chuột chuẩn hóa (-1 đến +1)
@@ -363,8 +385,9 @@ const tick = () => {
         // Xoay nhẹ nhàng quanh trục Y
         heartPoints.rotation.y = elapsedTime * 0.15;
         
-        // Subtle breathing effect
-        const scale = 1 + Math.sin(elapsedTime * 2) * 0.05;
+        // Hiệu ứng thở (Breathing effect)
+        // Dùng hàm sin mượt mà để tạo cảm giác phồng lên xẹp xuống từ từ, êm ái
+        const scale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.04;
         heartPoints.scale.set(scale, scale, scale);
     }
     
