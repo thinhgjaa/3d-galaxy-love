@@ -871,10 +871,10 @@ controls.addEventListener('start', () => {
  * 10. AUDIO BACKGROUND & AUDIO VISUALIZER (Nhạc nhảy theo Beat)
  * =========================================================================
  */
-const bgMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc48af67b2.mp3?filename=space-ambience-108861.mp3');
+// Sử dụng file nhạc nội bộ được lưu tại public/music.mp3 (100% ổn định, không lo lỗi mạng/CORS)
+const bgMusic = new Audio('/music.mp3');
 bgMusic.loop = true;
-bgMusic.volume = 0.5;
-bgMusic.crossOrigin = "anonymous";
+bgMusic.volume = 0.65;
 let musicStarted = false;
 
 let audioContext = null;
@@ -903,16 +903,24 @@ const initAudioAnalyser = () => {
 const startMusic = () => {
     initAudioAnalyser();
     if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().catch(() => {});
     }
-    if (!musicStarted) {
-        bgMusic.play().then(() => {
-            musicStarted = true;
-        }).catch(e => console.warn(e));
-        window.removeEventListener('pointerdown', startMusic);
-    }
+    bgMusic.play().then(() => {
+        musicStarted = true;
+        const btnM = document.getElementById('btn-music');
+        if (btnM) {
+            btnM.classList.remove('muted');
+            btnM.innerText = '🎵';
+        }
+    }).catch(e => {
+        console.warn("Chờ tương tác từ người dùng để phát nhạc:", e);
+    });
 };
-window.addEventListener('pointerdown', startMusic);
+
+// Tự động phát nhạc ngay khi người dùng chạm, click hoặc nhấn phím bất kỳ
+window.addEventListener('pointerdown', () => { if (!musicStarted) startMusic(); }, { once: true });
+window.addEventListener('click', () => { if (!musicStarted) startMusic(); }, { once: true });
+window.addEventListener('keydown', () => { if (!musicStarted) startMusic(); }, { once: true });
 
 /**
  * =========================================================================
