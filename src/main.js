@@ -477,36 +477,121 @@ const taurusConstellation = buildConstellation('♉ Kim Ngưu (Taurus)', taurusS
 
 /**
  * =========================================================================
- * 5.2 LOVE WORMHOLE / HYPER-DRIVE LOOP (Cổng dịch chuyển không gian)
+ * 5.2 LOVE WORMHOLE PORTAL (Lỗ không gian 3D trong tâm Trái Tim)
  * =========================================================================
  */
 let isWarping = false;
 let warpProgress = 0;
 const warpStartCameraPos = new THREE.Vector3();
-const warpTargetPos = new THREE.Vector3(0, 2.4, 0.1);
+const warpTargetPos = new THREE.Vector3(0, 2.4, 0.0);
 
+// Tạo đĩa xoáy lỗ không gian (Wormhole Portal Vortex)
+const createPortalVortexTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    const cx = 256, cy = 256;
+    for (let i = 0; i < 360; i += 2) {
+        const rad = (i * Math.PI) / 180;
+        const r1 = 25 + Math.random() * 35;
+        const r2 = 190 + Math.random() * 60;
+        const x1 = cx + Math.cos(rad) * r1;
+        const y1 = cy + Math.sin(rad) * r1;
+        const x2 = cx + Math.cos(rad + 1.2) * r2;
+        const y2 = cy + Math.sin(rad + 1.2) * r2;
+
+        const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+        grad.addColorStop(0, '#000000');
+        grad.addColorStop(0.3, '#ff007f');
+        grad.addColorStop(0.7, '#00f0ff');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    const centerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 250);
+    centerGrad.addColorStop(0, '#000000');
+    centerGrad.addColorStop(0.2, '#050015');
+    centerGrad.addColorStop(0.3, 'rgba(255, 0, 127, 0.95)');
+    centerGrad.addColorStop(0.55, 'rgba(0, 240, 255, 0.6)');
+    centerGrad.addColorStop(0.85, 'rgba(120, 0, 255, 0.2)');
+    centerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = centerGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 250, 0, Math.PI * 2);
+    ctx.fill();
+
+    return new THREE.CanvasTexture(canvas);
+};
+
+const portalVortexTexture = createPortalVortexTexture();
+
+// Group chứa Lỗ không gian đặt chính xác tại tâm quả tim (Y = 2.4)
+const wormholePortalGroup = new THREE.Group();
+wormholePortalGroup.position.set(0, 2.4, 0);
+wormholePortalGroup.scale.set(0.001, 0.001, 0.001);
+wormholePortalGroup.visible = false;
+scene.add(wormholePortalGroup);
+
+// 1. Mặt đĩa xoáy Sprite trung tâm
+const portalMat1 = new THREE.SpriteMaterial({
+    map: portalVortexTexture,
+    transparent: true,
+    opacity: 0.98,
+    blending: THREE.AdditiveBlending
+});
+const portalDisk1 = new THREE.Sprite(portalMat1);
+portalDisk1.scale.set(3.4, 3.4, 3.4);
+wormholePortalGroup.add(portalDisk1);
+
+// 2. Vành đai xoáy 3D Ring 1 (Xoay thuận chiều kim đồng hồ)
+const portalRingGeom = new THREE.RingGeometry(0.3, 2.0, 48);
+const portalRingMat = new THREE.MeshBasicMaterial({
+    map: portalVortexTexture,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.92,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+});
+const portalRingMesh = new THREE.Mesh(portalRingGeom, portalRingMat);
+wormholePortalGroup.add(portalRingMesh);
+
+// 3. Vành đai xoáy 3D Ring 2 (Xoay ngược chiều, tạo chiều sâu hố đen)
+const portalRingMesh2 = new THREE.Mesh(portalRingGeom.clone(), portalRingMat.clone());
+portalRingMesh2.scale.set(0.65, 0.65, 0.65);
+wormholePortalGroup.add(portalRingMesh2);
+
+// Tia sao kéo dài tốc độ ánh sáng
 const warpStarsGroup = new THREE.Group();
 warpStarsGroup.visible = false;
 scene.add(warpStarsGroup);
 
-const warpStarCount = 90;
+const warpStarCount = 100;
 const warpStarGeom = new THREE.BufferGeometry();
 const warpPositions = new Float32Array(warpStarCount * 6);
 const warpColors = new Float32Array(warpStarCount * 6);
 
 for (let i = 0; i < warpStarCount; i++) {
     const i6 = i * 6;
-    const rad = 0.5 + Math.random() * 5.0;
+    const rad = 0.3 + Math.random() * 4.5;
     const ang = Math.random() * Math.PI * 2;
     const x = Math.cos(ang) * rad;
     const y = Math.sin(ang) * rad + 2.4;
-    const z = -10 + Math.random() * 20;
+    const z = -12 + Math.random() * 24;
 
     warpPositions[i6] = x; warpPositions[i6 + 1] = y; warpPositions[i6 + 2] = z;
-    warpPositions[i6 + 3] = x; warpPositions[i6 + 4] = y; warpPositions[i6 + 5] = z - 2.5;
+    warpPositions[i6 + 3] = x; warpPositions[i6 + 4] = y; warpPositions[i6 + 5] = z - 3.5;
 
     warpColors[i6] = 1; warpColors[i6 + 1] = 1; warpColors[i6 + 2] = 1;
-    warpColors[i6 + 3] = 0; warpColors[i6 + 4] = 0.8; warpColors[i6 + 5] = 1;
+    warpColors[i6 + 3] = 0; warpColors[i6 + 4] = 0.85; warpColors[i6 + 5] = 1;
 }
 
 warpStarGeom.setAttribute('position', new THREE.BufferAttribute(warpPositions, 3));
@@ -521,12 +606,36 @@ const warpStarMat = new THREE.LineBasicMaterial({
 const warpStarsMesh = new THREE.LineSegments(warpStarGeom, warpStarMat);
 warpStarsGroup.add(warpStarsMesh);
 
+// Đường bay cong mượt mà chuẩn điện ảnh (Catmull-Rom Spline Curve)
+let warpFlightCurve = null;
+
 const triggerWormhole = () => {
     if (isWarping) return;
     isWarping = true;
     warpProgress = 0;
-    warpStartCameraPos.copy(camera.position);
+    
+    // Tạo đường cong CatmullRom liên tục mượt mà 100% từ vị trí hiện tại của camera
+    const startP = camera.position.clone();
+    const approachP = new THREE.Vector3(startP.x * 0.4, 2.4 + (startP.y - 2.4) * 0.3, Math.max(2.0, startP.z * 0.5));
+    const heartCenterP = new THREE.Vector3(0, 2.4, 0.0);
+    const exitBackP = new THREE.Vector3(0, 1.8, -4.5);
+    const sweepSideP = new THREE.Vector3(4.2, 2.8, 2.0);
+    const endDefaultP = defaultCameraPos.clone();
+
+    warpFlightCurve = new THREE.CatmullRomCurve3([
+        startP,
+        approachP,
+        heartCenterP,
+        exitBackP,
+        sweepSideP,
+        endDefaultP
+    ]);
+
+    // Kích hoạt hiển thị lỗ không gian mở to dần từ tâm trái tim
+    wormholePortalGroup.visible = true;
+    wormholePortalGroup.scale.set(0.01, 0.01, 0.01);
     warpStarsGroup.visible = true;
+
     isCinemaMode = false;
     isResettingView = false;
     document.getElementById('btn-cinema')?.classList.remove('active');
@@ -1286,37 +1395,66 @@ const tick = () => {
         });
     }
 
-    // 0.2 Cập nhật hiệu ứng Cổng Dịch Chuyển Wormhole (Loop)
-    if (isWarping) {
-        warpProgress += delta * 0.65;
+    // 0.2 Cập nhật hiệu ứng Cổng Dịch Chuyển Wormhole Ngay Tại Trái Tim (Spline Curve Flight)
+    if (isWarping && warpFlightCurve) {
+        warpProgress += delta * 0.38; // ~2.6 giây hành trình bay điện ảnh êm ru
         
+        // Xoay đĩa lỗ không gian đa tầng với tốc độ cao
+        if (typeof portalRingMesh !== 'undefined' && typeof portalRingMesh2 !== 'undefined' && typeof portalDisk1 !== 'undefined') {
+            portalRingMesh.rotation.z -= delta * 5.5;
+            portalRingMesh2.rotation.z += delta * 4.0;
+            portalDisk1.material.rotation += delta * 3.5;
+        }
+
+        // Cập nhật các tia sao bay vút
         const posAttr = warpStarsMesh.geometry.attributes.position;
         for (let i = 0; i < warpStarCount; i++) {
             const i6 = i * 6;
-            posAttr.array[i6 + 2] += (0.6 + warpProgress * 2.5);
-            posAttr.array[i6 + 5] += (0.6 + warpProgress * 2.5);
-            if (posAttr.array[i6 + 2] > 15) {
-                posAttr.array[i6 + 2] -= 30;
-                posAttr.array[i6 + 5] -= 30;
+            posAttr.array[i6 + 2] += (0.8 + warpProgress * 3.5);
+            posAttr.array[i6 + 5] += (0.8 + warpProgress * 3.5);
+            if (posAttr.array[i6 + 2] > 16) {
+                posAttr.array[i6 + 2] -= 32;
+                posAttr.array[i6 + 5] -= 32;
             }
         }
         posAttr.needsUpdate = true;
 
-        const ease = Math.pow(warpProgress, 2.5);
-        camera.position.lerpVectors(warpStartCameraPos, warpTargetPos, ease);
-        controls.target.lerp(warpTargetPos, 0.1);
-        camera.fov = 75 + warpProgress * 35;
-        camera.updateProjectionMatrix();
+        const clampedT = Math.min(1.0, Math.max(0.0, warpProgress));
+        // Lấy tọa độ camera chính xác theo đường cong Spline liên tục mượt mà
+        const currentCamPos = warpFlightCurve.getPointAt(clampedT);
+        camera.position.copy(currentCamPos);
+
+        // Điều khiển kích thước lỗ không gian & góc nhìn FOV linh hoạt
+        if (clampedT < 0.45) {
+            // Giai đoạn 1: Lao vào tâm - Portal mở rộng, FOV mở dãn
+            const p1 = clampedT / 0.45;
+            const portalScale = Math.sin(p1 * Math.PI * 0.5) * 1.9;
+            wormholePortalGroup.scale.set(portalScale, portalScale, portalScale);
+            camera.fov = 75 + p1 * 30;
+            camera.updateProjectionMatrix();
+            controls.target.lerp(new THREE.Vector3(0, 2.4, 0), 0.15);
+        } else if (clampedT < 0.58) {
+            // Giai đoạn 2: Xuyên qua hố đen - Chớp sáng nhẹ nhàng
+            const flashEl = document.getElementById('wormhole-flash');
+            if (flashEl && !flashEl.classList.contains('active')) {
+                flashEl.classList.add('active');
+                setTimeout(() => flashEl.classList.remove('active'), 550);
+            }
+            camera.fov = 75;
+            camera.updateProjectionMatrix();
+        } else {
+            // Giai đoạn 3: Uốn lượn quay về - Portal khép lại, tiêu điểm hướng về tâm ngân hà
+            const p2 = (clampedT - 0.58) / 0.42;
+            const portalShrink = Math.max(0, (1.0 - p2) * 1.9);
+            wormholePortalGroup.scale.set(portalShrink, portalShrink, portalShrink);
+            controls.target.lerp(defaultTarget, 0.08);
+        }
 
         if (warpProgress >= 1.0) {
             isWarping = false;
+            wormholePortalGroup.visible = false;
             warpStarsGroup.visible = false;
-
-            const flashEl = document.getElementById('wormhole-flash');
-            if (flashEl) {
-                flashEl.classList.add('active');
-                setTimeout(() => flashEl.classList.remove('active'), 600);
-            }
+            warpFlightCurve = null;
 
             camera.position.copy(defaultCameraPos);
             controls.target.copy(defaultTarget);
