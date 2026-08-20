@@ -44,23 +44,28 @@ const pointLight = new THREE.PointLight('#ff007f', 2, 20);
 pointLight.position.set(0, 3, 0);
 scene.add(pointLight);
 
-// Renderer
+// Renderer (Tối ưu PixelRatio max 1.5 để mượt mà trên màn hình độ phân giải cao/Retina)
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
     powerPreference: "high-performance"
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setClearColor('#000000');
 renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.autoClear = false;
 
-// Post Processing (UnrealBloomPass)
+// Post Processing (Chạy Bloom ở độ phân giải 1/2 để tăng tốc GPU gấp 4 lần)
 const renderScene = new RenderPass(scene, camera);
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(sizes.width, sizes.height), 1.4, 0.4, 0.85);
+const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2)),
+    1.2,
+    0.4,
+    0.85
+);
 bloomPass.threshold = 0.0;
-bloomPass.strength = 1.3;
+bloomPass.strength = 1.2;
 bloomPass.radius = 0.5;
 
 const composer = new EffectComposer(renderer);
@@ -76,9 +81,10 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
 
     renderer.setSize(sizes.width, sizes.height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     composer.setSize(sizes.width, sizes.height);
+    bloomPass.setSize(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2));
 });
 
 /**
@@ -125,12 +131,12 @@ let currentThemeIndex = 0;
 
 /**
  * =========================================================================
- * 3. GALAXY GENERATION
+ * 3. GALAXY GENERATION (Tối ưu 28.000 hạt với kích thước vừa vặn)
  * =========================================================================
  */
 const galaxyParams = {
-    count: 65000,
-    size: 0.01,
+    count: 28000,
+    size: 0.016,
     radius: 6.5,
     branches: 4,
     spin: 1.2,
@@ -198,7 +204,7 @@ generateGalaxy();
 
 /**
  * =========================================================================
- * 4. 3D HEART SYSTEM
+ * 4. 3D HEART SYSTEM (Tối ưu 6.000 hạt đẹp mắt)
  * =========================================================================
  */
 let heartPoints = null;
@@ -214,7 +220,7 @@ const generateHeart = () => {
 
     const theme = colorThemes[currentThemeIndex];
     heartGeometry = new THREE.BufferGeometry();
-    const heartCount = 14000;
+    const heartCount = 6500;
     const positions = new Float32Array(heartCount * 3);
     const colors = new Float32Array(heartCount * 3);
 
@@ -227,7 +233,6 @@ const generateHeart = () => {
         const y = (Math.random() - 0.5) * 3;
         const z = (Math.random() - 0.5) * 3;
 
-        // Phương trình 3D Heart: (x^2 + 2.25y^2 + z^2 - 1)^3 - x^2*z^3 - 0.1125*y^2*z^3 <= 0
         const a = x * x + 2.25 * y * y + z * z - 1;
         const val = a * a * a - (x * x * z * z * z) - (0.1125 * y * y * z * z * z);
 
@@ -255,9 +260,9 @@ const generateHeart = () => {
     heartGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     heartMaterial = new THREE.PointsMaterial({
-        size: 0.013,
+        size: 0.018,
         transparent: true,
-        opacity: 0.45,
+        opacity: 0.55,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -265,7 +270,7 @@ const generateHeart = () => {
     });
 
     heartPoints = new THREE.Points(heartGeometry, heartMaterial);
-    heartPoints.position.y = 2.4; // Tọa độ tâm trái tim phía trên ngân hà
+    heartPoints.position.y = 2.4;
     scene.add(heartPoints);
 };
 
@@ -631,15 +636,43 @@ controls.addEventListener('start', () => {
 
 /**
  * =========================================================================
- * 10. AUDIO BACKGROUND
+ * 10. AUDIO BACKGROUND & AUDIO VISUALIZER (Nhạc nhảy theo Beat)
  * =========================================================================
  */
 const bgMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc48af67b2.mp3?filename=space-ambience-108861.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.5;
+bgMusic.crossOrigin = "anonymous";
 let musicStarted = false;
 
+let audioContext = null;
+let analyser = null;
+let audioDataArray = null;
+
+const initAudioAnalyser = () => {
+    if (audioContext) return;
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioContext = new AudioContextClass();
+
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        const source = audioContext.createMediaElementSource(bgMusic);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+    } catch (e) {
+        console.warn("Audio analyser info:", e);
+    }
+};
+
 const startMusic = () => {
+    initAudioAnalyser();
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
     if (!musicStarted) {
         bgMusic.play().then(() => {
             musicStarted = true;
@@ -648,6 +681,70 @@ const startMusic = () => {
     }
 };
 window.addEventListener('pointerdown', startMusic);
+
+/**
+ * =========================================================================
+ * 10.1 MAGIC FAIRY DUST TRAIL (Vệt bụi sao ma thuật theo chuột)
+ * =========================================================================
+ */
+const fairyCanvas = document.getElementById('fairy-canvas');
+const fairyCtx = fairyCanvas ? fairyCanvas.getContext('2d') : null;
+const fairyDust = [];
+
+const resizeFairyCanvas = () => {
+    if (!fairyCanvas) return;
+    fairyCanvas.width = window.innerWidth;
+    fairyCanvas.height = window.innerHeight;
+};
+window.addEventListener('resize', resizeFairyCanvas);
+resizeFairyCanvas();
+
+let lastFairyTime = 0;
+
+window.addEventListener('pointermove', (e) => {
+    if (!fairyCtx) return;
+    const now = performance.now();
+    // Giới hạn chỉ sinh hạt tối đa 1 lần mỗi 35ms để không làm nghẽn CPU
+    if (now - lastFairyTime < 35 || fairyDust.length > 20) return;
+    lastFairyTime = now;
+
+    const theme = colorThemes[currentThemeIndex];
+    fairyDust.push({
+        x: e.clientX + (Math.random() - 0.5) * 8,
+        y: e.clientY + (Math.random() - 0.5) * 8,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8 - 0.3,
+        size: 11 + Math.random() * 6,
+        alpha: 1.0,
+        decay: 0.025 + Math.random() * 0.02,
+        symbol: ['✨', '⭐', '💖', '🌟'][Math.floor(Math.random() * 4)],
+        color: theme.heartGlow
+    });
+});
+
+const updateFairyDust = () => {
+    if (!fairyCtx || !fairyCanvas) return;
+    fairyCtx.clearRect(0, 0, fairyCanvas.width, fairyCanvas.height);
+
+    for (let i = fairyDust.length - 1; i >= 0; i--) {
+        const p = fairyDust[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+        p.size *= 0.98;
+
+        if (p.alpha <= 0 || p.size < 2) {
+            fairyDust.splice(i, 1);
+            continue;
+        }
+
+        fairyCtx.globalAlpha = p.alpha;
+        fairyCtx.font = `${Math.floor(p.size)}px sans-serif`;
+        fairyCtx.textAlign = 'center';
+        fairyCtx.textBaseline = 'middle';
+        fairyCtx.fillText(p.symbol, p.x, p.y);
+    }
+};
 
 /**
  * =========================================================================
@@ -717,23 +814,43 @@ const tick = () => {
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // 1. Rotate galaxy
+    // 0. Audio Visualizer (Phân tích tần số âm thanh)
+    let bassFactor = 0;
+    if (analyser && !bgMusic.paused && !bgMusic.muted) {
+        analyser.getByteFrequencyData(audioDataArray);
+        let bassSum = 0;
+        for (let i = 0; i < 4; i++) {
+            bassSum += audioDataArray[i];
+        }
+        bassFactor = bassSum / (4 * 255); // 0.0 đến 1.0
+    }
+
+    // Cập nhật vệt bụi sao ma thuật theo chuột
+    updateFairyDust();
+
+    // 1. Rotate galaxy (Quay êm dịu, tĩnh lặng, không nhảy theo nhạc)
     if (galaxyPoints) {
         galaxyPoints.rotation.y = elapsedTime * 0.08;
     }
 
-    // 2. Rotate & Breathe Heart
+    // 2. Rotate & Pulse Heart (Chỉ riêng quả tim thở nhịp nhàng kết hợp điệu nhạc)
     if (heartPoints) {
         heartPoints.rotation.y = elapsedTime * 0.12;
 
-        // Hiệu ứng thở (phồng lên xẹp xuống mượt mà từ giữa)
-        const breatheScale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.08;
+        // Nhịp thở êm ái của quả tim kết hợp nhịp bass nhẹ nhàng
+        const audioPulse = bassFactor * 0.12;
+        const breatheScale = 1.0 + Math.sin(elapsedTime * 1.5) * 0.06 + audioPulse;
         heartPoints.scale.set(breatheScale, breatheScale, breatheScale);
+    }
+
+    // Đèn phát sáng ổn định, êm ái
+    if (pointLight) {
+        pointLight.intensity = 2.0;
     }
 
     // 3. Floating Text Bobbing & Facing Camera
     if (textSprite) {
-        textSprite.position.y = 3.8 + Math.sin(elapsedTime * 2.0) * 0.08;
+        textSprite.position.y = 3.6 + Math.sin(elapsedTime * 2.0) * 0.08;
     }
 
     // 4. Meteors update & periodic random spawn
