@@ -261,6 +261,7 @@ canvas {
 #btn-save-counter,
 #btn-download-snapshot,
 #btn-save-wishes,
+#btn-save-settings,
 #btn-play-youtube {
   background: linear-gradient(135deg, #ff007f, #ff5599);
   color: white;
@@ -271,6 +272,7 @@ canvas {
 #btn-save-counter:hover,
 #btn-download-snapshot:hover,
 #btn-save-wishes:hover,
+#btn-save-settings:hover,
 #btn-play-youtube:hover {
   box-shadow: 0 6px 22px rgba(255, 0, 127, 0.7);
 }
@@ -280,6 +282,7 @@ canvas {
 #btn-close-wish,
 #btn-cancel-wishes,
 #btn-close-snapshot,
+#btn-close-settings,
 #btn-cancel-music,
 #btn-default-music,
 #btn-reset-wishes {
@@ -292,11 +295,135 @@ canvas {
 #btn-close-wish:hover,
 #btn-cancel-wishes:hover,
 #btn-close-snapshot:hover,
+#btn-close-settings:hover,
 #btn-cancel-music:hover,
 #btn-default-music:hover,
 #btn-reset-wishes:hover {
   background: rgba(255, 255, 255, 0.24);
   color: #fff;
+}
+
+/* =========================================================================
+   SETTINGS MODAL & TOGGLE SWITCHES (Cấu Hình Hiệu Ứng Liên Tục)
+   ========================================================================= */
+.settings-modal-content {
+  max-width: 460px;
+  padding: 24px 28px;
+}
+
+.settings-subtitle {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 14px;
+  border-radius: 14px;
+  transition: border-color 0.25s, background 0.25s;
+}
+
+.setting-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 0, 127, 0.4);
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.setting-desc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
+}
+
+/* Toggle Switch UI */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: 0.3s;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+input:checked + .slider {
+  background: linear-gradient(135deg, #ff007f, #00f0ff);
+  border-color: #ff007f;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Setting Select */
+.setting-select {
+  background: rgba(20, 16, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.setting-select:focus {
+  border-color: #ff007f;
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.5);
 }
 
 #btn-next-wish,

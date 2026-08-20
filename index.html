@@ -41,6 +41,7 @@
     <!-- UI CONTROLS (Thanh điều khiển vũ trụ)                     -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div id="ui-controls" class="ui-controls">
+      <button id="btn-settings" title="Cấu Hình Hiệu Ứng Vũ Trụ (Liên Tục)">⚙️</button>
       <button id="btn-star-wishes" title="Những Vì Sao Ước Nguyện (Thư Tình)">🌟</button>
       <button id="btn-firework" title="Bắn Pháo Hoa Trái Tim 3D">🎆</button>
       <button id="btn-snapshot" title="Chụp Ảnh Kỷ Niệm & Xuất Thiệp">📸</button>
@@ -152,6 +153,89 @@
           <button id="btn-play-youtube">Phát Link Này</button>
           <button id="btn-default-music">Nhạc Gốc</button>
           <button id="btn-cancel-music">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Modal Cấu Hình Hiệu Ứng Vũ Trụ (Hiệu ứng liên tục) -->
+    <div id="settings-modal" class="text-modal">
+      <div class="text-modal-content settings-modal-content">
+        <h3>⚙️ Cấu Hình Hiệu Ứng Vũ Trụ</h3>
+        <p class="settings-subtitle">Bật các chế độ tự động và hiệu ứng liên tục</p>
+
+        <div class="settings-list">
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🎆 Pháo hoa tim liên tục</span>
+              <span class="setting-desc">Tự động bung pháo hoa trái tim 3D không ngừng</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-auto-fireworks" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🌠 Mưa sao băng liên tục</span>
+              <span class="setting-desc">Sao băng bay dày đặc liên hồi qua dải ngân hà</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-auto-meteors" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">☄️ Sao chổi bay thường xuyên</span>
+              <span class="setting-desc">Tăng tần suất sao chổi đuôi lụa kỳ vĩ</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-frequent-comets" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">✨ Vệt bụi sao theo chuột</span>
+              <span class="setting-desc">Phát ra bụi sao ma thuật khi di chuyển chuột</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-fairy-dust" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🔊 Âm thanh hiệu ứng (SFX)</span>
+              <span class="setting-desc">Tiếng chuông gió & nổ pháo hoa ma thuật</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-sound-fx" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🌀 Tốc độ xoay vũ trụ</span>
+              <span class="setting-desc">Điều chỉnh tốc độ tự xoay của góc nhìn</span>
+            </div>
+            <select id="select-rotation-speed" class="setting-select">
+              <option value="0">Dừng xoay (Tĩnh)</option>
+              <option value="0.3">Chậm êm đềm (0.5x)</option>
+              <option value="0.6" selected>Tiêu chuẩn (1.0x)</option>
+              <option value="1.4">Nhanh bay bổng (2.0x)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button id="btn-save-settings">Lưu Cấu Hình</button>
+          <button id="btn-close-settings">Đóng</button>
         </div>
       </div>
     </div>

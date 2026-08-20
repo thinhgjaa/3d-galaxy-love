@@ -66,6 +66,30 @@ try {
 
 /**
  * =========================================================================
+ * 1.1 COSMIC FX CONFIG & LOCALSTORAGE (Cấu hình hiệu ứng liên tục)
+ * =========================================================================
+ */
+let fxConfig = {
+    autoFireworks: false,
+    autoMeteors: false,
+    frequentComets: false,
+    fairyDust: true,
+    soundFx: true,
+    rotationSpeed: 0.6
+};
+
+try {
+    const savedFx = localStorage.getItem('galaxy_fx_config');
+    if (savedFx) {
+        const parsed = JSON.parse(savedFx);
+        fxConfig = { ...fxConfig, ...parsed };
+    }
+} catch (e) {}
+
+let nextAutoFireworkTime = 0;
+
+/**
+ * =========================================================================
  * 2. BASE SETUP & SCENES
  * =========================================================================
  */
@@ -93,8 +117,8 @@ scene.add(camera);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.target.set(0, 1.35, 0);
-controls.autoRotate = true;
-controls.autoRotateSpeed = 0.6;
+controls.autoRotate = (fxConfig.rotationSpeed > 0);
+controls.autoRotateSpeed = fxConfig.rotationSpeed;
 controls.update();
 
 // Lighting
@@ -1241,7 +1265,7 @@ const initSFXContext = () => {
 };
 
 const playFireworkPop = () => {
-    if (isSoundMuted) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
 
@@ -1266,7 +1290,7 @@ const playFireworkPop = () => {
 };
 
 const playSparkleChime = () => {
-    if (isSoundMuted) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
 
@@ -1590,10 +1614,7 @@ const defaultTarget = new THREE.Vector3(0, 1.35, 0);
 
 controls.addEventListener('start', () => {
     isResettingView = false;
-    if (isCinemaMode) {
-        isCinemaMode = false;
-        document.getElementById('btn-cinema')?.classList.remove('active');
-    }
+    // Giữ nguyên Cinema Mode khi chạm/click vào màn hình
 });
 
 /**
@@ -1782,7 +1803,7 @@ resizeFairyCanvas();
 let lastFairyTime = 0;
 
 window.addEventListener('pointermove', (e) => {
-    if (!fairyCtx) return;
+    if (!fairyCtx || !fxConfig.fairyDust) return;
     const now = performance.now();
     if (now - lastFairyTime < 35 || fairyDust.length > 20) return;
     lastFairyTime = now;
@@ -2050,26 +2071,39 @@ const tick = () => {
         textSprite.position.y = 3.6 + Math.sin(elapsedTime * 2.0) * 0.08;
     }
 
-    // 4. Meteors update
+    // 3.5 Auto Continuous Heart Fireworks (Pháo hoa tim liên tục)
+    if (fxConfig.autoFireworks && elapsedTime > nextAutoFireworkTime) {
+        triggerHeartFirework();
+        nextAutoFireworkTime = elapsedTime + 0.65 + Math.random() * 0.55;
+    }
+
+    // 4. Meteors update (Mưa sao băng liên tục hoặc định kỳ)
     if (elapsedTime > nextMeteorTime) {
         const inactiveMeteors = meteorPool.filter(m => !m.active);
         if (inactiveMeteors.length > 0) {
             inactiveMeteors[0].spawn();
-            if (Math.random() > 0.75 && inactiveMeteors.length > 1) {
-                setTimeout(() => inactiveMeteors[1].spawn(), 300);
+            if (fxConfig.autoMeteors && inactiveMeteors.length > 1) {
+                setTimeout(() => inactiveMeteors[1].spawn(), 180);
+            }
+            if (fxConfig.autoMeteors && inactiveMeteors.length > 2) {
+                setTimeout(() => inactiveMeteors[2].spawn(), 340);
             }
         }
-        nextMeteorTime = elapsedTime + 2.0 + Math.random() * 3.0;
+        const baseDelay = fxConfig.autoMeteors ? 0.35 : 2.2;
+        const randDelay = fxConfig.autoMeteors ? 0.5 : 3.0;
+        nextMeteorTime = elapsedTime + baseDelay + Math.random() * randDelay;
     }
 
     meteorPool.forEach(m => m.update());
 
-    // 4.1 Majestic Comet update
+    // 4.1 Majestic Comet update (Sao chổi thường xuyên hoặc định kỳ)
     if (elapsedTime > nextCometTime) {
         if (!majesticComet.active) {
             majesticComet.spawn();
         }
-        nextCometTime = elapsedTime + 16.0 + Math.random() * 9.0;
+        const cometDelay = fxConfig.frequentComets ? 5.5 : 16.0;
+        const cometRand = fxConfig.frequentComets ? 4.0 : 9.0;
+        nextCometTime = elapsedTime + cometDelay + Math.random() * cometRand;
     }
     majesticComet.update(delta);
 
@@ -2105,7 +2139,8 @@ const tick = () => {
         controls.target.lerp(new THREE.Vector3(0, 2.2, 0), 0.05);
         controls.update();
     } else {
-        controls.autoRotate = !isResettingView;
+        controls.autoRotate = (!isResettingView && fxConfig.rotationSpeed > 0);
+        controls.autoRotateSpeed = fxConfig.rotationSpeed;
     }
 
     // 8. Smooth Camera Reset View
@@ -2215,6 +2250,71 @@ if (btnText && textModal) {
     });
 }
 
+
+// 0. Nút Mở & Quản Lý Cấu Hình Hiệu Ứng Vũ Trụ (Liên Tục)
+const btnSettings = document.getElementById('btn-settings');
+const settingsModal = document.getElementById('settings-modal');
+const toggleAutoFireworks = document.getElementById('toggle-auto-fireworks');
+const toggleAutoMeteors = document.getElementById('toggle-auto-meteors');
+const toggleFrequentComets = document.getElementById('toggle-frequent-comets');
+const toggleFairyDust = document.getElementById('toggle-fairy-dust');
+const toggleSoundFx = document.getElementById('toggle-sound-fx');
+const selectRotationSpeed = document.getElementById('select-rotation-speed');
+const btnSaveSettings = document.getElementById('btn-save-settings');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+
+const syncSettingsModalUI = () => {
+    if (toggleAutoFireworks) toggleAutoFireworks.checked = !!fxConfig.autoFireworks;
+    if (toggleAutoMeteors) toggleAutoMeteors.checked = !!fxConfig.autoMeteors;
+    if (toggleFrequentComets) toggleFrequentComets.checked = !!fxConfig.frequentComets;
+    if (toggleFairyDust) toggleFairyDust.checked = !!fxConfig.fairyDust;
+    if (toggleSoundFx) toggleSoundFx.checked = !!fxConfig.soundFx;
+    if (selectRotationSpeed) selectRotationSpeed.value = String(fxConfig.rotationSpeed);
+};
+
+syncSettingsModalUI();
+
+if (btnSettings && settingsModal) {
+    btnSettings.addEventListener('click', (e) => {
+        e.stopPropagation();
+        syncSettingsModalUI();
+        settingsModal.classList.add('show');
+    });
+
+    const applyAndSaveSettings = () => {
+        if (toggleAutoFireworks) fxConfig.autoFireworks = toggleAutoFireworks.checked;
+        if (toggleAutoMeteors) fxConfig.autoMeteors = toggleAutoMeteors.checked;
+        if (toggleFrequentComets) fxConfig.frequentComets = toggleFrequentComets.checked;
+        if (toggleFairyDust) fxConfig.fairyDust = toggleFairyDust.checked;
+        if (toggleSoundFx) fxConfig.soundFx = toggleSoundFx.checked;
+        if (selectRotationSpeed) fxConfig.rotationSpeed = parseFloat(selectRotationSpeed.value) || 0;
+
+        controls.autoRotate = (!isCinemaMode && !isResettingView && fxConfig.rotationSpeed > 0);
+        controls.autoRotateSpeed = fxConfig.rotationSpeed;
+
+        try {
+            localStorage.setItem('galaxy_fx_config', JSON.stringify(fxConfig));
+        } catch (err) {}
+    };
+
+    [toggleAutoFireworks, toggleAutoMeteors, toggleFrequentComets, toggleFairyDust, toggleSoundFx, selectRotationSpeed].forEach(el => {
+        el?.addEventListener('change', () => {
+            applyAndSaveSettings();
+        });
+    });
+
+    btnSaveSettings?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyAndSaveSettings();
+        settingsModal.classList.remove('show');
+        playSparkleChime();
+    });
+
+    btnCloseSettings?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsModal.classList.remove('show');
+    });
+}
 
 // 5. Nút Những Vì Sao Ước Nguyện & Modal Thư Tình
 const btnStarWishes = document.getElementById('btn-star-wishes');
