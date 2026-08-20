@@ -74,6 +74,10 @@ let fxConfig = {
     autoMeteors: false,
     frequentComets: false,
     fairyDust: true,
+    showPhotos: true,
+    showConstellations: true,
+    showSpaceIcons: true,
+    audioVisualizer: true,
     soundFx: true,
     rotationSpeed: 0.6
 };
@@ -113,12 +117,19 @@ const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 
 camera.position.set(0, 2.5, 7.2);
 scene.add(camera);
 
-// OrbitControls
+// OrbitControls (Tối ưu vuốt đa điểm & Pinch-to-zoom điện thoại)
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.enableZoom = true;
+controls.zoomSpeed = 0.85;
 controls.target.set(0, 1.35, 0);
 controls.autoRotate = (fxConfig.rotationSpeed > 0);
 controls.autoRotateSpeed = fxConfig.rotationSpeed;
+controls.touches = {
+    ONE: THREE.TOUCH.ROTATE,
+    TWO: THREE.TOUCH.DOLLY_PAN
+};
 controls.update();
 
 // Lighting
@@ -435,6 +446,74 @@ generateHeartRing();
 
 /**
  * =========================================================================
+ * 4.2 3D AUDIO VISUALIZER WAVES RING (Vòng Sóng Âm Nhạc 3D Nhảy Múa)
+ * =========================================================================
+ */
+const visualizerPointCount = 220;
+let audioVisualizerGroup = null;
+let audioVisualizerGeometry = null;
+let audioVisualizerLine = null;
+let audioVisualizerPoints = null;
+
+const generateAudioVisualizerRing = () => {
+    if (audioVisualizerGroup !== null) {
+        audioVisualizerGeometry.dispose();
+        scene.remove(audioVisualizerGroup);
+    }
+
+    audioVisualizerGroup = new THREE.Group();
+    audioVisualizerGroup.position.y = 2.4;
+
+    const positions = new Float32Array(visualizerPointCount * 3);
+    const colors = new Float32Array(visualizerPointCount * 3);
+
+    for (let i = 0; i < visualizerPointCount; i++) {
+        const angle = (i / visualizerPointCount) * Math.PI * 2;
+        const r = 2.05;
+        positions[i * 3] = Math.cos(angle) * r;
+        positions[i * 3 + 1] = 0;
+        positions[i * 3 + 2] = Math.sin(angle) * r;
+
+        colors[i * 3] = 1.0;
+        colors[i * 3 + 1] = 0.3;
+        colors[i * 3 + 2] = 0.7;
+    }
+
+    audioVisualizerGeometry = new THREE.BufferGeometry();
+    audioVisualizerGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    audioVisualizerGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const lineMat = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        linewidth: 2
+    });
+
+    const pointMat = new THREE.PointsMaterial({
+        vertexColors: true,
+        size: 0.038,
+        transparent: true,
+        opacity: 0.95,
+        sizeAttenuation: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+
+    audioVisualizerLine = new THREE.LineLoop(audioVisualizerGeometry, lineMat);
+    audioVisualizerPoints = new THREE.Points(audioVisualizerGeometry, pointMat);
+
+    audioVisualizerGroup.add(audioVisualizerLine);
+    audioVisualizerGroup.add(audioVisualizerPoints);
+    audioVisualizerGroup.visible = !!fxConfig.audioVisualizer;
+    scene.add(audioVisualizerGroup);
+};
+
+generateAudioVisualizerRing();
+
+/**
+ * =========================================================================
  * 5. DYNAMIC FLOATING 3D NEON TEXT (Dòng chữ phát sáng)
  * =========================================================================
  */
@@ -501,6 +580,7 @@ if (customTextInputInit) {
  * =========================================================================
  */
 const constellationsGroup = new THREE.Group();
+constellationsGroup.visible = (fxConfig.showConstellations !== false);
 scene.add(constellationsGroup);
 
 const createConstellationStarTexture = (isOrange = false) => {
@@ -599,6 +679,7 @@ const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') 
     labelSprite.position.set(offset.x, offset.y + 1.2, offset.z);
     labelSprite.scale.set(1.5, 0.38, 1);
     labelSprite.userData = { parentOffset: offset };
+    labelSprite.visible = (fxConfig.showConstellations !== false);
     sceneSprites.add(labelSprite);
 
     constellationsGroup.add(group);
@@ -822,8 +903,8 @@ const meteorHeadTexture = createMeteorHeadTexture();
 class Meteor {
     constructor() {
         this.active = false;
-        this.speed = 0.35;
-        this.length = 3.8;
+        this.speed = 0.38;
+        this.length = 6.8;
 
         this.group = new THREE.Group();
         this.group.visible = false;
@@ -842,7 +923,7 @@ class Meteor {
         const lineMaterial = new THREE.LineBasicMaterial({
             vertexColors: true,
             transparent: true,
-            opacity: 0.95,
+            opacity: 0.9,
             blending: THREE.AdditiveBlending
         });
 
@@ -856,7 +937,7 @@ class Meteor {
             blending: THREE.AdditiveBlending
         });
         this.head = new THREE.Sprite(spriteMaterial);
-        this.head.scale.set(0.4, 0.4, 0.4);
+        this.head.scale.set(0.22, 0.22, 0.22);
         this.group.add(this.head);
 
         this.direction = new THREE.Vector3(-1, -0.5, -0.6).normalize();
@@ -870,25 +951,26 @@ class Meteor {
         const tailColor = new THREE.Color(theme.heartGlow);
         const colors = this.line.geometry.attributes.color;
         colors.setXYZ(0, 1.0, 1.0, 1.0);
-        colors.setXYZ(1, tailColor.r, tailColor.g, tailColor.b);
+        colors.setXYZ(1, tailColor.r * 0.4, tailColor.g * 0.4, tailColor.b * 0.4);
         colors.needsUpdate = true;
 
         if (customPos) {
             this.group.position.copy(customPos);
         } else {
-            const startX = 4 + Math.random() * 8;
-            const startY = 3.5 + Math.random() * 4.5;
-            const startZ = -2 + (Math.random() - 0.5) * 8;
+            const startX = 6 + Math.random() * 8;
+            const startY = 4.0 + Math.random() * 5.0;
+            const startZ = -3 + (Math.random() - 0.5) * 8;
             this.group.position.set(startX, startY, startZ);
         }
 
         this.direction.set(
             -1.0 - Math.random() * 0.4,
-            -0.45 - Math.random() * 0.3,
-            -0.4 - Math.random() * 0.4
+            -0.42 - Math.random() * 0.25,
+            -0.35 - Math.random() * 0.35
         ).normalize();
 
-        this.speed = 0.28 + Math.random() * 0.22;
+        this.length = 6.2 + Math.random() * 2.6; // Dài thướt tha, bay vút qua ngân hà
+        this.speed = 0.32 + Math.random() * 0.22;
         this.updateGeometry();
     }
 
@@ -1231,7 +1313,6 @@ for (let i = 0; i < 15; i++) {
 }
 
 const triggerHeartFirework = (worldPos = null) => {
-    playFireworkPop();
     const theme = colorThemes[currentThemeIndex];
     const origin = worldPos ? worldPos.clone() : new THREE.Vector3(
         (Math.random() - 0.5) * 6,
@@ -1245,6 +1326,40 @@ const triggerHeartFirework = (worldPos = null) => {
         inactive.spawn(origin, color);
     }
 };
+
+const triggerDoubleHeartFirework = () => {
+    triggerHeartFirework(new THREE.Vector3(-1.35, 2.0, (Math.random() - 0.5) * 1.5));
+    setTimeout(() => {
+        triggerHeartFirework(new THREE.Vector3(1.35, 2.3, (Math.random() - 0.5) * 1.5));
+    }, 130);
+};
+
+// Xử lý Double-Tap trên thiết bị cảm ứng / Mobile
+let lastTouchEndTime = 0;
+let lastTouchEndPos = { x: 0, y: 0 };
+
+window.addEventListener('touchend', (e) => {
+    if (e.target.closest('#ui-controls') || e.target.closest('.text-modal') || e.target.closest('#btn-restore-ui')) {
+        return;
+    }
+    const touch = e.changedTouches && e.changedTouches[0];
+    if (!touch) return;
+
+    const now = performance.now();
+    const dt = now - lastTouchEndTime;
+    const dx = Math.abs(touch.clientX - lastTouchEndPos.x);
+    const dy = Math.abs(touch.clientY - lastTouchEndPos.y);
+
+    if (dt < 330 && dx < 45 && dy < 45) {
+        // Kích hoạt chùm pháo hoa tim đôi khi chạm 2 lần liên tiếp
+        e.preventDefault();
+        triggerDoubleHeartFirework();
+        lastTouchEndTime = 0;
+    } else {
+        lastTouchEndTime = now;
+        lastTouchEndPos = { x: touch.clientX, y: touch.clientY };
+    }
+}, { passive: false });
 
 /**
  * =========================================================================
@@ -1264,30 +1379,8 @@ const initSFXContext = () => {
     }
 };
 
-const playFireworkPop = () => {
-    if (isSoundMuted || !fxConfig.soundFx) return;
-    initSFXContext();
-    if (!sfxAudioCtx) return;
-
-    try {
-        const now = sfxAudioCtx.currentTime;
-        const osc = sfxAudioCtx.createOscillator();
-        const gain = sfxAudioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(420 + Math.random() * 200, now);
-        osc.frequency.exponentialRampToValueAtTime(80, now + 0.35);
-
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-        osc.connect(gain);
-        gain.connect(sfxAudioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.36);
-    } catch (e) {}
-};
+// Đã tắt âm thanh pháo hoa theo yêu cầu
+const playFireworkPop = () => {};
 
 const playSparkleChime = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
@@ -1349,8 +1442,17 @@ const playWarpSound = () => {
  * 8. ORBITING SPRITES & CUSTOM PHOTO SYSTEM
  * =========================================================================
  */
-let floatingSprites = new THREE.Group();
-sceneSprites.add(floatingSprites);
+const photosGroup = new THREE.Group();
+photosGroup.visible = (fxConfig.showPhotos !== false);
+sceneSprites.add(photosGroup);
+
+const spaceIconsGroup = new THREE.Group();
+spaceIconsGroup.visible = (fxConfig.showSpaceIcons !== false);
+sceneSprites.add(spaceIconsGroup);
+
+const getAllOrbitSprites = () => {
+    return [...photosGroup.children, ...spaceIconsGroup.children];
+};
 
 const addSpriteToOrbit = (texture, isCustom = false) => {
     const material = new THREE.SpriteMaterial({
@@ -1379,7 +1481,12 @@ const addSpriteToOrbit = (texture, isCustom = false) => {
         isCustomPhoto: isCustom
     };
 
-    floatingSprites.add(sprite);
+    if (isCustom) {
+        photosGroup.add(sprite);
+    } else {
+        spaceIconsGroup.add(sprite);
+    }
+
     return sprite;
 };
 
@@ -1403,7 +1510,7 @@ const initDefaultSprites = () => {
     });
 
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('/cat.jpg', (tex) => {
+    textureLoader.load('/photos/cat.jpg', (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         for (let i = 0; i < 3; i++) {
             addSpriteToOrbit(tex, true);
@@ -1872,14 +1979,18 @@ window.addEventListener('click', (event) => {
     }
 
     // 2. Kiểm tra xem có click trúng ảnh cá nhân/emoji không
-    const spriteIntersects = raycaster.intersectObjects(floatingSprites.children, false);
+    const activeSprites = [];
+    if (photosGroup.visible) activeSprites.push(...photosGroup.children);
+    if (spaceIconsGroup.visible) activeSprites.push(...spaceIconsGroup.children);
+    
+    const spriteIntersects = raycaster.intersectObjects(activeSprites, false);
     let clickedSprite = null;
 
     if (spriteIntersects.length > 0) {
         clickedSprite = spriteIntersects[0].object;
     }
 
-    floatingSprites.children.forEach(sprite => {
+    getAllOrbitSprites().forEach(sprite => {
         if (sprite === clickedSprite) {
             sprite.userData.isZoomed = !sprite.userData.isZoomed;
             if (sprite.userData.isZoomed) playSparkleChime();
@@ -1935,9 +2046,22 @@ const tick = () => {
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // 0. Audio Visualizer (Phân tích tần số Bass)
+    // 0. Audio Visualizer & YouTube Rhythm Engine
     let rawBass = 0;
-    if (analyser && !bgMusic.paused && !bgMusic.muted) {
+    let isYTPlaying = false;
+    try {
+        if (isUsingYouTube && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+            isYTPlaying = (ytPlayer.getPlayerState() === 1 && !isYTMuted);
+        }
+    } catch (e) {}
+
+    if (isYTPlaying) {
+        // Tạo nhịp phách âm nhạc hòa âm đa tầng cho YouTube
+        const beatTime = elapsedTime * 2.2;
+        const kick = Math.pow(Math.max(0, Math.sin(beatTime * Math.PI)), 4) * 0.65;
+        const subBass = (Math.sin(elapsedTime * 4.0) * 0.5 + 0.5) * 0.3;
+        rawBass = Math.min(1.0, kick + subBass);
+    } else if (analyser && !bgMusic.paused && !bgMusic.muted) {
         analyser.getByteFrequencyData(audioDataArray);
         let bassSum = 0;
         const binsToCheck = Math.min(6, audioDataArray.length);
@@ -2066,6 +2190,55 @@ const tick = () => {
         heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
     }
 
+    // 2.2 Cập nhật Vòng Sóng Âm Nhạc 3D (Audio Visualizer Waves Ring - Nhảy múa cả khi phát YouTube & MP3)
+    if (audioVisualizerGeometry) {
+        const posAttr = audioVisualizerGeometry.attributes.position;
+        const colorAttr = audioVisualizerGeometry.attributes.color;
+        const theme = colorThemes[currentThemeIndex];
+        const baseCol = new THREE.Color(theme.heartGlow);
+        const altCol = new THREE.Color(theme.insideColor);
+
+        for (let i = 0; i < visualizerPointCount; i++) {
+            const angle = (i / visualizerPointCount) * Math.PI * 2;
+            let freqVal = 0;
+            
+            if (isYTPlaying) {
+                // Hòa âm đa tần số chuyển động theo giai điệu YouTube
+                const harmonic1 = Math.sin(angle * 7 + elapsedTime * 4.2) * 0.5 + 0.5;
+                const harmonic2 = Math.cos(angle * 13 - elapsedTime * 3.5) * 0.5 + 0.5;
+                const harmonic3 = Math.sin(angle * 3 + elapsedTime * 1.8) * 0.5 + 0.5;
+                const rhythmPulse = (Math.sin(elapsedTime * 4.4 + angle * 4) * 0.5 + 0.5);
+                
+                freqVal = (harmonic1 * 0.45 + harmonic2 * 0.35 + harmonic3 * 0.2) * (0.4 + smoothedBass * 0.85) * (0.6 + rhythmPulse * 0.4);
+            } else if (audioDataArray && audioDataArray.length > 0 && !bgMusic.paused && !bgMusic.muted) {
+                const freqIdx = Math.min(audioDataArray.length - 1, Math.floor(Math.abs(Math.sin(angle)) * (audioDataArray.length / 2)));
+                freqVal = audioDataArray[freqIdx] / 255;
+            } else {
+                // Nhịp thở êm đềm khi nhạc dừng
+                freqVal = (Math.sin(angle * 4 + elapsedTime * 1.5) * 0.5 + 0.5) * 0.12;
+            }
+
+            const wave1 = Math.sin(angle * 6 + elapsedTime * 3.0) * 0.12;
+            const wave2 = Math.cos(angle * 9 - elapsedTime * 2.2) * 0.07;
+            const audioAmp = (freqVal * 0.5) + (smoothedBass * 0.28);
+            const yVal = wave1 + wave2 + audioAmp;
+
+            const r = 2.05 + Math.sin(angle * 4 + elapsedTime * 1.5) * 0.06 + (freqVal * 0.24);
+
+            posAttr.setXYZ(i, Math.cos(angle) * r, yVal, Math.sin(angle) * r);
+
+            const mixRatio = 0.5 + Math.sin(angle * 3 + elapsedTime * 2) * 0.5;
+            const col = baseCol.clone().lerp(altCol, mixRatio);
+            colorAttr.setXYZ(i, col.r, col.g, col.b);
+        }
+        posAttr.needsUpdate = true;
+        colorAttr.needsUpdate = true;
+
+        if (audioVisualizerGroup) {
+            audioVisualizerGroup.rotation.y = elapsedTime * 0.06;
+        }
+    }
+
     // 3. Floating Text Bobbing
     if (textSprite) {
         textSprite.position.y = 3.6 + Math.sin(elapsedTime * 2.0) * 0.08;
@@ -2111,7 +2284,7 @@ const tick = () => {
     fireworkPool.forEach(f => f.update(delta));
 
     // 6. Floating Sprites Orbit
-    floatingSprites.children.forEach(sprite => {
+    getAllOrbitSprites().forEach(sprite => {
         const targetScale = sprite.userData.isZoomed ? (sprite.userData.isCustomPhoto ? 3.5 : 2.5) : sprite.userData.originalScale;
         sprite.scale.x += (targetScale - sprite.scale.x) * 0.1;
         sprite.scale.y += (targetScale - sprite.scale.y) * 0.1;
@@ -2187,6 +2360,7 @@ if (btnTheme) {
         generateGalaxy();
         generateHeart();
         generateHeartRing();
+        generateAudioVisualizerRing();
 
         pointLight.color.set(theme.lightColor);
 
@@ -2258,6 +2432,10 @@ const toggleAutoFireworks = document.getElementById('toggle-auto-fireworks');
 const toggleAutoMeteors = document.getElementById('toggle-auto-meteors');
 const toggleFrequentComets = document.getElementById('toggle-frequent-comets');
 const toggleFairyDust = document.getElementById('toggle-fairy-dust');
+const toggleShowPhotos = document.getElementById('toggle-show-photos');
+const toggleShowConstellations = document.getElementById('toggle-show-constellations');
+const toggleShowSpaceIcons = document.getElementById('toggle-show-space-icons');
+const toggleAudioVisualizer = document.getElementById('toggle-audio-visualizer');
 const toggleSoundFx = document.getElementById('toggle-sound-fx');
 const selectRotationSpeed = document.getElementById('select-rotation-speed');
 const btnSaveSettings = document.getElementById('btn-save-settings');
@@ -2268,6 +2446,10 @@ const syncSettingsModalUI = () => {
     if (toggleAutoMeteors) toggleAutoMeteors.checked = !!fxConfig.autoMeteors;
     if (toggleFrequentComets) toggleFrequentComets.checked = !!fxConfig.frequentComets;
     if (toggleFairyDust) toggleFairyDust.checked = !!fxConfig.fairyDust;
+    if (toggleShowPhotos) toggleShowPhotos.checked = (fxConfig.showPhotos !== false);
+    if (toggleShowConstellations) toggleShowConstellations.checked = (fxConfig.showConstellations !== false);
+    if (toggleShowSpaceIcons) toggleShowSpaceIcons.checked = (fxConfig.showSpaceIcons !== false);
+    if (toggleAudioVisualizer) toggleAudioVisualizer.checked = !!fxConfig.audioVisualizer;
     if (toggleSoundFx) toggleSoundFx.checked = !!fxConfig.soundFx;
     if (selectRotationSpeed) selectRotationSpeed.value = String(fxConfig.rotationSpeed);
 };
@@ -2286,6 +2468,28 @@ if (btnSettings && settingsModal) {
         if (toggleAutoMeteors) fxConfig.autoMeteors = toggleAutoMeteors.checked;
         if (toggleFrequentComets) fxConfig.frequentComets = toggleFrequentComets.checked;
         if (toggleFairyDust) fxConfig.fairyDust = toggleFairyDust.checked;
+        if (toggleShowPhotos) {
+            fxConfig.showPhotos = toggleShowPhotos.checked;
+            if (photosGroup) photosGroup.visible = fxConfig.showPhotos;
+        }
+        if (toggleShowConstellations) {
+            fxConfig.showConstellations = toggleShowConstellations.checked;
+            if (constellationsGroup) constellationsGroup.visible = fxConfig.showConstellations;
+            if (typeof virgoConstellation !== 'undefined' && virgoConstellation?.labelSprite) {
+                virgoConstellation.labelSprite.visible = fxConfig.showConstellations;
+            }
+            if (typeof taurusConstellation !== 'undefined' && taurusConstellation?.labelSprite) {
+                taurusConstellation.labelSprite.visible = fxConfig.showConstellations;
+            }
+        }
+        if (toggleShowSpaceIcons) {
+            fxConfig.showSpaceIcons = toggleShowSpaceIcons.checked;
+            if (spaceIconsGroup) spaceIconsGroup.visible = fxConfig.showSpaceIcons;
+        }
+        if (toggleAudioVisualizer) {
+            fxConfig.audioVisualizer = toggleAudioVisualizer.checked;
+            if (audioVisualizerGroup) audioVisualizerGroup.visible = fxConfig.audioVisualizer;
+        }
         if (toggleSoundFx) fxConfig.soundFx = toggleSoundFx.checked;
         if (selectRotationSpeed) fxConfig.rotationSpeed = parseFloat(selectRotationSpeed.value) || 0;
 
@@ -2297,7 +2501,7 @@ if (btnSettings && settingsModal) {
         } catch (err) {}
     };
 
-    [toggleAutoFireworks, toggleAutoMeteors, toggleFrequentComets, toggleFairyDust, toggleSoundFx, selectRotationSpeed].forEach(el => {
+    [toggleAutoFireworks, toggleAutoMeteors, toggleFrequentComets, toggleFairyDust, toggleShowPhotos, toggleShowConstellations, toggleShowSpaceIcons, toggleAudioVisualizer, toggleSoundFx, selectRotationSpeed].forEach(el => {
         el?.addEventListener('change', () => {
             applyAndSaveSettings();
         });
@@ -2553,7 +2757,7 @@ if (btnReset) {
             btnCinema?.classList.remove('active');
         }
         isResettingView = true;
-        floatingSprites.children.forEach(sprite => {
+        getAllOrbitSprites().forEach(sprite => {
             sprite.userData.isZoomed = false;
         });
     });
