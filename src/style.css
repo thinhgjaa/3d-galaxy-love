@@ -286,3 +286,197 @@ canvas {
     display: none;
   }
 }
+
+/* =========================================================================
+   LOADING SCREEN — Màn hình chào vũ trụ tình yêu
+   ========================================================================= */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 85% 65% at 50% 42%, #1a0030 0%, #090020 40%, #02000f 75%, #000000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-stars-bg,
+.loading-nebula {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Các điểm sao được tạo động bằng JS */
+.l-star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: l-twinkle 2s ease-in-out infinite alternate;
+}
+
+@keyframes l-twinkle {
+  from { opacity: 0.1;  transform: scale(0.5); }
+  to   { opacity: 1.0;  transform: scale(1.5); }
+}
+
+/* Hào quang tinh vân nền */
+.loading-nebula {
+  background:
+    radial-gradient(ellipse 60% 38% at 12% 22%, rgba(170, 0, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 32% at 88% 72%, rgba(0, 210, 255, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 28% at 72% 12%, rgba(255, 0, 127, 0.11) 0%, transparent 70%),
+    radial-gradient(ellipse 35% 22% at 30% 85%, rgba(100, 0, 200, 0.09) 0%, transparent 70%);
+  animation: nebula-shift 8s ease-in-out infinite alternate;
+}
+
+@keyframes nebula-shift {
+  from { opacity: 0.7; transform: scale(1.0) rotate(0deg); }
+  to   { opacity: 1.0; transform: scale(1.06) rotate(1.5deg); }
+}
+
+/* Nội dung loading */
+.loading-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 0 28px;
+}
+
+/* Trái tim xung nhịp */
+.loading-heart-wrapper {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-heart {
+  font-size: 68px;
+  line-height: 1;
+  display: block;
+  animation: l-heart-pulse 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  filter: drop-shadow(0 0 22px rgba(255, 0, 127, 0.9));
+}
+
+@keyframes l-heart-pulse {
+  0%, 100% { transform: scale(1.00); filter: drop-shadow(0 0 18px rgba(255, 0, 127, 0.75)); }
+  45%       { transform: scale(1.16); filter: drop-shadow(0 0 36px rgba(255, 80, 180, 1.0)); }
+  65%       { transform: scale(1.08); filter: drop-shadow(0 0 26px rgba(255, 0, 127, 0.88)); }
+}
+
+/* Vòng sóng lan toa từ trái tim */
+.loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 77, 170, 0.55);
+  animation: l-ring-expand 2.1s ease-out infinite;
+}
+
+.loading-ring:nth-child(2) { animation-delay: 0.7s; }
+.loading-ring:nth-child(3) { animation-delay: 1.4s; }
+
+@keyframes l-ring-expand {
+  0%   { transform: scale(0.75); opacity: 0.85; }
+  100% { transform: scale(2.4);  opacity: 0; }
+}
+
+/* Tiêu đề gradient */
+.loading-title {
+  font-size: clamp(1.9rem, 6vw, 3.1rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #ff88bb 30%, #bb44ff 60%, #00e5ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: l-title-shimmer 4s ease-in-out infinite alternate;
+  background-size: 200% 200%;
+}
+
+@keyframes l-title-shimmer {
+  from { background-position: 0% 50%;   filter: drop-shadow(0 0 6px rgba(255, 0, 127, 0.3)); }
+  to   { background-position: 100% 50%; filter: drop-shadow(0 0 14px rgba(170, 68, 255, 0.45)); }
+}
+
+.loading-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* Thanh tiến trình */
+.loading-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  width: min(290px, 78vw);
+}
+
+.loading-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  overflow: visible;
+  position: relative;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff007f 0%, #aa44ff 55%, #00e5ff 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.75), 0 0 22px rgba(170, 68, 255, 0.45);
+  position: relative;
+  transition: width 0.06s linear;
+}
+
+/* Chấm sáng đầu thanh tiến trình */
+.loading-bar::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 2px rgba(255,255,255,0.9), 0 0 14px 5px rgba(255, 0, 127, 0.7);
+}
+
+.loading-percent {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.78rem;
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.loading-hint {
+  color: rgba(255, 255, 255, 0.26);
+  font-size: 0.79rem;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+

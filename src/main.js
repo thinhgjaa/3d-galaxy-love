@@ -127,7 +127,19 @@ const colorThemes = [
     }
 ];
 
+// Load saved theme index from localStorage if exists
 let currentThemeIndex = 0;
+try {
+    const savedTheme = localStorage.getItem('galaxy_theme_index');
+    if (savedTheme !== null) {
+        const idx = parseInt(savedTheme, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < colorThemes.length) {
+            currentThemeIndex = idx;
+        }
+    }
+} catch (e) {
+    console.warn('LocalStorage error:', e);
+}
 
 /**
  * =========================================================================
@@ -402,7 +414,19 @@ const updateFloatingText = (text) => {
     }
 };
 
-updateFloatingText('Forever & Always 💖');
+// Load initial text from localStorage
+let initialLoveText = 'Forever & Always 💖';
+try {
+    const savedText = localStorage.getItem('galaxy_love_text');
+    if (savedText && savedText.trim()) {
+        initialLoveText = savedText.trim();
+    }
+} catch (e) {}
+updateFloatingText(initialLoveText);
+const customTextInputInit = document.getElementById('custom-text-input');
+if (customTextInputInit) {
+    customTextInputInit.value = initialLoveText;
+}
 
 /**
  * =========================================================================
@@ -1569,6 +1593,11 @@ const tick = () => {
         smoothedBass += (rawBass - smoothedBass) * 0.14;
     }
 
+    // Hiệu ứng Bloom phát quang rực rỡ nhảy theo nhịp nhạc Bass
+    if (bloomPass) {
+        bloomPass.strength = 1.15 + smoothedBass * 1.35;
+    }
+
     // Cập nhật vệt bụi sao ma thuật theo chuột
     updateFairyDust();
 
@@ -1787,7 +1816,7 @@ tick();
 
 /**
  * =========================================================================
- * 13. UI CONTROLS WIRING
+ * 13. UI CONTROLS WIRING & LOCALSTORAGE PERSISTENCE
  * =========================================================================
  */
 // 1. Nút đổi Theme màu
@@ -1798,6 +1827,10 @@ if (btnTheme) {
         currentThemeIndex = (currentThemeIndex + 1) % colorThemes.length;
         const theme = colorThemes[currentThemeIndex];
 
+        try {
+            localStorage.setItem('galaxy_theme_index', currentThemeIndex);
+        } catch (err) {}
+
         // Tái tạo lại Galaxy, Heart và Vành đai Sao Thổ theo theme mới
         generateGalaxy();
         generateHeart();
@@ -1807,7 +1840,7 @@ if (btnTheme) {
         pointLight.color.set(theme.lightColor);
 
         // Cập nhật lại màu phát sáng của chữ
-        const currentText = document.getElementById('custom-text-input')?.value || 'Forever & Always 💖';
+        const currentText = document.getElementById('custom-text-input')?.value || initialLoveText;
         updateFloatingText(currentText);
     });
 }
@@ -1846,6 +1879,9 @@ if (btnText && textModal) {
         const textVal = customTextInput.value.trim();
         if (textVal) {
             updateFloatingText(textVal);
+            try {
+                localStorage.setItem('galaxy_love_text', textVal);
+            } catch (err) {}
         }
         textModal.classList.remove('show');
     });
@@ -1887,6 +1923,14 @@ const btnPlayYouTube = document.getElementById('btn-play-youtube');
 const btnDefaultMusic = document.getElementById('btn-default-music');
 const btnCancelMusic = document.getElementById('btn-cancel-music');
 
+// Load saved YouTube link if exists
+try {
+    const savedYT = localStorage.getItem('galaxy_yt_music');
+    if (savedYT && youtubeUrlInput) {
+        youtubeUrlInput.value = savedYT;
+    }
+} catch (err) {}
+
 if (btnChangeMusic && musicModal) {
     btnChangeMusic.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1899,6 +1943,9 @@ if (btnChangeMusic && musicModal) {
         const url = youtubeUrlInput.value.trim();
         const videoId = extractYouTubeId(url);
         if (videoId) {
+            try {
+                localStorage.setItem('galaxy_yt_music', url);
+            } catch (err) {}
             playYouTubeMusic(videoId);
             musicModal.classList.remove('show');
         } else {
@@ -1908,6 +1955,9 @@ if (btnChangeMusic && musicModal) {
 
     btnDefaultMusic.addEventListener('click', (e) => {
         e.stopPropagation();
+        try {
+            localStorage.removeItem('galaxy_yt_music');
+        } catch (err) {}
         switchToDefaultMusic();
         musicModal.classList.remove('show');
     });
@@ -1997,3 +2047,63 @@ if (btnToggleUI && btnRestoreUI && uiControls) {
         btnRestoreUI.classList.remove('show');
     });
 }
+
+/**
+ * =========================================================================
+ * 14. LOADING SCREEN CONTROLLER (Khởi tạo sao & Mở màn vũ trụ mượt mà)
+ * =========================================================================
+ */
+const initLoadingScreen = () => {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (!loadingScreen) return;
+
+    // Sinh các ngôi sao lấp lánh ngẫu nhiên trên màn hình chờ
+    const starsBg = loadingScreen.querySelector('.loading-stars-bg');
+    if (starsBg) {
+        const starCount = 65;
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.className = 'l-star';
+            const size = Math.random() * 2.5 + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.animationDelay = `${Math.random() * 2.5}s`;
+            star.style.animationDuration = `${Math.random() * 2.5 + 1.5}s`;
+            if (Math.random() > 0.6) {
+                star.style.boxShadow = `0 0 6px rgba(255, 120, 200, 0.9)`;
+            }
+            starsBg.appendChild(star);
+        }
+    }
+
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingPercent = document.getElementById('loading-percent');
+
+    let currentProgress = 0;
+    const progressInterval = setInterval(() => {
+        currentProgress += Math.floor(Math.random() * 14) + 8;
+        if (currentProgress >= 100) {
+            currentProgress = 100;
+            clearInterval(progressInterval);
+
+            if (loadingBar) loadingBar.style.width = '100%';
+            if (loadingPercent) loadingPercent.textContent = '100%';
+
+            // Hoàn tất tải: Mờ dần màn hình loading và giải phóng
+            setTimeout(() => {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingScreen.remove();
+                }, 950);
+            }, 350);
+        } else {
+            if (loadingBar) loadingBar.style.width = `${currentProgress}%`;
+            if (loadingPercent) loadingPercent.textContent = `${currentProgress}%`;
+        }
+    }, 45);
+};
+
+initLoadingScreen();
+

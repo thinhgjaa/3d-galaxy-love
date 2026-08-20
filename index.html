@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,6 +7,31 @@
     <title>Galaxy of Love 💖 | Vũ Trụ Tình Yêu 3D</title>
   </head>
   <body>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LOADING SCREEN — Màn hình chào mừng Vũ Trụ Tình Yêu       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="loading-screen">
+      <div class="loading-stars-bg"></div>
+      <div class="loading-nebula"></div>
+      <div class="loading-content">
+        <div class="loading-heart-wrapper">
+          <span class="loading-heart">💖</span>
+          <span class="loading-ring"></span>
+          <span class="loading-ring"></span>
+          <span class="loading-ring"></span>
+        </div>
+        <h1 class="loading-title">Galaxy of Love</h1>
+        <p class="loading-subtitle">Đang tải vũ trụ tình yêu&hellip;</p>
+        <div class="loading-bar-wrap">
+          <div class="loading-bar-track">
+            <div class="loading-bar" id="loading-bar"></div>
+          </div>
+          <span class="loading-percent" id="loading-percent">0%</span>
+        </div>
+        <p class="loading-hint">✨ Nhấp hoặc chạm bất kỳ đâu để bắt đầu nhạc nền</p>
+      </div>
+    </div>
+
     <div id="app"></div>
     <!-- Canvas cho hiệu ứng vệt bụi sao ma thuật theo con trỏ chuột -->
     <canvas id="fairy-canvas"></canvas>
