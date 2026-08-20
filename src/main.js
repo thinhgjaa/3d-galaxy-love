@@ -286,18 +286,13 @@ const createTextTexture = (text) => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Hiệu ứng phát sáng Neon cho chữ
     const theme = colorThemes[currentThemeIndex];
-    ctx.font = 'bold 54px "Segoe UI", Roboto, sans-serif';
+    ctx.font = '600 46px "Segoe UI", Roboto, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Glow layers
-    ctx.shadowColor = theme.heartBase;
-    ctx.shadowBlur = 25;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(text, 512, 128);
-
+    // Đổ bóng màu pastel nhẹ nhàng, không bị chói
+    ctx.shadowColor = theme.heartGlow;
     ctx.shadowBlur = 12;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(text, 512, 128);
@@ -311,14 +306,15 @@ const updateFloatingText = (text) => {
         const material = new THREE.SpriteMaterial({
             map: texture,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.92,
             depthWrite: false,
-            blending: THREE.AdditiveBlending
+            blending: THREE.NormalBlending // Dùng NormalBlending để chữ rõ nét và dịu mắt
         });
         textSprite = new THREE.Sprite(material);
-        textSprite.position.set(0, 3.8, 0);
-        textSprite.scale.set(3.8, 0.95, 1);
-        scene.add(textSprite);
+        textSprite.position.set(0, 3.6, 0);
+        textSprite.scale.set(3.6, 0.9, 1);
+        // Đưa vào sceneSprites để không bị BloomPass làm lóa mắt
+        sceneSprites.add(textSprite);
     } else {
         textSprite.material.map.dispose();
         textSprite.material.map = texture;
