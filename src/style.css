@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -9,7 +11,9 @@ html, body {
   background-color: #000;
   width: 100vw;
   height: 100vh;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #app {
@@ -32,189 +36,20 @@ canvas {
   z-index: 80;
 }
 
+
+/* =========================================================================
+   UI CONTROLS (Thanh Công Cụ)
+   ========================================================================= */
 .ui-controls {
   position: absolute;
-  bottom: 30px;
-  right: 30px;
+  bottom: 26px;
+  right: 26px;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   z-index: 100;
   max-width: 90vw;
   justify-content: flex-end;
-}
-
-.ui-controls button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(20, 20, 35, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: white;
-  font-size: 19px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-  user-select: none;
-}
-
-.ui-controls button:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-4px) scale(1.08);
-  box-shadow: 0 8px 24px rgba(255, 0, 127, 0.45);
-  border-color: rgba(255, 0, 127, 0.6);
-}
-
-.ui-controls button:active {
-  transform: translateY(0) scale(0.95);
-}
-
-.ui-controls button.active {
-  background: rgba(255, 0, 127, 0.35);
-  border-color: #ff007f;
-  box-shadow: 0 0 15px rgba(255, 0, 127, 0.7);
-}
-
-.ui-controls button.muted {
-  background: rgba(255, 50, 50, 0.35);
-  border-color: rgba(255, 50, 50, 0.6);
-}
-
-/* Modal nhập văn bản */
-.text-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  animation: fadeIn 0.3s ease;
-}
-
-.text-modal.show {
-  display: flex;
-}
-
-.text-modal-content {
-  background: rgba(25, 20, 38, 0.85);
-  border: 1px solid rgba(255, 0, 127, 0.4);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 0, 127, 0.25);
-  backdrop-filter: blur(20px);
-  padding: 24px 30px;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 420px;
-  text-align: center;
-  color: #fff;
-  animation: scaleUp 0.3s ease;
-}
-
-.text-modal-content h3 {
-  margin-bottom: 18px;
-  font-size: 1.25rem;
-  font-weight: 600;
-  background: linear-gradient(135deg, #fff, #ff77aa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-modal-content input {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.text-modal-content input:focus {
-  border-color: #ff007f;
-  box-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.modal-buttons button {
-  padding: 10px 22px;
-  border-radius: 12px;
-  border: none;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-#btn-save-text {
-  background: linear-gradient(135deg, #ff007f, #ff5599);
-  color: white;
-  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
-}
-
-#btn-save-text:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 0, 127, 0.6);
-}
-
-#btn-cancel-text {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ddd;
-}
-
-#btn-cancel-text:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Hướng dẫn tương tác nhỏ */
-.hint-box {
-  position: absolute;
-  bottom: 30px;
-  left: 30px;
-  padding: 10px 18px;
-  background: rgba(20, 20, 35, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 30px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 0.85rem;
-  pointer-events: none;
-  z-index: 90;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
-.hint-box.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(20px);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Ẩn thanh công cụ mượt mà (Zen Mode) */
-.ui-controls {
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
@@ -224,6 +59,48 @@ canvas {
   transform: translateY(20px);
 }
 
+.ui-controls button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(22, 18, 38, 0.68);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: white;
+  font-size: 19px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  position: relative;
+}
+
+.ui-controls button:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: 0 10px 25px rgba(255, 0, 127, 0.45);
+  border-color: rgba(255, 0, 127, 0.7);
+}
+
+.ui-controls button:active {
+  transform: translateY(0) scale(0.94);
+}
+
+.ui-controls button.active {
+  background: rgba(255, 0, 127, 0.35);
+  border-color: #ff007f;
+  box-shadow: 0 0 18px rgba(255, 0, 127, 0.75);
+}
+
+.ui-controls button.muted {
+  background: rgba(255, 60, 60, 0.35);
+  border-color: rgba(255, 60, 60, 0.65);
+}
+
+/* Nút nhỏ hiện lại thanh công cụ (Zen mode) */
 .btn-restore-ui {
   position: absolute;
   bottom: 24px;
@@ -232,16 +109,17 @@ canvas {
   height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(25, 20, 40, 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(25, 20, 40, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #ff77aa;
-  font-size: 18px;
+  font-size: 19px;
   cursor: pointer;
   z-index: 105;
   display: none;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+  box-shadow: 0 4px 18px rgba(255, 0, 127, 0.45);
   transition: all 0.3s ease;
 }
 
@@ -252,11 +130,11 @@ canvas {
 
 .btn-restore-ui:hover {
   transform: scale(1.15) rotate(15deg);
-  background: rgba(255, 0, 127, 0.3);
+  background: rgba(255, 0, 127, 0.4);
   border-color: #ff007f;
 }
 
-/* Màn chớp sáng Wormhole */
+/* Màn chớp sáng Wormhole & Supernova */
 .wormhole-flash {
   position: fixed;
   inset: 0;
@@ -271,18 +149,899 @@ canvas {
   opacity: 1;
 }
 
-@media (max-width: 600px) {
+.supernova-flash {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, rgba(255, 220, 245, 0.95) 45%, rgba(255, 0, 127, 0.85) 75%, rgba(40, 0, 80, 0.95) 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 310;
+  transition: opacity 0.3s ease-out;
+}
+
+.supernova-flash.active {
+  opacity: 1;
+  transition: opacity 0.15s ease-in;
+}
+
+.supernova-flash.fade-out {
+  opacity: 0;
+  transition: opacity 1.8s cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+
+/* Screen Shake Animation */
+@keyframes screenShake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-6px, 4px) rotate(-0.5deg); }
+  20% { transform: translate(6px, -5px) rotate(0.5deg); }
+  30% { transform: translate(-8px, -3px) rotate(-0.3deg); }
+  40% { transform: translate(7px, 6px) rotate(0.4deg); }
+  50% { transform: translate(-5px, 3px) rotate(-0.2deg); }
+  60% { transform: translate(4px, -4px) rotate(0.2deg); }
+  70% { transform: translate(-3px, 2px) rotate(-0.1deg); }
+  80% { transform: translate(2px, -1px) rotate(0.1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.screen-shake {
+  animation: screenShake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* =========================================================================
+   MODALS SYSTEM (Khung Kính Mờ Đa Chức Năng)
+   ========================================================================= */
+.text-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.3s ease;
+  padding: 16px;
+}
+
+.text-modal.show {
+  display: flex;
+}
+
+.text-modal-content {
+  background: rgba(26, 20, 42, 0.88);
+  border: 1px solid rgba(255, 0, 127, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 0, 127, 0.3);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 26px 30px;
+  border-radius: 22px;
+  width: 92%;
+  max-width: 440px;
+  text-align: center;
+  color: #fff;
+  animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.text-modal-content h3 {
+  margin-bottom: 16px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff, #ff88bb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.text-modal-content input,
+.text-modal-content textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.98rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.text-modal-content input:focus,
+.text-modal-content textarea:focus {
+  border-color: #ff007f;
+  box-shadow: 0 0 14px rgba(255, 0, 127, 0.5);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-buttons button:hover {
+  transform: translateY(-2px);
+}
+
+#btn-save-text,
+#btn-save-counter,
+#btn-download-snapshot,
+#btn-save-wishes,
+#btn-save-settings,
+#btn-save-saturn-modal,
+#btn-play-youtube {
+  background: linear-gradient(135deg, #ff007f, #ff5599);
+  color: white;
+  box-shadow: 0 4px 16px rgba(255, 0, 127, 0.45);
+}
+
+#btn-save-text:hover,
+#btn-save-counter:hover,
+#btn-download-snapshot:hover,
+#btn-save-wishes:hover,
+#btn-save-settings:hover,
+#btn-save-saturn-modal:hover,
+#btn-play-youtube:hover {
+  box-shadow: 0 6px 22px rgba(255, 0, 127, 0.7);
+}
+
+#btn-cancel-text,
+#btn-cancel-counter,
+#btn-close-wish,
+#btn-cancel-wishes,
+#btn-close-snapshot,
+#btn-close-settings,
+#btn-close-saturn-modal,
+#btn-close-detail-modal,
+#btn-cancel-music,
+#btn-default-music,
+#btn-reset-wishes,
+#btn-reset-saturn-memories {
+  background: rgba(255, 255, 255, 0.14);
+  color: #e5e5e5;
+}
+
+#btn-cancel-text:hover,
+#btn-cancel-counter:hover,
+#btn-close-wish:hover,
+#btn-cancel-wishes:hover,
+#btn-close-snapshot:hover,
+#btn-close-settings:hover,
+#btn-close-saturn-modal:hover,
+#btn-close-detail-modal:hover,
+#btn-cancel-music:hover,
+#btn-default-music:hover,
+#btn-reset-wishes:hover,
+#btn-reset-saturn-memories:hover {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+/* =========================================================================
+   SETTINGS MODAL & TOGGLE SWITCHES (Cấu Hình Hiệu Ứng Liên Tục)
+   ========================================================================= */
+.settings-modal-content {
+  max-width: 540px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px 28px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 127, 0.4) transparent;
+}
+
+.settings-subtitle {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: -8px;
+  margin-bottom: 14px;
+}
+
+/* Category Filter Tabs in Settings */
+.settings-categories-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-cat-btn {
+  flex: 1 1 auto;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.settings-cat-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.settings-cat-btn.active {
+  background: linear-gradient(135deg, rgba(255, 0, 127, 0.45), rgba(0, 240, 255, 0.35));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 0, 127, 0.3);
+  border: 1px solid rgba(255, 0, 127, 0.5);
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.settings-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 0.25s ease;
+}
+
+.settings-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ff88cc;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 4px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 14px;
+  border-radius: 14px;
+  transition: border-color 0.25s, background 0.25s;
+}
+
+.setting-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 0, 127, 0.4);
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.setting-desc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
+}
+
+/* Toggle Switch UI */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: 0.3s;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+input:checked + .slider {
+  background: linear-gradient(135deg, #ff007f, #00f0ff);
+  border-color: #ff007f;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Setting Select */
+.setting-select {
+  background: rgba(20, 16, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.setting-select:focus {
+  border-color: #ff007f;
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.5);
+}
+
+#btn-next-wish,
+#btn-edit-wishes {
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  color: #00f0ff;
+}
+
+#btn-next-wish:hover,
+#btn-edit-wishes:hover {
+  background: rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.45);
+}
+
+/* =========================================================================
+   STAR WISHES CARD (Thư Tình Vũ Trụ)
+   ========================================================================= */
+.star-wish-card {
+  max-width: 480px;
+  background: radial-gradient(circle at 50% 0%, rgba(60, 20, 80, 0.95), rgba(20, 12, 35, 0.96));
+  border: 1.5px solid rgba(255, 180, 220, 0.5);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 80, 180, 0.35);
+  padding: 30px 32px;
+}
+
+.wish-card-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.8));
+}
+
+.wish-quote-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #ff77aa;
+  padding: 18px 20px;
+  border-radius: 8px 14px 14px 8px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+#wish-quote-text {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.12rem;
+  line-height: 1.6;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.wish-author {
+  font-size: 0.85rem;
+  color: rgba(255, 180, 220, 0.85);
+  text-align: right;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* Wishes Editor */
+.wishes-editor textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.editor-desc {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+/* =========================================================================
+   POLAROID SNAPSHOT PREVIEW (Thiệp Kỷ Niệm)
+   ========================================================================= */
+.snapshot-card {
+  max-width: 440px;
+  padding: 20px 24px;
+}
+
+.polaroid-wrapper {
+  background: #ffffff;
+  padding: 12px 12px 24px 12px;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  margin: 12px auto;
+  width: 100%;
+  max-width: 360px;
+}
+
+#snapshot-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+}
+
+/* =========================================================================
+   MUSIC MODAL PRESETS (Danh Sách Nhạc)
+   ========================================================================= */
+.music-presets-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: left;
+  margin: 12px 0 8px 0;
+}
+
+.music-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-preset-song {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-preset-song:hover {
+  background: rgba(255, 0, 127, 0.3);
+  border-color: #ff007f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 0, 127, 0.35);
+}
+
+.music-custom-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 14px 0 12px 0;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.music-custom-divider::before,
+.music-custom-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.music-custom-divider span {
+  padding: 0 10px;
+}
+
+/* =========================================================================
+   HINT BOX & ANIMATIONS
+   ========================================================================= */
+.hint-box {
+  position: absolute;
+  bottom: 26px;
+  left: 26px;
+  padding: 10px 18px;
+  background: rgba(18, 14, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 30px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.82rem;
+  pointer-events: none;
+  z-index: 90;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hint-box b {
+  color: #ff88bb;
+}
+
+.hint-box.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================================
+   RESPONSIVE DESIGN (Tối Ưu Mọi Màn Hình)
+   ========================================================================= */
+@media (max-width: 768px) {
+
   .ui-controls {
-    bottom: 20px;
-    right: 20px;
+    bottom: 16px;
+    right: 16px;
     gap: 8px;
+    max-width: 95vw;
   }
+
   .ui-controls button {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     font-size: 16px;
   }
+
   .hint-box {
     display: none;
+  }
+
+  .music-presets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================================
+   LOADING SCREEN (Màn Hình Chờ Lung Linh)
+   ========================================================================= */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 85% 65% at 50% 42%, #1a0030 0%, #090020 40%, #02000f 75%, #000000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-stars-bg,
+.loading-nebula {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.l-star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: l-twinkle 2s ease-in-out infinite alternate;
+}
+
+@keyframes l-twinkle {
+  from { opacity: 0.1;  transform: scale(0.5); }
+  to   { opacity: 1.0;  transform: scale(1.5); }
+}
+
+.loading-nebula {
+  background:
+    radial-gradient(ellipse 60% 38% at 12% 22%, rgba(170, 0, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 32% at 88% 72%, rgba(0, 210, 255, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 28% at 72% 12%, rgba(255, 0, 127, 0.11) 0%, transparent 70%),
+    radial-gradient(ellipse 35% 22% at 30% 85%, rgba(100, 0, 200, 0.09) 0%, transparent 70%);
+  animation: nebula-shift 8s ease-in-out infinite alternate;
+}
+
+@keyframes nebula-shift {
+  from { opacity: 0.7; transform: scale(1.0) rotate(0deg); }
+  to   { opacity: 1.0; transform: scale(1.06) rotate(1.5deg); }
+}
+
+.loading-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 0 28px;
+}
+
+.loading-heart-wrapper {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-heart {
+  font-size: 68px;
+  line-height: 1;
+  display: block;
+  animation: l-heart-pulse 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  filter: drop-shadow(0 0 22px rgba(255, 0, 127, 0.9));
+}
+
+@keyframes l-heart-pulse {
+  0%, 100% { transform: scale(1.00); filter: drop-shadow(0 0 18px rgba(255, 0, 127, 0.75)); }
+  45%       { transform: scale(1.16); filter: drop-shadow(0 0 36px rgba(255, 80, 180, 1.0)); }
+  65%       { transform: scale(1.08); filter: drop-shadow(0 0 26px rgba(255, 0, 127, 0.88)); }
+}
+
+.loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 77, 170, 0.55);
+  animation: l-ring-expand 2.1s ease-out infinite;
+}
+
+.loading-ring:nth-child(2) { animation-delay: 0.7s; }
+.loading-ring:nth-child(3) { animation-delay: 1.4s; }
+
+@keyframes l-ring-expand {
+  0%   { transform: scale(0.75); opacity: 0.85; }
+  100% { transform: scale(2.4);  opacity: 0; }
+}
+
+.loading-title {
+  font-size: clamp(1.9rem, 6vw, 3.1rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #ff88bb 30%, #bb44ff 60%, #00e5ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: l-title-shimmer 4s ease-in-out infinite alternate;
+  background-size: 200% 200%;
+}
+
+@keyframes l-title-shimmer {
+  from { background-position: 0% 50%;   filter: drop-shadow(0 0 6px rgba(255, 0, 127, 0.3)); }
+  to   { background-position: 100% 50%; filter: drop-shadow(0 0 14px rgba(170, 68, 255, 0.45)); }
+}
+
+.loading-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.loading-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  width: min(290px, 78vw);
+}
+
+.loading-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  overflow: visible;
+  position: relative;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff007f 0%, #aa44ff 55%, #00e5ff 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.75), 0 0 22px rgba(170, 68, 255, 0.45);
+  position: relative;
+  transition: width 0.06s linear;
+}
+
+.loading-bar::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 2px rgba(255,255,255,0.9), 0 0 14px 5px rgba(255, 0, 127, 0.7);
+}
+
+.loading-percent {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.78rem;
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.loading-hint {
+  color: rgba(255, 255, 255, 0.26);
+  font-size: 0.79rem;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* =========================================================================
+   SATURN RINGS 3D MODAL (Cài Đặt Vòng Đai Sao Thổ 3D)
+   ========================================================================= */
+.saturn-modal-content {
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px 28px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 127, 0.4) transparent;
+}
+
+.saturn-modal-header {
+  margin-bottom: 16px;
+}
+
+/* =========================================================================
+   RESPONSIVE OPTIMIZATIONS (Tối Ưu Hóa Màn Hình Điện Thoại & Máy Tính Bảng)
+   ========================================================================= */
+@media (max-width: 768px) {
+  .ui-controls {
+    bottom: 14px;
+    right: 50%;
+    transform: translateX(50%);
+    max-width: 96vw;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(14, 10, 26, 0.75);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .ui-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ui-controls.hidden {
+    transform: translate(50%, 20px);
+  }
+
+  .ui-controls button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 17px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .text-modal-content,
+  .settings-modal-content,
+  .saturn-modal-content,
+  .star-wishes-modal-content,
+  .snapshot-modal-content,
+  .music-modal-content {
+    max-width: 92vw;
+    width: 92vw;
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  .settings-cats-tabs {
+    gap: 4px;
+    padding-bottom: 8px;
+  }
+
+  .settings-cat-btn {
+    font-size: 0.76rem;
+    padding: 5px 9px;
+  }
+
+  .counter-box {
+    top: 14px;
+    left: 14px;
+    padding: 8px 14px;
+  }
+
+  .counter-box h4 {
+    font-size: 0.78rem;
+  }
+
+  .counter-number {
+    font-size: 1.15rem;
   }
 }
