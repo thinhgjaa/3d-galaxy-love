@@ -278,6 +278,81 @@ generateHeart();
 
 /**
  * =========================================================================
+ * 4.1 SATURN-LIKE PLANETARY RING (Vành đai Sao Thổ quanh Trái Tim)
+ * =========================================================================
+ */
+let heartRingPoints = null;
+let heartRingGeometry = null;
+let heartRingMaterial = null;
+
+const generateHeartRing = () => {
+    if (heartRingPoints !== null) {
+        heartRingGeometry.dispose();
+        heartRingMaterial.dispose();
+        scene.remove(heartRingPoints);
+    }
+
+    const theme = colorThemes[currentThemeIndex];
+    heartRingGeometry = new THREE.BufferGeometry();
+    const ringCount = 3800;
+    const positions = new Float32Array(ringCount * 3);
+    const colors = new Float32Array(ringCount * 3);
+
+    const innerColor = new THREE.Color(theme.heartGlow);
+    const outerColor = new THREE.Color(theme.insideColor);
+
+    const innerRadius = 1.35;
+    const outerRadius = 2.65;
+
+    for (let i = 0; i < ringCount; i++) {
+        const i3 = i * 3;
+        // Bán kính ngẫu nhiên với dải phân cách rãnh Cassini tinh tế
+        let r = innerRadius + Math.random() * (outerRadius - innerRadius);
+        if (r > 1.95 && r < 2.12 && Math.random() > 0.15) {
+            r = (Math.random() > 0.5 ? 1.85 : 2.22) + Math.random() * 0.3;
+        }
+
+        const angle = Math.random() * Math.PI * 2;
+        const thickness = (Math.random() - 0.5) * 0.06; // Độ mỏng dẹt của vành đai
+
+        positions[i3] = Math.cos(angle) * r;
+        positions[i3 + 1] = thickness;
+        positions[i3 + 2] = Math.sin(angle) * r;
+
+        // Gradient màu từ mép trong ra mép ngoài
+        const ratio = (r - innerRadius) / (outerRadius - innerRadius);
+        const col = innerColor.clone().lerp(outerColor, ratio);
+
+        colors[i3] = col.r;
+        colors[i3 + 1] = col.g;
+        colors[i3 + 2] = col.b;
+    }
+
+    heartRingGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    heartRingGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    heartRingMaterial = new THREE.PointsMaterial({
+        size: 0.014,
+        transparent: true,
+        opacity: 0.65,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    heartRingPoints = new THREE.Points(heartRingGeometry, heartRingMaterial);
+    heartRingPoints.position.y = 2.4; // Tọa độ tâm trái tim
+    // Vành đai nằm ngang hoàn toàn (song song mặt phẳng ngân hà)
+    heartRingPoints.rotation.x = 0;
+    heartRingPoints.rotation.z = 0;
+    scene.add(heartRingPoints);
+};
+
+generateHeartRing();
+
+/**
+ * =========================================================================
  * 5. DYNAMIC FLOATING 3D NEON TEXT (Dòng chữ phát sáng)
  * =========================================================================
  */
@@ -1481,6 +1556,13 @@ const tick = () => {
         heartPoints.scale.set(breatheScale, breatheScale, breatheScale);
     }
 
+    // 2.1 Xoay vành đai Sao Thổ quanh Trái Tim lấp lánh
+    if (heartRingPoints) {
+        heartRingPoints.rotation.y = elapsedTime * 0.07;
+        const ringPulse = 1.0 + Math.sin(elapsedTime * 1.5) * 0.04 + (bassFactor * 0.08);
+        heartRingPoints.scale.set(ringPulse, ringPulse, ringPulse);
+    }
+
     // Đèn phát sáng ổn định, êm ái
     if (pointLight) {
         pointLight.intensity = 2.0;
@@ -1587,9 +1669,10 @@ if (btnTheme) {
         currentThemeIndex = (currentThemeIndex + 1) % colorThemes.length;
         const theme = colorThemes[currentThemeIndex];
 
-        // Tái tạo lại Galaxy và Heart theo theme mới
+        // Tái tạo lại Galaxy, Heart và Vành đai Sao Thổ theo theme mới
         generateGalaxy();
         generateHeart();
+        generateHeartRing();
 
         // Cập nhật màu đèn
         pointLight.color.set(theme.lightColor);
