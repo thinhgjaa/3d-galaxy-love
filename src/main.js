@@ -27,14 +27,16 @@ const sizes = {
 
 // Camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
-camera.position.set(0, 3, 7);
+camera.position.set(0, 2.5, 7.2);
 scene.add(camera);
 
 // OrbitControls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
+controls.target.set(0, 1.35, 0);
 controls.autoRotate = true;
 controls.autoRotateSpeed = 0.6;
+controls.update();
 
 // Lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -213,6 +215,53 @@ const generateGalaxy = () => {
 };
 
 generateGalaxy();
+
+/**
+ * =========================================================================
+ * 3.1 DEEP COSMIC STARFIELD (Vòm sao lung linh lấp đầy không gian phía trên)
+ * =========================================================================
+ */
+const starfieldCount = 2200;
+const starfieldGeom = new THREE.BufferGeometry();
+const starfieldPositions = new Float32Array(starfieldCount * 3);
+const starfieldColors = new Float32Array(starfieldCount * 3);
+
+for (let i = 0; i < starfieldCount; i++) {
+    const i3 = i * 3;
+    // Phân bố sao trên hình cầu vòm bao quanh không gian vũ trụ
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    const radius = 18 + Math.random() * 22;
+
+    starfieldPositions[i3] = Math.sin(phi) * Math.cos(theta) * radius;
+    starfieldPositions[i3 + 1] = Math.sin(phi) * Math.sin(theta) * radius + 1.5;
+    starfieldPositions[i3 + 2] = Math.cos(phi) * radius;
+
+    // Màu sắc sao: xanh pastel, hồng tím, trắng lấp lánh
+    const colType = Math.random();
+    if (colType < 0.4) {
+        starfieldColors[i3] = 1.0; starfieldColors[i3 + 1] = 0.95; starfieldColors[i3 + 2] = 1.0; // Trắng sáng
+    } else if (colType < 0.7) {
+        starfieldColors[i3] = 0.6; starfieldColors[i3 + 1] = 0.85; starfieldColors[i3 + 2] = 1.0; // Xanh băng
+    } else {
+        starfieldColors[i3] = 1.0; starfieldColors[i3 + 1] = 0.65; starfieldColors[i3 + 2] = 0.9; // Hồng tím
+    }
+}
+
+starfieldGeom.setAttribute('position', new THREE.BufferAttribute(starfieldPositions, 3));
+starfieldGeom.setAttribute('color', new THREE.BufferAttribute(starfieldColors, 3));
+
+const starfieldMat = new THREE.PointsMaterial({
+    size: 0.045,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+});
+
+const starfieldPoints = new THREE.Points(starfieldGeom, starfieldMat);
+scene.add(starfieldPoints);
 
 /**
  * =========================================================================
@@ -1266,8 +1315,8 @@ const handlePhotoUpload = (files) => {
  */
 let isCinemaMode = false;
 let isResettingView = false;
-const defaultCameraPos = new THREE.Vector3(0, 3, 7);
-const defaultTarget = new THREE.Vector3(0, 0, 0);
+const defaultCameraPos = new THREE.Vector3(0, 2.5, 7.2);
+const defaultTarget = new THREE.Vector3(0, 1.35, 0);
 
 controls.addEventListener('start', () => {
     isResettingView = false;
@@ -1687,9 +1736,12 @@ const tick = () => {
         }
     }
 
-    // 1. Rotate galaxy (Quay êm dịu, tĩnh lặng, không nhảy theo nhạc)
+    // 1. Rotate galaxy & deep starfield (Quay êm dịu, tĩnh lặng)
     if (galaxyPoints) {
         galaxyPoints.rotation.y = elapsedTime * 0.08;
+    }
+    if (starfieldPoints) {
+        starfieldPoints.rotation.y = elapsedTime * 0.015;
     }
 
     // 2. Rotate & Pulse Heart (Quả tim đập theo tiếng bass của nhạc HOẶC thở đều đặn êm ái)
