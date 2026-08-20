@@ -290,6 +290,13 @@ controls.enableDamping = true;
 controls.autoRotate = true; 
 controls.autoRotateSpeed = 0.8;
 
+// Hủy bỏ quá trình tự động lướt về toàn cảnh nếu người dùng chủ động vuốt/kéo màn hình
+controls.addEventListener('start', () => {
+    if (typeof isResettingView !== 'undefined') {
+        isResettingView = false;
+    }
+});
+
 /**
  * Tương tác click chuột (Raycaster) & Âm thanh
  */
@@ -374,6 +381,10 @@ composer.addPass(bloomPass);
  */
 const clock = new THREE.Clock();
 
+let isResettingView = false;
+const defaultCameraPos = new THREE.Vector3(0, 3, 7);
+const defaultTarget = new THREE.Vector3(0, 0, 0);
+
 const tick = () => {
     const elapsedTime = clock.getElapsedTime();
 
@@ -417,6 +428,16 @@ const tick = () => {
         });
     }
 
+    // Di chuyển mượt mà về góc nhìn toàn cảnh nếu người dùng bấm nút
+    if (isResettingView) {
+        camera.position.lerp(defaultCameraPos, 0.05);
+        controls.target.lerp(defaultTarget, 0.05);
+        // Dừng nội suy khi đã đến rất gần (nới lỏng threshold để không bị kẹt với autoRotate)
+        if (camera.position.distanceTo(defaultCameraPos) < 0.1) {
+            isResettingView = false;
+        }
+    }
+
     controls.update();
     
     // Render 2 lớp: Lớp 1 (Ngân hà phát sáng), Lớp 2 (Hình ảnh bình thường)
@@ -429,3 +450,44 @@ const tick = () => {
 };
 
 tick();
+
+/**
+ * UI Controls Logic
+ */
+const btnMusic = document.getElementById('btn-music');
+const btnReset = document.getElementById('btn-reset-view');
+
+if (btnMusic) {
+    const toggleMusic = (e) => {
+        e.stopPropagation(); // Tránh bị dính click vào scene 3D
+        bgMusic.muted = !bgMusic.muted;
+        if (bgMusic.muted) {
+            btnMusic.classList.add('muted');
+            btnMusic.innerText = '🔇';
+        } else {
+            btnMusic.classList.remove('muted');
+            btnMusic.innerText = '🎵';
+            if (!musicStarted) {
+                bgMusic.play().catch(e => console.warn(e));
+                musicStarted = true;
+            }
+        }
+    };
+    btnMusic.addEventListener('click', toggleMusic);
+}
+
+if (btnReset) {
+    const resetView = (e) => {
+        e.stopPropagation();
+        // Bật cờ để camera từ từ lướt về vị trí ban đầu trong vòng lặp tick()
+        isResettingView = true;
+        
+        // Thu nhỏ lại tất cả các hình ảnh nếu đang bị phóng to
+        if (floatingSprites) {
+            floatingSprites.children.forEach(sprite => {
+                sprite.userData.isZoomed = false;
+            });
+        }
+    };
+    btnReset.addEventListener('click', resetView);
+}

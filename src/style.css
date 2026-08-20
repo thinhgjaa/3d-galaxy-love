@@ -21,3 +21,46 @@ canvas {
   display: block;
   outline: none;
 }
+
+.ui-controls {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  display: flex;
+  gap: 15px;
+  z-index: 100;
+}
+
+.ui-controls button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(25, 25, 35, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.ui-controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 0, 127, 0.4);
+  border-color: rgba(255, 0, 127, 0.5);
+}
+
+.ui-controls button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.ui-controls button.muted {
+  background: rgba(255, 50, 50, 0.3);
+  border-color: rgba(255, 50, 50, 0.5);
+}
