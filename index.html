@@ -368,139 +368,77 @@
       </div>
     </div>
 
-    <!-- 8. Modal Quản Lý & Cài Đặt Vòng Đai Sao Thổ Kỷ Niệm -->
+    <!-- 8. Modal Cấu Hình Vòng Đai Sao Thổ 3D -->
     <div id="saturn-modal" class="text-modal">
       <div class="text-modal-content saturn-modal-content">
         <div class="saturn-modal-header">
-          <h3>🪐 Vòng Đai Sao Thổ Kỷ Niệm</h3>
-          <p class="settings-subtitle">Lưu giữ từng khoảnh khắc ngọt ngào trên vành đai vũ trụ</p>
+          <h3>🪐 Cấu Hình Vòng Đai Sao Thổ 3D</h3>
+          <p class="settings-subtitle">Tùy chỉnh màu sắc, tốc độ xoay và độ nghiêng của vành đai</p>
         </div>
 
-        <!-- Tab Điều Hướng -->
-        <div class="saturn-tabs">
-          <button class="saturn-tab-btn active" id="tab-btn-memories" type="button">📸 Danh Sách Kỷ Niệm</button>
-          <button class="saturn-tab-btn" id="tab-btn-settings" type="button">⚙️ Cài Đặt Vành Đai</button>
-        </div>
-
-        <!-- Tab 1: Danh Sách Kỷ Niệm -->
-        <div id="saturn-tab-pane-memories" class="saturn-tab-pane active">
-          <div class="saturn-memories-list" id="saturn-memories-list">
-            <!-- Render danh sách kỷ niệm từ JS -->
+        <div class="settings-list">
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🪐 Hiển thị Vòng đai</span>
+              <span class="setting-desc">Bật/Tắt vành đai Sao Thổ trong không gian</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-saturn-enabled-tab" checked />
+              <span class="slider"></span>
+            </label>
           </div>
 
-          <div class="saturn-add-memory-box">
-            <h4>✨ Thêm Kỷ Niệm Mới Vào Vòng Đai</h4>
-            <div class="saturn-add-form">
-              <div class="saturn-upload-preview" id="saturn-upload-preview">
-                <span id="saturn-upload-label">➕ Chọn ảnh kỷ niệm</span>
-                <img id="saturn-preview-img" style="display: none;" alt="Preview" />
-              </div>
-              <input type="file" id="saturn-photo-file" accept="image/*" style="display: none;" />
-              
-              <div class="saturn-inputs">
-                <input type="text" id="saturn-memory-title" placeholder="Tiêu đề (VD: Lần đầu đi chơi, Kỷ niệm 100 ngày...)" maxlength="40" />
-                <input type="text" id="saturn-memory-date" placeholder="Ngày tháng / Địa điểm (VD: 14/02/2024 - Đà Lạt)" maxlength="40" />
-                <textarea id="saturn-memory-note" rows="2" placeholder="Dòng tâm sự ngọt ngào gửi gắm vào kỷ niệm này..." maxlength="140"></textarea>
-                <button type="button" id="btn-add-saturn-memory" class="btn-primary-gradient">💖 Thêm Vào Vòng Đai</button>
-              </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🎨 Bảng màu Vành đai</span>
+              <span class="setting-desc">Tông màu bụi sao & hào quang vành đai</span>
             </div>
+            <select id="select-saturn-theme" class="setting-select">
+              <option value="gold" selected>🌟 Vàng Kim Tinh Tú (Golden)</option>
+              <option value="pink">💖 Hồng Pha Lê (Rose Crystal)</option>
+              <option value="cyan">💎 Lam Ngọc Kỳ Ảo (Cyan Nebula)</option>
+              <option value="purple">🌌 Tím Huyền Bí (Deep Purple)</option>
+              <option value="rainbow">🌈 Cầu Vồng Vũ Trụ (Rainbow Dream)</option>
+            </select>
           </div>
-        </div>
 
-        <!-- Tab 2: Cài Đặt Vành Đai -->
-        <div id="saturn-tab-pane-settings" class="saturn-tab-pane">
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">🪐 Hiển thị Vòng đai</span>
-                <span class="setting-desc">Bật/Tắt vành đai Sao Thổ trong không gian</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="toggle-saturn-enabled-tab" checked />
-                <span class="slider"></span>
-              </label>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">🌀 Tốc độ xoay Vòng đai</span>
+              <span class="setting-desc">Tốc độ chuyển động của vành đai sao</span>
             </div>
+            <select id="select-saturn-speed" class="setting-select">
+              <option value="0">Tĩnh (Đứng yên)</option>
+              <option value="0.04">Chậm êm dịu (0.5x)</option>
+              <option value="0.08" selected>Tiêu chuẩn (1.0x)</option>
+              <option value="0.16">Nhanh bay bổng (2.0x)</option>
+            </select>
+          </div>
 
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">🎨 Bảng màu Vành đai</span>
-                <span class="setting-desc">Tông màu bụi sao & hào quang vành đai</span>
-              </div>
-              <select id="select-saturn-theme" class="setting-select">
-                <option value="gold" selected>🌟 Vàng Kim Tinh Tú (Golden)</option>
-                <option value="pink">💖 Hồng Pha Lê (Rose Crystal)</option>
-                <option value="cyan">💎 Lam Ngọc Kỳ Ảo (Cyan Nebula)</option>
-                <option value="purple">🌌 Tím Huyền Bí (Deep Purple)</option>
-                <option value="rainbow">🌈 Cầu Vồng Vũ Trụ (Rainbow Dream)</option>
-              </select>
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">📐 Góc nghiêng Vành đai</span>
+              <span class="setting-desc">Độ nghiêng chuẩn không gian của Sao Thổ</span>
             </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">🌀 Tốc độ xoay Vòng đai</span>
-                <span class="setting-desc">Tốc độ chuyển động của các ảnh trên quỹ đạo</span>
-              </div>
-              <select id="select-saturn-speed" class="setting-select">
-                <option value="0">Tĩnh (Đứng yên)</option>
-                <option value="0.04">Chậm êm dịu (0.5x)</option>
-                <option value="0.08" selected>Tiêu chuẩn (1.0x)</option>
-                <option value="0.16">Nhanh bay bổng (2.0x)</option>
-              </select>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="setting-title">📐 Góc nghiêng Vành đai</span>
-                <span class="setting-desc">Độ nghiêng chuẩn không gian của Sao Thổ</span>
-              </div>
-              <select id="select-saturn-tilt" class="setting-select">
-                <option value="saturn" selected>Nghiêng Sao Thổ Chuẩn (28°)</option>
-                <option value="deep">Nghiêng Sâu Điện Ảnh (45°)</option>
-                <option value="flat">Mặt Phẳng Ngang (0°)</option>
-                <option value="vertical">Thẳng Đứng (90°)</option>
-              </select>
-            </div>
+            <select id="select-saturn-tilt" class="setting-select">
+              <option value="saturn" selected>Nghiêng Sao Thổ Chuẩn (28°)</option>
+              <option value="deep">Nghiêng Sâu Điện Ảnh (45°)</option>
+              <option value="flat">Mặt Phẳng Ngang (0°)</option>
+              <option value="vertical">Thẳng Đứng (90°)</option>
+            </select>
           </div>
         </div>
 
         <div class="modal-buttons">
           <button id="btn-save-saturn-modal">Lưu Cấu Hình</button>
-          <button id="btn-reset-saturn-memories">Khôi Phục Mặc Định</button>
           <button id="btn-close-saturn-modal">Đóng</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 9. Modal Xem Chi Tiết Kỷ Niệm (Khi bấm vào ảnh trên Vòng Đai) -->
-    <div id="memory-detail-modal" class="text-modal">
-      <div class="text-modal-content memory-detail-card">
-        <div class="memory-card-header">
-          <span class="memory-card-badge">🪐 KỶ NIỆM SAO THỔ</span>
-          <button class="btn-close-detail-corner" id="btn-close-memory-corner" title="Đóng">✕</button>
-        </div>
-        <div class="memory-detail-polaroid">
-          <div class="memory-img-wrapper">
-            <img id="detail-memory-img" src="/photos/cat.jpg" alt="Memory Photo" />
-          </div>
-          <div class="memory-detail-info">
-            <h3 id="detail-memory-title">Ngày Đầu Gặp Gỡ</h3>
-            <p class="detail-memory-date" id="detail-memory-date">🗓️ 14 Tháng 02 • Quán cà phê góc phố</p>
-            <div class="detail-memory-divider"></div>
-            <p class="detail-memory-quote" id="detail-memory-quote">"Khoảnh khắc ánh mắt ta chạm nhau, cả vũ trụ dường như ngừng quay."</p>
-          </div>
-        </div>
-        <div class="modal-buttons">
-          <button id="btn-prev-memory">⏮️ Kỷ Niệm Trước</button>
-          <button id="btn-next-memory">Kỷ Niệm Kế Tiếp ⏭️</button>
-          <button id="btn-open-saturn-manager">⚙️ Quản Lý Vòng Đai</button>
-          <button id="btn-close-detail-modal">Đóng</button>
         </div>
       </div>
     </div>
 
     <!-- Hướng dẫn tương tác nhỏ xinh ở góc trái -->
     <div id="hint-box" class="hint-box">
-      <span>✨ <b>Chạm / Click:</b> Pháo hoa tim | <b>Nhấp ảnh trên Vành Đai:</b> Xem kỷ niệm 🪐 | <b>Vuốt 2 ngón:</b> Phóng to/Thu nhỏ | <b>Space:</b> Sao băng</span>
+      <span>✨ <b>Chạm / Click:</b> Pháo hoa tim | <b>Nhấp ảnh / icon:</b> Phóng to 🖼️ | <b>Vuốt 2 ngón:</b> Phóng to/Thu nhỏ | <b>Space:</b> Sao băng</span>
     </div>
 
     <script type="module" src="/src/main.js"></script>

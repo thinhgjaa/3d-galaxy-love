@@ -1660,51 +1660,9 @@ const openStarWishModal = (quoteIndex = null) => {
 
 /**
  * =========================================================================
- * 8.2 MEMORY SATURN RINGS 3D SYSTEM (Vòng Đai Sao Thổ Kỷ Niệm)
+ * 8.2 SATURN RINGS 3D SYSTEM (Vành Đai Sao Thổ 3D Lộng Lẫy)
  * =========================================================================
  */
-const defaultSaturnMemories = [
-    {
-        id: 'mem_1',
-        title: 'Ngày Đầu Gặp Gỡ ☕',
-        date: '14 Tháng 02 • Quán cà phê góc phố',
-        quote: 'Khoảnh khắc ánh mắt ta chạm nhau, cả vũ trụ dường như ngừng quay.',
-        image: '/photos/cat.jpg'
-    },
-    {
-        id: 'mem_2',
-        title: 'Dưới Cơn Mưa Đầu Mùa 🌧️',
-        date: '20 Tháng 05 • Chiếc ô nhỏ che đôi mình',
-        quote: 'Mưa ngoài kia có lớn bao nhiêu cũng chẳng bằng sự ấm áp khi nép vào vai anh.',
-        image: '/photos/cat.jpg'
-    },
-    {
-        id: 'mem_3',
-        title: 'Chuyến Đi Xa Cùng Nhau 🌅',
-        date: '08 Tháng 08 • Ngắm hoàng hôn trên biển',
-        quote: 'Đi đâu không quan trọng, chỉ cần nơi đó có em ở bên cạnh.',
-        image: '/photos/cat.jpg'
-    },
-    {
-        id: 'mem_4',
-        title: 'Mãi Yêu & Bên Nhau 💖',
-        date: 'Vũ Trụ Vĩnh Cửu • Tương lai tươi đẹp',
-        quote: 'Dù đi qua vạn năm ánh sáng, trái tim này vẫn mãi hướng về một mình em.',
-        image: '/photos/cat.jpg'
-    }
-];
-
-let saturnMemories = [...defaultSaturnMemories];
-try {
-    const savedMemories = localStorage.getItem('galaxy_saturn_memories_data');
-    if (savedMemories) {
-        const parsed = JSON.parse(savedMemories);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-            saturnMemories = parsed;
-        }
-    }
-} catch (e) {}
-
 const saturnColorThemes = {
     gold: {
         inner: '#ffe680',
@@ -1753,7 +1711,7 @@ const getSaturnTiltAngles = (tiltType) => {
     }
 };
 
-// Khởi tạo các nhóm 3D cho Vành đai Sao Thổ
+// Khởi tạo nhóm 3D cho Vành đai Sao Thổ
 const saturnMainGroup = new THREE.Group();
 saturnMainGroup.position.set(0, 2.4, 0);
 saturnMainGroup.visible = (fxConfig.showSaturnRings !== false);
@@ -1765,23 +1723,11 @@ saturnMainGroup.add(saturnDustGroup);
 const saturnRibbonsGroup = new THREE.Group();
 saturnMainGroup.add(saturnRibbonsGroup);
 
-const saturnPhotosContainer = new THREE.Group();
-saturnPhotosContainer.position.set(0, 2.4, 0);
-saturnPhotosContainer.visible = (fxConfig.showSaturnRings !== false);
-sceneSprites.add(saturnPhotosContainer);
-
-const saturnPhotosGroup = new THREE.Group();
-saturnPhotosContainer.add(saturnPhotosGroup);
-
-let currentActiveMemoryIndex = 0;
-
 // Cập nhật góc nghiêng Vành đai
 const updateSaturnTilt = () => {
     const tilt = getSaturnTiltAngles(fxConfig.saturnTilt);
     saturnMainGroup.rotation.x = tilt.x;
     saturnMainGroup.rotation.z = tilt.z;
-    saturnPhotosContainer.rotation.x = tilt.x;
-    saturnPhotosContainer.rotation.z = tilt.z;
 };
 
 updateSaturnTilt();
@@ -1804,7 +1750,7 @@ const generateSaturnDustAndRibbons = () => {
     const themeKey = fxConfig.saturnTheme || 'gold';
     const theme = saturnColorThemes[themeKey] || saturnColorThemes.gold;
 
-    const particleCount = 3800;
+    const particleCount = 4200;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -1886,256 +1832,6 @@ const generateSaturnDustAndRibbons = () => {
 };
 
 generateSaturnDustAndRibbons();
-
-// 2. Tạo Canvas Texture cho từng thẻ ảnh Polaroid trên Vành đai
-const createMemoryPolaroidTexture = (memoryItem, index) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 280;
-    canvas.height = 340;
-    const ctx = canvas.getContext('2d');
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-
-    const renderCard = (imgObj = null) => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Khung Polaroid viền pha lê phát sáng
-        ctx.save();
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(255, 0, 127, 0.45)';
-        ctx.shadowBlur = 18;
-        ctx.beginPath();
-        ctx.roundRect(10, 10, 260, 320, 14);
-        ctx.fill();
-        ctx.restore();
-
-        // Viền bóng mờ tinh tế
-        ctx.strokeStyle = 'rgba(255, 180, 220, 0.8)';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.roundRect(10, 10, 260, 320, 14);
-        ctx.stroke();
-
-        // Khu vực vẽ ảnh
-        const photoX = 22;
-        const photoY = 22;
-        const photoW = 236;
-        const photoH = 205;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(photoX, photoY, photoW, photoH, 10);
-        ctx.clip();
-
-        if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
-            // Vẽ ảnh thật căn giữa theo tỷ lệ cover
-            const imgAspect = imgObj.naturalWidth / imgObj.naturalHeight;
-            const targetAspect = photoW / photoH;
-            let drawW, drawH, drawX, drawY;
-
-            if (imgAspect > targetAspect) {
-                drawH = photoH;
-                drawW = photoH * imgAspect;
-                drawX = photoX - (drawW - photoW) / 2;
-                drawY = photoY;
-            } else {
-                drawW = photoW;
-                drawH = photoW / imgAspect;
-                drawX = photoX;
-                drawY = photoY - (drawH - photoH) / 2;
-            }
-            ctx.drawImage(imgObj, drawX, drawY, drawW, drawH);
-        } else {
-            // Gradient vũ trụ nghệ thuật nếu ảnh đang tải
-            const grad = ctx.createLinearGradient(photoX, photoY, photoX + photoW, photoY + photoH);
-            grad.addColorStop(0, '#2d004d');
-            grad.addColorStop(0.5, '#6a0080');
-            grad.addColorStop(1, '#ff007f');
-            ctx.fillStyle = grad;
-            ctx.fillRect(photoX, photoY, photoW, photoH);
-
-            ctx.font = '64px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('💖', photoX + photoW / 2, photoY + photoH / 2);
-        }
-        ctx.restore();
-
-        // Huy hiệu kỷ niệm số ở góc trên
-        ctx.save();
-        ctx.fillStyle = 'rgba(255, 0, 127, 0.9)';
-        ctx.beginPath();
-        ctx.roundRect(photoX + 8, photoY + 8, 56, 22, 11);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px "Outfit", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`🪐 #${index + 1}`, photoX + 36, photoY + 19);
-        ctx.restore();
-
-        // Tiêu đề kỷ niệm
-        ctx.fillStyle = '#221128';
-        ctx.font = 'bold 15px "Outfit", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const titleText = memoryItem.title || `Kỷ Niệm #${index + 1}`;
-        ctx.fillText(titleText, 140, 252);
-
-        // Ngày kỷ niệm
-        ctx.fillStyle = '#c4207d';
-        ctx.font = '500 12px "Outfit", sans-serif';
-        const dateText = memoryItem.date || 'Khoảnh Khắc Ngọt Ngào';
-        ctx.fillText(dateText, 140, 276);
-
-        // Dòng lụa ngăn cách nhỏ
-        ctx.strokeStyle = 'rgba(255, 0, 127, 0.25)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(80, 296);
-        ctx.lineTo(200, 296);
-        ctx.stroke();
-
-        texture.needsUpdate = true;
-    };
-
-    renderCard();
-
-    if (memoryItem.image) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = memoryItem.image;
-        img.onload = () => {
-            renderCard(img);
-        };
-    }
-
-    return texture;
-};
-
-// 3. Dựng các Sprite ảnh kỷ niệm trên quỹ đạo Vành đai
-const buildSaturnMemorySprites = () => {
-    while (saturnPhotosGroup.children.length > 0) {
-        const sprite = saturnPhotosGroup.children[0];
-        if (sprite.material) {
-            if (sprite.material.map) sprite.material.map.dispose();
-            sprite.material.dispose();
-        }
-        saturnPhotosGroup.remove(sprite);
-    }
-
-    const total = saturnMemories.length;
-    if (total === 0) return;
-
-    const orbitRadius = 4.85;
-
-    saturnMemories.forEach((mem, idx) => {
-        const angle = (idx / total) * Math.PI * 2;
-        const tex = createMemoryPolaroidTexture(mem, idx);
-
-        const mat = new THREE.SpriteMaterial({
-            map: tex,
-            transparent: true,
-            opacity: 0.96
-        });
-
-        const sprite = new THREE.Sprite(mat);
-        sprite.position.x = Math.cos(angle) * orbitRadius;
-        sprite.position.z = Math.sin(angle) * orbitRadius;
-        sprite.position.y = (Math.sin(angle * 3) * 0.12);
-
-        const baseW = 1.35;
-        const baseH = 1.65;
-        sprite.scale.set(baseW, baseH, 1.0);
-
-        sprite.userData = {
-            isSaturnMemory: true,
-            memoryIndex: idx,
-            memoryData: mem,
-            orbitAngle: angle,
-            orbitRadius: orbitRadius,
-            baseScale: { x: baseW, y: baseH },
-            isZoomed: false
-        };
-
-        saturnPhotosGroup.add(sprite);
-    });
-};
-
-buildSaturnMemorySprites();
-
-// 4. Modal Chi Tiết Kỷ Niệm (Khi bấm vào ảnh trên Vành Đai)
-const openMemoryDetailModal = (index) => {
-    if (index < 0 || index >= saturnMemories.length) index = 0;
-    currentActiveMemoryIndex = index;
-    const mem = saturnMemories[index];
-    if (!mem) return;
-
-    playSparkleChime();
-
-    const detailModal = document.getElementById('memory-detail-modal');
-    const imgEl = document.getElementById('detail-memory-img');
-    const titleEl = document.getElementById('detail-memory-title');
-    const dateEl = document.getElementById('detail-memory-date');
-    const quoteEl = document.getElementById('detail-memory-quote');
-
-    if (imgEl) imgEl.src = mem.image || '/photos/cat.jpg';
-    if (titleEl) titleEl.textContent = mem.title || `Kỷ Niệm #${index + 1}`;
-    if (dateEl) dateEl.textContent = `🗓️ ${mem.date || 'Khoảnh khắc ngọt ngào'}`;
-    if (quoteEl) quoteEl.textContent = `"${mem.quote || 'Tình yêu là điều kỳ diệu nhất giữa ngân hà.'}"`;
-
-    if (detailModal) detailModal.classList.add('show');
-};
-
-// 5. Render danh sách kỷ niệm trong Modal Quản Lý
-const renderSaturnMemoriesListUI = () => {
-    const listContainer = document.getElementById('saturn-memories-list');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
-    if (saturnMemories.length === 0) {
-        listContainer.innerHTML = '<div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 12px;">Chưa có kỷ niệm nào trên vành đai. Hãy thêm kỷ niệm mới bên dưới!</div>';
-        return;
-    }
-
-    saturnMemories.forEach((mem, idx) => {
-        const itemRow = document.createElement('div');
-        itemRow.className = 'memory-item-row';
-        itemRow.innerHTML = `
-            <img src="${mem.image || '/photos/cat.jpg'}" class="memory-thumb" alt="Thumb" />
-            <div class="memory-item-info">
-                <div class="memory-item-title">${idx + 1}. ${mem.title}</div>
-                <div class="memory-item-date">${mem.date || ''}</div>
-            </div>
-            <button class="btn-delete-mem" data-index="${idx}">🗑️ Xóa</button>
-        `;
-        listContainer.appendChild(itemRow);
-    });
-
-    // Gắn sự kiện nút xóa
-    listContainer.querySelectorAll('.btn-delete-mem').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const delIdx = parseInt(btn.getAttribute('data-index'), 10);
-            if (!isNaN(delIdx) && delIdx >= 0 && delIdx < saturnMemories.length) {
-                saturnMemories.splice(delIdx, 1);
-                saveSaturnMemoriesToStorage();
-                renderSaturnMemoriesListUI();
-                buildSaturnMemorySprites();
-                playSparkleChime();
-            }
-        });
-    });
-};
-
-const saveSaturnMemoriesToStorage = () => {
-    try {
-        localStorage.setItem('galaxy_saturn_memories_data', JSON.stringify(saturnMemories));
-    } catch (e) {
-        console.warn('Could not save saturn memories to LocalStorage:', e);
-    }
-};
 
 /**
  * =========================================================================
@@ -2468,18 +2164,6 @@ window.addEventListener('click', (event) => {
         return;
     }
 
-    // 1.5 Kiểm tra xem có click vào Thẻ Kỷ Niệm Vòng Đai Sao Thổ không
-    if (saturnPhotosContainer && saturnPhotosContainer.visible && saturnPhotosGroup.children.length > 0) {
-        const saturnIntersects = raycaster.intersectObjects(saturnPhotosGroup.children, false);
-        if (saturnIntersects.length > 0) {
-            const clickedMem = saturnIntersects[0].object;
-            if (clickedMem.userData && clickedMem.userData.isSaturnMemory) {
-                openMemoryDetailModal(clickedMem.userData.memoryIndex);
-                return;
-            }
-        }
-    }
-
     // 2. Kiểm tra xem có click trúng ảnh cá nhân/emoji không
     const activeSprites = [];
     if (photosGroup.visible) activeSprites.push(...photosGroup.children);
@@ -2801,15 +2485,10 @@ const tick = () => {
         sprite.position.y += Math.sin(elapsedTime * Math.abs(sprite.userData.speed) * 8) * 0.004;
     });
 
-    // 6.5 Saturn Memory Rings Rotation & Audio Response
-    if (fxConfig.showSaturnRings !== false) {
+    // 6.5 Saturn Rings Rotation & Audio Response
+    if (fxConfig.showSaturnRings !== false && saturnMainGroup) {
         const saturnSpeed = (typeof fxConfig.saturnSpeed === 'number') ? fxConfig.saturnSpeed : 0.08;
-        if (saturnMainGroup) {
-            saturnMainGroup.rotation.y += saturnSpeed * delta;
-        }
-        if (saturnPhotosGroup) {
-            saturnPhotosGroup.rotation.y += saturnSpeed * delta;
-        }
+        saturnMainGroup.rotation.y += saturnSpeed * delta;
         if (fxConfig.audioVisualizer && smoothedBass > 0.05 && saturnDustGroup) {
             const scaleAudio = 1.0 + smoothedBass * 0.06;
             saturnDustGroup.scale.set(scaleAudio, 1.0, scaleAudio);
@@ -3093,38 +2772,21 @@ if (btnSettings && settingsModal) {
 }
 
 // 0.1 Nút & Modal Quản Lý Vòng Đai Sao Thổ Kỷ Niệm (Memory Saturn Rings)
+// 0.1 Nút & Modal Cài Đặt Vòng Đai Sao Thổ 3D (Saturn Rings)
 const btnSaturnRing = document.getElementById('btn-saturn-ring');
 const saturnModal = document.getElementById('saturn-modal');
-const tabBtnMemories = document.getElementById('tab-btn-memories');
-const tabBtnSettings = document.getElementById('tab-btn-settings');
-const saturnPaneMemories = document.getElementById('saturn-tab-pane-memories');
-const saturnPaneSettings = document.getElementById('saturn-tab-pane-settings');
-
-const saturnUploadPreview = document.getElementById('saturn-upload-preview');
-const saturnPhotoFile = document.getElementById('saturn-photo-file');
-const saturnPreviewImg = document.getElementById('saturn-preview-img');
-const saturnUploadLabel = document.getElementById('saturn-upload-label');
-const saturnMemoryTitle = document.getElementById('saturn-memory-title');
-const saturnMemoryDate = document.getElementById('saturn-memory-date');
-const saturnMemoryNote = document.getElementById('saturn-memory-note');
-const btnAddSaturnMemory = document.getElementById('btn-add-saturn-memory');
-
 const toggleSaturnEnabledTab = document.getElementById('toggle-saturn-enabled-tab');
 const selectSaturnTheme = document.getElementById('select-saturn-theme');
 const selectSaturnSpeed = document.getElementById('select-saturn-speed');
 const selectSaturnTilt = document.getElementById('select-saturn-tilt');
 const btnSaveSaturnModal = document.getElementById('btn-save-saturn-modal');
-const btnResetSaturnMemories = document.getElementById('btn-reset-saturn-memories');
 const btnCloseSaturnModal = document.getElementById('btn-close-saturn-modal');
-
-let currentUploadedMemoryImage = '';
 
 const syncSaturnModalSettingsUI = () => {
     if (toggleSaturnEnabledTab) toggleSaturnEnabledTab.checked = (fxConfig.showSaturnRings !== false);
     if (selectSaturnTheme) selectSaturnTheme.value = fxConfig.saturnTheme || 'gold';
     if (selectSaturnSpeed) selectSaturnSpeed.value = String(fxConfig.saturnSpeed !== undefined ? fxConfig.saturnSpeed : 0.08);
     if (selectSaturnTilt) selectSaturnTilt.value = fxConfig.saturnTilt || 'saturn';
-    renderSaturnMemoriesListUI();
 };
 
 if (btnSaturnRing && saturnModal) {
@@ -3136,112 +2798,6 @@ if (btnSaturnRing && saturnModal) {
     });
 }
 
-// Chuyển Tabs trong Modal Saturn
-if (tabBtnMemories && tabBtnSettings) {
-    tabBtnMemories.addEventListener('click', (e) => {
-        e.stopPropagation();
-        tabBtnMemories.classList.add('active');
-        tabBtnSettings.classList.remove('active');
-        saturnPaneMemories?.classList.add('active');
-        saturnPaneSettings?.classList.remove('active');
-    });
-
-    tabBtnSettings.addEventListener('click', (e) => {
-        e.stopPropagation();
-        tabBtnSettings.classList.add('active');
-        tabBtnMemories.classList.remove('active');
-        saturnPaneSettings?.classList.add('active');
-        saturnPaneMemories?.classList.remove('active');
-    });
-}
-
-// Upload ảnh kỷ niệm
-if (saturnUploadPreview && saturnPhotoFile) {
-    saturnUploadPreview.addEventListener('click', (e) => {
-        e.stopPropagation();
-        saturnPhotoFile.click();
-    });
-
-    saturnPhotoFile.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file || !file.type.startsWith('image/')) return;
-
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = new Image();
-            img.src = ev.target.result;
-            img.onload = () => {
-                const maxDim = 500;
-                let w = img.width;
-                let h = img.height;
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) {
-                        h = Math.round((h * maxDim) / w);
-                        w = maxDim;
-                    } else {
-                        w = Math.round((w * maxDim) / h);
-                        h = maxDim;
-                    }
-                }
-                const c = document.createElement('canvas');
-                c.width = w;
-                c.height = h;
-                const ctx = c.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                currentUploadedMemoryImage = c.toDataURL('image/jpeg', 0.85);
-
-                if (saturnPreviewImg) {
-                    saturnPreviewImg.src = currentUploadedMemoryImage;
-                    saturnPreviewImg.style.display = 'block';
-                }
-                if (saturnUploadLabel) {
-                    saturnUploadLabel.style.display = 'none';
-                }
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// Thêm Kỷ Niệm Mới vào Vòng Đai
-if (btnAddSaturnMemory) {
-    btnAddSaturnMemory.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const title = saturnMemoryTitle?.value.trim() || `Kỷ Niệm #${saturnMemories.length + 1}`;
-        const date = saturnMemoryDate?.value.trim() || 'Khoảnh khắc ngọt ngào 💖';
-        const note = saturnMemoryNote?.value.trim() || 'Yêu em nhiều hơn mỗi ngày trôi qua.';
-        const image = currentUploadedMemoryImage || '/photos/cat.jpg';
-
-        const newMem = {
-            id: 'mem_' + Date.now(),
-            title: title,
-            date: date,
-            quote: note,
-            image: image
-        };
-
-        saturnMemories.push(newMem);
-        saveSaturnMemoriesToStorage();
-        buildSaturnMemorySprites();
-        renderSaturnMemoriesListUI();
-
-        // Reset form
-        if (saturnMemoryTitle) saturnMemoryTitle.value = '';
-        if (saturnMemoryDate) saturnMemoryDate.value = '';
-        if (saturnMemoryNote) saturnMemoryNote.value = '';
-        if (saturnPreviewImg) {
-            saturnPreviewImg.src = '';
-            saturnPreviewImg.style.display = 'none';
-        }
-        if (saturnUploadLabel) {
-            saturnUploadLabel.style.display = 'block';
-        }
-        currentUploadedMemoryImage = '';
-
-        playSparkleChime();
-    });
-}
-
 // Lưu Cài Đặt Vòng Đai Sao Thổ
 if (btnSaveSaturnModal && saturnModal) {
     btnSaveSaturnModal.addEventListener('click', (e) => {
@@ -3249,7 +2805,6 @@ if (btnSaveSaturnModal && saturnModal) {
         if (toggleSaturnEnabledTab) {
             fxConfig.showSaturnRings = toggleSaturnEnabledTab.checked;
             if (saturnMainGroup) saturnMainGroup.visible = fxConfig.showSaturnRings;
-            if (saturnPhotosContainer) saturnPhotosContainer.visible = fxConfig.showSaturnRings;
             if (toggleSaturnRings) toggleSaturnRings.checked = fxConfig.showSaturnRings;
         }
         if (selectSaturnTheme) {
@@ -3268,23 +2823,8 @@ if (btnSaveSaturnModal && saturnModal) {
             localStorage.setItem('galaxy_fx_config', JSON.stringify(fxConfig));
         } catch (err) {}
 
-        buildSaturnMemorySprites();
         saturnModal.classList.remove('show');
         playSparkleChime();
-    });
-}
-
-// Khôi phục kỷ niệm mặc định
-if (btnResetSaturnMemories) {
-    btnResetSaturnMemories.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (confirm('Bạn có chắc chắn muốn khôi phục danh sách kỷ niệm mặc định không?')) {
-            saturnMemories = [...defaultSaturnMemories];
-            saveSaturnMemoriesToStorage();
-            renderSaturnMemoriesListUI();
-            buildSaturnMemorySprites();
-            playSparkleChime();
-        }
     });
 }
 
@@ -3292,55 +2832,6 @@ if (btnCloseSaturnModal && saturnModal) {
     btnCloseSaturnModal.addEventListener('click', (e) => {
         e.stopPropagation();
         saturnModal.classList.remove('show');
-    });
-}
-
-// Điều khiển Modal Xem Chi Tiết Kỷ Niệm
-const memoryDetailModal = document.getElementById('memory-detail-modal');
-const btnPrevMemory = document.getElementById('btn-prev-memory');
-const btnNextMemory = document.getElementById('btn-next-memory');
-const btnOpenSaturnManager = document.getElementById('btn-open-saturn-manager');
-const btnCloseDetailModal = document.getElementById('btn-close-detail-modal');
-const btnCloseMemoryCorner = document.getElementById('btn-close-memory-corner');
-
-if (btnPrevMemory) {
-    btnPrevMemory.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (saturnMemories.length === 0) return;
-        currentActiveMemoryIndex = (currentActiveMemoryIndex - 1 + saturnMemories.length) % saturnMemories.length;
-        openMemoryDetailModal(currentActiveMemoryIndex);
-    });
-}
-
-if (btnNextMemory) {
-    btnNextMemory.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (saturnMemories.length === 0) return;
-        currentActiveMemoryIndex = (currentActiveMemoryIndex + 1) % saturnMemories.length;
-        openMemoryDetailModal(currentActiveMemoryIndex);
-    });
-}
-
-if (btnOpenSaturnManager) {
-    btnOpenSaturnManager.addEventListener('click', (e) => {
-        e.stopPropagation();
-        memoryDetailModal?.classList.remove('show');
-        syncSaturnModalSettingsUI();
-        saturnModal?.classList.add('show');
-    });
-}
-
-if (btnCloseDetailModal && memoryDetailModal) {
-    btnCloseDetailModal.addEventListener('click', (e) => {
-        e.stopPropagation();
-        memoryDetailModal.classList.remove('show');
-    });
-}
-
-if (btnCloseMemoryCorner && memoryDetailModal) {
-    btnCloseMemoryCorner.addEventListener('click', (e) => {
-        e.stopPropagation();
-        memoryDetailModal.classList.remove('show');
     });
 }
 
