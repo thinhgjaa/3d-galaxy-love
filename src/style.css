@@ -207,6 +207,64 @@ canvas {
   to { opacity: 1; transform: scale(1); }
 }
 
+/* Ẩn thanh công cụ mượt mà (Zen Mode) */
+.ui-controls {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.ui-controls.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+.btn-restore-ui {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(25, 20, 40, 0.6);
+  backdrop-filter: blur(10px);
+  color: #ff77aa;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 105;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-restore-ui.show {
+  display: flex;
+  animation: fadeIn 0.4s ease;
+}
+
+.btn-restore-ui:hover {
+  transform: scale(1.15) rotate(15deg);
+  background: rgba(255, 0, 127, 0.3);
+  border-color: #ff007f;
+}
+
+/* Màn chớp sáng Wormhole */
+.wormhole-flash {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, #ffffff 40%, rgba(200, 240, 255, 0.9) 70%, rgba(255, 100, 200, 0.8) 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 300;
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.wormhole-flash.active {
+  opacity: 1;
+}
+
 @media (max-width: 600px) {
   .ui-controls {
     bottom: 20px;

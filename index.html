@@ -11,13 +11,21 @@
     <!-- Canvas cho hiệu ứng vệt bụi sao ma thuật theo con trỏ chuột -->
     <canvas id="fairy-canvas"></canvas>
     <div id="ui-controls" class="ui-controls">
+      <button id="btn-wormhole" title="Cổng Dịch Chuyển Không Gian (Wormhole Warp)">🌀</button>
       <button id="btn-theme" title="Đổi Bảng Màu Vũ Trụ (Theme)">🎨</button>
       <button id="btn-cinema" title="Chế Độ Điện Ảnh (Cinema Tour)">🎥</button>
       <button id="btn-text" title="Đổi Lời Nhắn Tình Yêu">💌</button>
       <button id="btn-upload" title="Tải Ảnh Cá Nhân Lên">🖼️</button>
       <button id="btn-music" title="Bật/Tắt Nhạc Nền">🎵</button>
       <button id="btn-reset-view" title="Về Góc Nhìn Toàn Cảnh">🌐</button>
+      <button id="btn-toggle-ui" title="Ẩn Thanh Công Cụ (Zen Mode)">👁️</button>
     </div>
+
+    <!-- Nút nhỏ hiện lại thanh công cụ khi đang ẩn -->
+    <button id="btn-restore-ui" class="btn-restore-ui" title="Hiện lại thanh công cụ">✨</button>
+
+    <!-- Màn chớp sáng khi dịch chuyển qua Cổng Không Gian -->
+    <div id="wormhole-flash" class="wormhole-flash"></div>
 
     <!-- Ẩn input chọn file ảnh -->
     <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;" />

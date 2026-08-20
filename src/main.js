@@ -331,6 +331,209 @@ updateFloatingText('Forever & Always 💖');
 
 /**
  * =========================================================================
+ * 5.1 CONSTELLATIONS: VIRGO & TAURUS (Chòm sao Xử Nữ ♍ & Kim Ngưu ♉)
+ * =========================================================================
+ */
+const constellationsGroup = new THREE.Group();
+scene.add(constellationsGroup);
+
+const createConstellationStarTexture = (isOrange = false) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 60);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.2, isOrange ? '#ffbb66' : '#aaddff');
+    grad.addColorStop(0.6, isOrange ? 'rgba(255, 120, 0, 0.4)' : 'rgba(100, 180, 255, 0.3)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(64, 16); ctx.lineTo(64, 112);
+    ctx.moveTo(16, 64); ctx.lineTo(112, 64);
+    ctx.stroke();
+
+    return new THREE.CanvasTexture(canvas);
+};
+
+const constStarBlueTex = createConstellationStarTexture(false);
+const constStarOrangeTex = createConstellationStarTexture(true);
+
+const createConstellationLabelTexture = (text) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.font = '600 36px "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, 256, 64);
+    return new THREE.CanvasTexture(canvas);
+};
+
+const buildConstellation = (title, stars, lines, offset, mainColor = '#00f0ff') => {
+    const group = new THREE.Group();
+    group.position.copy(offset);
+    group.scale.set(0.48, 0.48, 0.48); // Thu nhỏ chòm sao vừa vặn, tinh tế
+
+    // 1. Đường nối các sao (thanh mảnh, tinh tế)
+    const linePositions = [];
+    lines.forEach(([i1, i2]) => {
+        const p1 = stars[i1];
+        const p2 = stars[i2];
+        linePositions.push(p1.x, p1.y, p1.z);
+        linePositions.push(p2.x, p2.y, p2.z);
+    });
+
+    const lineGeom = new THREE.BufferGeometry();
+    lineGeom.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    const lineMat = new THREE.LineBasicMaterial({
+        color: new THREE.Color(mainColor),
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending
+    });
+    const lineMesh = new THREE.LineSegments(lineGeom, lineMat);
+    group.add(lineMesh);
+
+    // 2. Các điểm sao phát sáng nhỏ xinh
+    const starSprites = [];
+    stars.forEach((s) => {
+        const tex = s.isOrange ? constStarOrangeTex : constStarBlueTex;
+        const mat = new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0.95,
+            blending: THREE.AdditiveBlending
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.position.set(s.x, s.y, s.z);
+        const scale = (s.size || 0.45) * 0.55; // Thu nhỏ điểm sao
+        sprite.scale.set(scale, scale, scale);
+        sprite.userData = { baseScale: scale, phase: Math.random() * Math.PI * 2 };
+        group.add(sprite);
+        starSprites.push(sprite);
+    });
+
+    // 3. Nhãn tên chòm sao nhỏ gọn
+    const labelTex = createConstellationLabelTexture(title);
+    const labelMat = new THREE.SpriteMaterial({
+        map: labelTex,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.NormalBlending
+    });
+    const labelSprite = new THREE.Sprite(labelMat);
+    labelSprite.position.set(offset.x, offset.y + 1.2, offset.z);
+    labelSprite.scale.set(1.5, 0.38, 1); // Thu nhỏ nhãn tên
+    labelSprite.userData = { parentOffset: offset };
+    sceneSprites.add(labelSprite);
+
+    constellationsGroup.add(group);
+    return { group, starSprites, labelSprite };
+};
+
+// Chòm sao Xử Nữ (Virgo ♍)
+const virgoStars = [
+    { x: 0.0, y: -1.2, z: 0.0, size: 0.75, name: 'Spica' }, // Sao Giác (sáng nhất)
+    { x: -0.6, y: 0.2, z: 0.2, size: 0.5, name: 'Porrima' },
+    { x: -1.1, y: 0.8, z: -0.1, size: 0.45, name: 'Auva' },
+    { x: 0.4, y: 1.4, z: 0.3, size: 0.55, name: 'Vindemiatrix' },
+    { x: -1.6, y: 1.2, z: 0.0, size: 0.4, name: 'Zavijava' },
+    { x: -1.3, y: -0.4, z: -0.2, size: 0.45, name: 'Zaniah' },
+    { x: 0.8, y: -0.6, z: 0.1, size: 0.45, name: 'Heze' },
+    { x: 1.2, y: -1.6, z: -0.1, size: 0.4, name: 'Syrma' },
+    { x: 1.8, y: -2.1, z: 0.2, size: 0.4, name: 'Rijl al Awwa' }
+];
+const virgoLines = [
+    [0, 1], [1, 2], [2, 3], [2, 4], [1, 5], [5, 0], [0, 6], [6, 7], [7, 8]
+];
+
+// Chòm sao Kim Ngưu (Taurus ♉)
+const taurusStars = [
+    { x: 0.0, y: 0.0, z: 0.0, size: 0.85, isOrange: true, name: 'Aldebaran' }, // Mắt bò đỏ cam
+    { x: -0.7, y: 0.6, z: 0.1, size: 0.45, name: 'Ain' },
+    { x: -0.4, y: -0.5, z: -0.1, size: 0.4, name: 'Hyadum I' },
+    { x: -1.0, y: 0.2, z: 0.2, size: 0.4, name: 'Hyadum II' },
+    { x: 1.5, y: 1.8, z: 0.3, size: 0.55, name: 'Elnath' }, // Sừng bắc
+    { x: 1.8, y: 0.5, z: -0.2, size: 0.5, name: 'Tianguan' }, // Sừng nam
+    { x: -2.0, y: 1.5, z: 0.1, size: 0.6, name: 'Pleiades' } // Thất Tinh
+];
+const taurusLines = [
+    [0, 1], [1, 3], [3, 2], [2, 0], [0, 5], [1, 4], [1, 6]
+];
+
+const virgoConstellation = buildConstellation('♍ Xử Nữ (Virgo)', virgoStars, virgoLines, new THREE.Vector3(-6.8, 3.4, -3.2), '#a855f7');
+const taurusConstellation = buildConstellation('♉ Kim Ngưu (Taurus)', taurusStars, taurusLines, new THREE.Vector3(6.8, 3.4, -3.2), '#00f0ff');
+
+/**
+ * =========================================================================
+ * 5.2 LOVE WORMHOLE / HYPER-DRIVE LOOP (Cổng dịch chuyển không gian)
+ * =========================================================================
+ */
+let isWarping = false;
+let warpProgress = 0;
+const warpStartCameraPos = new THREE.Vector3();
+const warpTargetPos = new THREE.Vector3(0, 2.4, 0.1);
+
+const warpStarsGroup = new THREE.Group();
+warpStarsGroup.visible = false;
+scene.add(warpStarsGroup);
+
+const warpStarCount = 90;
+const warpStarGeom = new THREE.BufferGeometry();
+const warpPositions = new Float32Array(warpStarCount * 6);
+const warpColors = new Float32Array(warpStarCount * 6);
+
+for (let i = 0; i < warpStarCount; i++) {
+    const i6 = i * 6;
+    const rad = 0.5 + Math.random() * 5.0;
+    const ang = Math.random() * Math.PI * 2;
+    const x = Math.cos(ang) * rad;
+    const y = Math.sin(ang) * rad + 2.4;
+    const z = -10 + Math.random() * 20;
+
+    warpPositions[i6] = x; warpPositions[i6 + 1] = y; warpPositions[i6 + 2] = z;
+    warpPositions[i6 + 3] = x; warpPositions[i6 + 4] = y; warpPositions[i6 + 5] = z - 2.5;
+
+    warpColors[i6] = 1; warpColors[i6 + 1] = 1; warpColors[i6 + 2] = 1;
+    warpColors[i6 + 3] = 0; warpColors[i6 + 4] = 0.8; warpColors[i6 + 5] = 1;
+}
+
+warpStarGeom.setAttribute('position', new THREE.BufferAttribute(warpPositions, 3));
+warpStarGeom.setAttribute('color', new THREE.BufferAttribute(warpColors, 3));
+
+const warpStarMat = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending
+});
+const warpStarsMesh = new THREE.LineSegments(warpStarGeom, warpStarMat);
+warpStarsGroup.add(warpStarsMesh);
+
+const triggerWormhole = () => {
+    if (isWarping) return;
+    isWarping = true;
+    warpProgress = 0;
+    warpStartCameraPos.copy(camera.position);
+    warpStarsGroup.visible = true;
+    isCinemaMode = false;
+    isResettingView = false;
+    document.getElementById('btn-cinema')?.classList.remove('active');
+};
+
+/**
+ * =========================================================================
  * 6. SHOOTING STARS / METEORS (Hệ thống Sao Băng)
  * =========================================================================
  */
@@ -1068,6 +1271,63 @@ const tick = () => {
     // Cập nhật vệt bụi sao ma thuật theo chuột
     updateFairyDust();
 
+    // 0.1 Cập nhật hiệu ứng chòm sao Xử Nữ & Kim Ngưu lấp lánh
+    if (typeof virgoConstellation !== 'undefined' && typeof taurusConstellation !== 'undefined') {
+        [virgoConstellation, taurusConstellation].forEach(c => {
+            c.starSprites.forEach(s => {
+                const scale = s.userData.baseScale * (1.0 + Math.sin(elapsedTime * 3.0 + s.userData.phase) * 0.18);
+                s.scale.set(scale, scale, scale);
+            });
+            c.labelSprite.position.set(
+                c.labelSprite.userData.parentOffset.x,
+                c.labelSprite.userData.parentOffset.y + 1.2 + Math.sin(elapsedTime * 1.5) * 0.04,
+                c.labelSprite.userData.parentOffset.z
+            );
+        });
+    }
+
+    // 0.2 Cập nhật hiệu ứng Cổng Dịch Chuyển Wormhole (Loop)
+    if (isWarping) {
+        warpProgress += delta * 0.65;
+        
+        const posAttr = warpStarsMesh.geometry.attributes.position;
+        for (let i = 0; i < warpStarCount; i++) {
+            const i6 = i * 6;
+            posAttr.array[i6 + 2] += (0.6 + warpProgress * 2.5);
+            posAttr.array[i6 + 5] += (0.6 + warpProgress * 2.5);
+            if (posAttr.array[i6 + 2] > 15) {
+                posAttr.array[i6 + 2] -= 30;
+                posAttr.array[i6 + 5] -= 30;
+            }
+        }
+        posAttr.needsUpdate = true;
+
+        const ease = Math.pow(warpProgress, 2.5);
+        camera.position.lerpVectors(warpStartCameraPos, warpTargetPos, ease);
+        controls.target.lerp(warpTargetPos, 0.1);
+        camera.fov = 75 + warpProgress * 35;
+        camera.updateProjectionMatrix();
+
+        if (warpProgress >= 1.0) {
+            isWarping = false;
+            warpStarsGroup.visible = false;
+
+            const flashEl = document.getElementById('wormhole-flash');
+            if (flashEl) {
+                flashEl.classList.add('active');
+                setTimeout(() => flashEl.classList.remove('active'), 600);
+            }
+
+            camera.position.copy(defaultCameraPos);
+            controls.target.copy(defaultTarget);
+            camera.fov = 75;
+            camera.updateProjectionMatrix();
+            controls.update();
+
+            spawnMeteorShower();
+        }
+    }
+
     // 1. Rotate galaxy (Quay êm dịu, tĩnh lặng, không nhảy theo nhạc)
     if (galaxyPoints) {
         galaxyPoints.rotation.y = elapsedTime * 0.08;
@@ -1303,5 +1563,33 @@ if (btnReset) {
         floatingSprites.children.forEach(sprite => {
             sprite.userData.isZoomed = false;
         });
+    });
+}
+
+// 7. Nút Cổng Dịch Chuyển Không Gian (Wormhole Warp)
+const btnWormhole = document.getElementById('btn-wormhole');
+if (btnWormhole) {
+    btnWormhole.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerWormhole();
+    });
+}
+
+// 8. Nút Ẩn / Hiện Thanh Công Cụ (Zen Mode)
+const btnToggleUI = document.getElementById('btn-toggle-ui');
+const btnRestoreUI = document.getElementById('btn-restore-ui');
+const uiControls = document.getElementById('ui-controls');
+
+if (btnToggleUI && btnRestoreUI && uiControls) {
+    btnToggleUI.addEventListener('click', (e) => {
+        e.stopPropagation();
+        uiControls.classList.add('hidden');
+        btnRestoreUI.classList.add('show');
+    });
+
+    btnRestoreUI.addEventListener('click', (e) => {
+        e.stopPropagation();
+        uiControls.classList.remove('hidden');
+        btnRestoreUI.classList.remove('show');
     });
 }
