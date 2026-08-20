@@ -2168,13 +2168,13 @@ scene.add(supernovaPoints);
 
 // Âm thanh Siêu Tân Tinh (Implosion Sweep + Detonation Boom)
 const playSupernovaImplosionSound = () => {
-    if (!fxConfig.soundFx) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
     try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        const now = sfxAudioCtx.currentTime;
+        const osc = sfxAudioCtx.createOscillator();
+        const gain = sfxAudioCtx.createGain();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(320, now);
         osc.frequency.exponentialRampToValueAtTime(38, now + 1.25);
@@ -2182,42 +2182,42 @@ const playSupernovaImplosionSound = () => {
         gain.gain.linearRampToValueAtTime(0.45, now + 0.9);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(sfxAudioCtx.destination);
         osc.start(now);
         osc.stop(now + 1.35);
     } catch (e) {}
 };
 
 const playSupernovaDetonationSound = () => {
-    if (!fxConfig.soundFx) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
     try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
+        const now = sfxAudioCtx.currentTime;
         
         // Deep sub boom
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        const osc = sfxAudioCtx.createOscillator();
+        const gain = sfxAudioCtx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(95, now);
         osc.frequency.exponentialRampToValueAtTime(28, now + 1.8);
         gain.gain.setValueAtTime(0.9, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(sfxAudioCtx.destination);
         osc.start(now);
         osc.stop(now + 2.3);
 
         // Sparkle arpeggio
         [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00].forEach((freq, idx) => {
-            const sOsc = ctx.createOscillator();
-            const sGain = ctx.createGain();
+            const sOsc = sfxAudioCtx.createOscillator();
+            const sGain = sfxAudioCtx.createGain();
             sOsc.type = 'triangle';
             sOsc.frequency.setValueAtTime(freq, now + idx * 0.09);
             sGain.gain.setValueAtTime(0.28, now + idx * 0.09);
             sGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.9);
             sOsc.connect(sGain);
-            sGain.connect(ctx.destination);
+            sGain.connect(sfxAudioCtx.destination);
             sOsc.start(now + idx * 0.09);
             sOsc.stop(now + idx * 0.09 + 1.0);
         });
@@ -2713,7 +2713,9 @@ const tick = () => {
         const targetScale = 1.0 + steadyBreathe + bassAdd;
 
         currentHeartScale += (targetScale - currentHeartScale) * 0.1;
-        heartPoints.scale.set(currentHeartScale, currentHeartScale, currentHeartScale);
+        if (!isSupernovaRunning) {
+            heartPoints.scale.set(currentHeartScale, currentHeartScale, currentHeartScale);
+        }
     }
 
     // 2.1 Xoay Vành đai
@@ -2721,7 +2723,9 @@ const tick = () => {
         heartRingPoints.rotation.y = elapsedTime * 0.05;
         const ringTarget = 1.0 + (currentHeartScale - 1.0) * 0.5;
         currentRingScale += (ringTarget - currentRingScale) * 0.08;
-        heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
+        if (!isSupernovaRunning) {
+            heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
+        }
     }
 
     // 2.2 Cập nhật Vòng Sóng Âm Nhạc 3D (Audio Visualizer Waves Ring - Nhảy múa cả khi phát YouTube & MP3)
@@ -2893,6 +2897,8 @@ const tick = () => {
             if (heartRingPoints) heartRingPoints.scale.set(scaleDown, scaleDown, scaleDown);
             if (galaxyPoints) galaxyPoints.scale.set(scaleDown, scaleDown, scaleDown);
             if (saturnMainGroup) saturnMainGroup.scale.set(scaleDown, scaleDown, scaleDown);
+            if (audioVisualizerGroup) audioVisualizerGroup.scale.set(scaleDown, scaleDown, scaleDown);
+            if (textSprite) textSprite.scale.set(3.6 * scaleDown, 0.9 * scaleDown, 1 * scaleDown);
 
             if (supernovaShockwave) {
                 supernovaShockwave.material.opacity = progress * 0.8;
@@ -2906,7 +2912,7 @@ const tick = () => {
 
                 playSupernovaDetonationSound();
 
-                // Flash
+                // Flash & Heavy Screen Shake on Detonation
                 const flashEl = document.getElementById('supernova-flash');
                 if (flashEl) {
                     flashEl.classList.remove('fade-out');
@@ -2915,6 +2921,12 @@ const tick = () => {
                         flashEl.classList.remove('active');
                         flashEl.classList.add('fade-out');
                     }, 200);
+                }
+                const appEl = document.getElementById('app');
+                if (appEl) {
+                    appEl.classList.remove('screen-shake');
+                    void appEl.offsetWidth;
+                    appEl.classList.add('screen-shake');
                 }
 
                 // Kích nổ 4.500 hạt Siêu Tân Tinh
@@ -2958,6 +2970,14 @@ const tick = () => {
             }
         } else if (supernovaState === 'explosion') {
             // Giai đoạn 2: Bùng nổ hạt & lan tỏa sóng xung kích (0 -> 3.2s)
+            const explMinScale = 0.001;
+            if (heartPoints) heartPoints.scale.set(explMinScale, explMinScale, explMinScale);
+            if (heartRingPoints) heartRingPoints.scale.set(explMinScale, explMinScale, explMinScale);
+            if (galaxyPoints) galaxyPoints.scale.set(explMinScale, explMinScale, explMinScale);
+            if (saturnMainGroup) saturnMainGroup.scale.set(explMinScale, explMinScale, explMinScale);
+            if (audioVisualizerGroup) audioVisualizerGroup.scale.set(explMinScale, explMinScale, explMinScale);
+            if (textSprite) textSprite.scale.set(3.6 * explMinScale, 0.9 * explMinScale, 1 * explMinScale);
+
             const posAttr = supernovaGeom.attributes.position;
 
             for (let i = 0; i < supernovaParticleCount; i++) {
@@ -3002,6 +3022,8 @@ const tick = () => {
             if (heartRingPoints) heartRingPoints.scale.set(smoothScale, smoothScale, smoothScale);
             if (galaxyPoints) galaxyPoints.scale.set(smoothScale, smoothScale, smoothScale);
             if (saturnMainGroup) saturnMainGroup.scale.set(smoothScale, smoothScale, smoothScale);
+            if (audioVisualizerGroup) audioVisualizerGroup.scale.set(smoothScale, smoothScale, smoothScale);
+            if (textSprite) textSprite.scale.set(3.6 * smoothScale, 0.9 * smoothScale, 1 * smoothScale);
 
             supernovaMat.opacity = Math.max(0, 1.0 - rebProgress);
 
@@ -3015,6 +3037,8 @@ const tick = () => {
                 if (heartRingPoints) heartRingPoints.scale.set(1, 1, 1);
                 if (galaxyPoints) galaxyPoints.scale.set(1, 1, 1);
                 if (saturnMainGroup) saturnMainGroup.scale.set(1, 1, 1);
+                if (audioVisualizerGroup) audioVisualizerGroup.scale.set(1, 1, 1);
+                if (textSprite) textSprite.scale.set(3.6, 0.9, 1);
                 playSparkleChime();
             }
         }
