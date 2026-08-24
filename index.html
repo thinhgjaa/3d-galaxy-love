@@ -52,7 +52,7 @@
       <button id="btn-cinema" title="Chế Độ Điện Ảnh (Cinema Tour)">🎥</button>
       <button id="btn-text" title="Đổi Lời Nhắn Tình Yêu">💌</button>
       <button id="btn-upload" title="Tải Ảnh Cá Nhân Lên">🖼️</button>
-      <button id="btn-change-music" title="Đổi Nhạc (Preset & YouTube)">📻</button>
+      <button id="btn-change-music" title="Trình Phát & Chọn Bài Hát (Playlist Audio)">📻</button>
       <button id="btn-music" title="Bật/Tắt Âm Thanh">🎵</button>
       <button id="btn-reset-view" title="Về Góc Nhìn Toàn Cảnh">🌐</button>
       <button id="btn-toggle-ui" title="Ẩn Thanh Công Cụ (Zen Mode)">👁️</button>
@@ -65,8 +65,9 @@
     <div id="wormhole-flash" class="wormhole-flash"></div>
     <div id="supernova-flash" class="supernova-flash"></div>
 
-    <!-- Ẩn input chọn file ảnh -->
+    <!-- Ẩn input chọn file ảnh & file nhạc -->
     <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;" />
+    <input type="file" id="audio-upload-input" accept="audio/*" multiple style="display: none;" />
 
     <!-- Container cho trình phát YouTube ngầm -->
     <div id="youtube-player-container" style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
@@ -135,26 +136,93 @@
       </div>
     </div>
 
-    <!-- 6. Modal Đổi Nhạc & Preset Playlist -->
+    <!-- 6. Modal Đổi Nhạc & Trình Phát Nhạc Vũ Trụ -->
     <div id="music-modal" class="text-modal">
       <div class="text-modal-content music-modal-content">
-        <h3>📻 Chọn Nhạc Vũ Trụ Lãng Mạn</h3>
-        
-        <div class="music-presets-title">🌟 Danh Sách Phát Chọn Nhanh:</div>
-        <div class="music-presets-grid">
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=GxldQ9eX2wo">💖 Until I Found You</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=HAa8d_eG_g8">✨ Golden Hour (Piano)</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=p4vW7B4_69g">🌙 Can't Help Falling in Love</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=2Vv-BfVoq4g">🪐 Ed Sheeran - Perfect</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=5qap5aO4i9A">☕ Lofi Hip Hop / Chill Love</button>
+        <div class="music-modal-header">
+          <h3>🎵 Trình Phát & Danh Sách Nhạc Vũ Trụ</h3>
+          <p class="settings-subtitle">Thư viện bài hát trong thư mục audio & Tuyển tập không gian</p>
         </div>
 
-        <div class="music-custom-divider"><span>HOẶC DÁN LINK YOUTUBE</span></div>
-        <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
-        
-        <div class="modal-buttons">
-          <button id="btn-play-youtube">Phát Link Này</button>
-          <button id="btn-default-music">Nhạc Gốc</button>
+        <!-- Now Playing Card -->
+        <div class="now-playing-card">
+          <div class="now-playing-disc-wrapper">
+            <div id="player-disc" class="now-playing-disc">
+              <span class="disc-icon">🪐</span>
+            </div>
+          </div>
+          <div class="now-playing-details">
+            <div class="now-playing-top">
+              <span class="now-playing-label">ĐANG PHÁT</span>
+              <span id="player-status-badge" class="player-badge">🎵 Local Audio</span>
+            </div>
+            <h4 id="player-current-title" class="player-title">Melody of Universe</h4>
+            <p id="player-current-artist" class="player-artist">Galaxy Ambient • /audio/music.mp3</p>
+          </div>
+        </div>
+
+        <!-- Player Progress & Time -->
+        <div class="player-progress-container">
+          <span id="player-current-time" class="time-text">00:00</span>
+          <div class="progress-bar-wrap">
+            <input type="range" id="player-progress-bar" min="0" max="100" value="0" step="0.1" class="custom-range-slider" />
+          </div>
+          <span id="player-duration-time" class="time-text">00:00</span>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="player-controls-row">
+          <button type="button" id="btn-player-shuffle" class="player-ctrl-btn" title="Phát Ngẫu Nhiên">🔀</button>
+          <button type="button" id="btn-player-prev" class="player-ctrl-btn" title="Bài Trước Đó">⏮️</button>
+          <button type="button" id="btn-player-play" class="player-ctrl-btn player-play-main" title="Phát / Tạm Dừng">▶️</button>
+          <button type="button" id="btn-player-next" class="player-ctrl-btn" title="Bài Kế Tiếp">⏭️</button>
+          <button type="button" id="btn-player-loop" class="player-ctrl-btn active" title="Lặp Lại">🔁</button>
+        </div>
+
+        <!-- Volume Control -->
+        <div class="player-volume-row">
+          <span class="volume-icon">🔊</span>
+          <input type="range" id="player-volume-slider" min="0" max="1" step="0.01" value="0.65" class="custom-volume-slider" />
+          <span id="player-volume-percent" class="volume-percent">65%</span>
+        </div>
+
+        <!-- Music Navigation Tabs -->
+        <div class="music-tabs-nav">
+          <button type="button" class="music-tab-btn active" id="tab-btn-local" data-tab="local">📁 Thư Mục Audio (<span id="local-song-count">2</span>)</button>
+          <button type="button" class="music-tab-btn" id="tab-btn-yt" data-tab="youtube">📺 Nhạc YouTube</button>
+        </div>
+
+        <!-- Tab 1: Local Audio Files (Thư Mục Audio) -->
+        <div id="tab-local-music" class="music-tab-content active">
+          <div class="playlist-header">
+            <span class="playlist-subtext">Nhấp vào bất kỳ bài hát nào để phát ngay:</span>
+            <button type="button" id="btn-trigger-upload-audio" class="btn-upload-music">➕ Thêm bài hát từ máy</button>
+          </div>
+          <div id="local-playlist-list" class="local-playlist-list">
+            <!-- Sẽ được render động bằng JS -->
+          </div>
+        </div>
+
+        <!-- Tab 2: YouTube Presets & Custom URL -->
+        <div id="tab-youtube-music" class="music-tab-content">
+          <div class="music-presets-title">🌟 Tuyển Tập YouTube Lãng Mạn:</div>
+          <div class="music-presets-grid">
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=GxldQ9eX2wo">💖 Until I Found You</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=HAa8d_eG_g8">✨ Golden Hour (Piano)</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=p4vW7B4_69g">🌙 Can't Help Falling in Love</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=2Vv-BfVoq4g">🪐 Ed Sheeran - Perfect</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=5qap5aO4i9A">☕ Lofi Hip Hop / Chill Love</button>
+          </div>
+
+          <div class="music-custom-divider"><span>HOẶC DÁN LINK YOUTUBE BẤT KỲ</span></div>
+          <div class="yt-input-row">
+            <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
+            <button id="btn-play-youtube" class="btn-primary-gradient" style="padding: 10px 18px; border-radius: 12px; white-space: nowrap;">Phát Link</button>
+          </div>
+        </div>
+
+        <div class="modal-buttons" style="margin-top: 14px;">
+          <button id="btn-default-music" class="btn-secondary-action">🔄 Nhạc Gốc Mặc Định</button>
           <button id="btn-cancel-music">Đóng</button>
         </div>
       </div>
