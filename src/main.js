@@ -197,17 +197,17 @@ window.addEventListener('resize', () => {
 
 /**
  * =========================================================================
- * 3. GALAXY GENERATION (28.000 hạt ngân hà xoắn ốc)
+ * 3. GALAXY GENERATION (Ngân hà xoắn ốc sắc nét, tinh xảo & không bị nhòe)
  * =========================================================================
  */
 const galaxyParams = {
-    count: 28000,
-    size: 0.016,
-    radius: 6.5,
+    count: 24000,
+    size: 0.013,
+    radius: 8.0,
     branches: 4,
-    spin: 1.2,
-    randomness: 0.4,
-    randomnessPower: 3.5
+    spin: 1.25,
+    randomness: 0.28,
+    randomnessPower: 4.2
 };
 
 let galaxyGeometry = null;
@@ -259,7 +259,9 @@ const generateGalaxy = () => {
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-        vertexColors: true
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85
     });
 
     galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
