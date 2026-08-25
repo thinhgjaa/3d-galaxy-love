@@ -76,11 +76,11 @@ let fxConfig = {
     showStarfield: true,
     showSaturnRings: true,
     cosmicSeason: 'spring',
-    autoFireworks: false,
-    autoMeteors: false,
-    frequentComets: false,
+    autoFireworks: true,
+    autoMeteors: true,
+    frequentComets: true,
     fairyDust: true,
-    showPhotos: true,
+    showPhotos: false,
     saturnTheme: 'gold',
     saturnSpeed: 0.08,
     saturnTilt: 'saturn',
@@ -2271,17 +2271,17 @@ controls.addEventListener('start', () => {
  */
 const defaultPlaylist = [
     {
-        id: 'melody-of-universe',
-        title: 'Melody of Universe',
-        artist: 'Galaxy Ambient & Love',
-        src: '/audio/music.mp3',
-        sourceType: 'local'
-    },
-    {
         id: 'why-not-me',
         title: 'Why Not Me',
         artist: 'Enrique Iglesias',
         src: '/audio/why-not-me.mp3',
+        sourceType: 'local'
+    },
+    {
+        id: 'melody-of-universe',
+        title: 'Melody of Universe',
+        artist: 'Galaxy Ambient & Love',
+        src: '/audio/music.mp3',
         sourceType: 'local'
     }
 ];
