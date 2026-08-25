@@ -121,9 +121,17 @@ const sizes = {
     height: window.innerHeight
 };
 
-// Camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
-camera.position.set(0, 2.5, 7.2);
+const isPortrait = () => window.innerWidth < window.innerHeight;
+
+// Camera (Tối ưu FOV & khoảng cách cho cả điện thoại dọc và màn hình ngang)
+const camera = new THREE.PerspectiveCamera(
+    isPortrait() ? 80 : 75,
+    sizes.width / sizes.height,
+    0.1,
+    100
+);
+const initialCamPos = isPortrait() ? new THREE.Vector3(0, 2.8, 8.8) : new THREE.Vector3(0, 2.5, 7.2);
+camera.position.copy(initialCamPos);
 scene.add(camera);
 
 // OrbitControls (Tối ưu vuốt đa điểm & Pinch-to-zoom điện thoại)
@@ -158,7 +166,7 @@ const renderer = new THREE.WebGLRenderer({
     preserveDrawingBuffer: true // Cho phép chụp ảnh canvas xuất sắc
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
 renderer.setClearColor('#000000');
 renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.autoClear = false;
@@ -179,16 +187,25 @@ const composer = new EffectComposer(renderer);
 composer.addPass(renderScene);
 composer.addPass(bloomPass);
 
-// Resize handler
+// Resize handler (Tự động canh chỉnh khi xoay màn hình điện thoại hoặc thay đổi kích thước)
 window.addEventListener('resize', () => {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
 
     camera.aspect = sizes.width / sizes.height;
+    camera.fov = (sizes.width < sizes.height) ? 80 : 75;
     camera.updateProjectionMatrix();
 
+    if (typeof defaultCameraPos !== 'undefined') {
+        if (sizes.width < sizes.height) {
+            defaultCameraPos.set(0, 2.8, 8.8);
+        } else {
+            defaultCameraPos.set(0, 2.5, 7.2);
+        }
+    }
+
     renderer.setSize(sizes.width, sizes.height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
 
     composer.setSize(sizes.width, sizes.height);
     bloomPass.setSize(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2));
@@ -2260,7 +2277,9 @@ const triggerSupernovaLoveBurst = () => {
  */
 let isCinemaMode = false;
 let isResettingView = false;
-const defaultCameraPos = new THREE.Vector3(0, 2.5, 7.2);
+const defaultCameraPos = (window.innerWidth < window.innerHeight)
+    ? new THREE.Vector3(0, 2.8, 8.8)
+    : new THREE.Vector3(0, 2.5, 7.2);
 const defaultTarget = new THREE.Vector3(0, 1.35, 0);
 
 controls.addEventListener('start', () => {
@@ -2653,20 +2672,41 @@ bgMusic.addEventListener('timeupdate', () => {
     }
 });
 
-bgMusic.addEventListener('loadedmetadata', () => {
-    const durTimeEl = document.getElementById('player-duration-time');
-    if (durTimeEl && bgMusic.duration && !isNaN(bgMusic.duration)) {
-        durTimeEl.innerText = formatTime(bgMusic.duration);
+// Mở khóa âm thanh an toàn và tức thì trên mọi trình duyệt di động (iOS Safari & Chrome Android)
+const unlockAudioOnTouch = () => {
+    if (!musicStarted && !isSoundMuted) {
+        startMusic();
+    }
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+    }
+    if (sfxAudioCtx && sfxAudioCtx.state === 'suspended') {
+        sfxAudioCtx.resume().catch(() => {});
+    }
+};
+
+['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, unlockAudioOnTouch, { passive: true });
+});
+
+// Tự động khôi phục AudioContext và nhạc khi người dùng quay lại tab trình duyệt trên điện thoại
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && musicStarted && !isSoundMuted) {
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+        }
+        if (sfxAudioCtx && sfxAudioCtx.state === 'suspended') {
+            sfxAudioCtx.resume().catch(() => {});
+        }
+        if (bgMusic.paused && !isUsingYouTube) {
+            bgMusic.play().catch(() => {});
+        }
     }
 });
 
-window.addEventListener('pointerdown', () => { if (!musicStarted) startMusic(); }, { once: true });
-window.addEventListener('click', () => { if (!musicStarted) startMusic(); }, { once: true });
-window.addEventListener('keydown', () => { if (!musicStarted) startMusic(); }, { once: true });
-
 /**
  * =========================================================================
- * 10.1 MAGIC FAIRY DUST TRAIL (Vệt bụi sao ma thuật theo chuột)
+ * 10.1 MAGIC FAIRY DUST TRAIL (Vệt bụi sao ma thuật theo chuột & ngón tay)
  * =========================================================================
  */
 const fairyCanvas = document.getElementById('fairy-canvas');
@@ -2683,16 +2723,16 @@ resizeFairyCanvas();
 
 let lastFairyTime = 0;
 
-window.addEventListener('pointermove', (e) => {
+const spawnFairyDustAt = (clientX, clientY) => {
     if (!fairyCtx || !fxConfig.fairyDust) return;
     const now = performance.now();
-    if (now - lastFairyTime < 35 || fairyDust.length > 20) return;
+    if (now - lastFairyTime < 28 || fairyDust.length > 25) return;
     lastFairyTime = now;
 
     const theme = colorThemes[currentThemeIndex];
     fairyDust.push({
-        x: e.clientX + (Math.random() - 0.5) * 8,
-        y: e.clientY + (Math.random() - 0.5) * 8,
+        x: clientX + (Math.random() - 0.5) * 8,
+        y: clientY + (Math.random() - 0.5) * 8,
         vx: (Math.random() - 0.5) * 0.8,
         vy: (Math.random() - 0.5) * 0.8 - 0.3,
         size: 11 + Math.random() * 6,
@@ -2701,7 +2741,23 @@ window.addEventListener('pointermove', (e) => {
         symbol: ['✨', '⭐', '💖', '🌟'][Math.floor(Math.random() * 4)],
         color: theme.heartGlow
     });
-});
+};
+
+window.addEventListener('pointermove', (e) => {
+    spawnFairyDustAt(e.clientX, e.clientY);
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches[0]) {
+        spawnFairyDustAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+window.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+        spawnFairyDustAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
 
 const updateFairyDust = () => {
     if (!fairyCtx || !fairyCanvas) return;
@@ -4175,27 +4231,42 @@ const initLoadingScreen = () => {
     const loadingBar = document.getElementById('loading-bar');
     const loadingPercent = document.getElementById('loading-percent');
 
+    let isDismissed = false;
+    const dismissLoading = () => {
+        if (isDismissed) return;
+        isDismissed = true;
+        clearInterval(progressInterval);
+        if (loadingBar) loadingBar.style.width = '100%';
+        if (loadingPercent) loadingPercent.textContent = '100%';
+
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => {
+            loadingScreen.remove();
+        }, 850);
+
+        if (!musicStarted && !isSoundMuted) {
+            startMusic();
+        }
+    };
+
+    // Chạm/Click vào màn hình loading để bắt đầu ngay lập tức
+    loadingScreen.addEventListener('click', dismissLoading, { passive: true });
+    loadingScreen.addEventListener('touchstart', dismissLoading, { passive: true });
+
     let currentProgress = 0;
     const progressInterval = setInterval(() => {
-        currentProgress += Math.floor(Math.random() * 14) + 8;
+        if (isDismissed) return;
+        currentProgress += Math.floor(Math.random() * 18) + 12;
         if (currentProgress >= 100) {
             currentProgress = 100;
-            clearInterval(progressInterval);
-
             if (loadingBar) loadingBar.style.width = '100%';
             if (loadingPercent) loadingPercent.textContent = '100%';
-
-            setTimeout(() => {
-                loadingScreen.classList.add('fade-out');
-                setTimeout(() => {
-                    loadingScreen.remove();
-                }, 950);
-            }, 350);
+            dismissLoading();
         } else {
             if (loadingBar) loadingBar.style.width = `${currentProgress}%`;
             if (loadingPercent) loadingPercent.textContent = `${currentProgress}%`;
         }
-    }, 45);
+    }, 40);
 };
 
 initLoadingScreen();
