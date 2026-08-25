@@ -2988,7 +2988,13 @@ let currentRingScale = 1.0;
 let smoothedBass = 0.0;
 
 const tick = () => {
-    const delta = clock.getDelta();
+    if (document.hidden) {
+        // Tự động tạm dừng render khi người dùng ẩn tab/khóa máy để tiết kiệm 100% pin & GPU
+        window.requestAnimationFrame(tick);
+        return;
+    }
+
+    const delta = Math.min(0.1, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
 
     // 0. Audio Visualizer & YouTube Rhythm Engine
@@ -4272,6 +4278,32 @@ if (btnReset) {
         getAllOrbitSprites().forEach(sprite => {
             sprite.userData.isZoomed = false;
         });
+    });
+}
+
+// 11.1 Nút Chế Độ Toàn Màn Hình (Fullscreen)
+const btnFullscreen = document.getElementById('btn-fullscreen');
+if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+            btnFullscreen.classList.add('active');
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            }
+            btnFullscreen.classList.remove('active');
+        }
+        playSparkleChime();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            btnFullscreen.classList.remove('active');
+        } else {
+            btnFullscreen.classList.add('active');
+        }
     });
 }
 

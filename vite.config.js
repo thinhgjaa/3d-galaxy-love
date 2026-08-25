@@ -14,5 +14,21 @@ export default defineConfig({
         '**/public/photos/**'
       ]
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          orbitcontrols: ['three/examples/jsm/controls/OrbitControls.js'],
+          postprocessing: [
+            'three/examples/jsm/postprocessing/EffectComposer.js',
+            'three/examples/jsm/postprocessing/RenderPass.js',
+            'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+          ]
+        }
+      }
+    }
   }
 });
