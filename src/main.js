@@ -81,7 +81,7 @@ let fxConfig = {
     frequentComets: true,
     fairyDust: true,
     showPhotos: false,
-    saturnTheme: 'gold',
+    saturnTheme: 'rainbow',
     saturnSpeed: 0.08,
     saturnTilt: 'saturn',
     showConstellations: true,
@@ -1829,13 +1829,17 @@ const generateSaturnDustAndRibbons = () => {
 
     // Thêm các vòng lụa ánh sáng (Silk Ribbons) tăng độ mềm mại lộng lẫy
     const ribbonRadii = [3.9, 4.4, 5.2, 5.8];
+    const rainbowRibbonColors = ['#ff007f', '#00f0ff', '#ffaa00', '#a855f7'];
     ribbonRadii.forEach((rad, idx) => {
         const ringGeom = new THREE.RingGeometry(rad - 0.04, rad + 0.04, 64);
+        const ribbonColorHex = (themeKey === 'rainbow') 
+            ? rainbowRibbonColors[idx % rainbowRibbonColors.length]
+            : (idx % 2 === 0 ? theme.inner : theme.mid);
         const ringMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(idx % 2 === 0 ? theme.inner : theme.mid),
+            color: new THREE.Color(ribbonColorHex),
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.18,
+            opacity: 0.24,
             depthWrite: false,
             blending: THREE.AdditiveBlending
         });
@@ -3645,7 +3649,7 @@ const btnCloseSaturnModal = document.getElementById('btn-close-saturn-modal');
 
 const syncSaturnModalSettingsUI = () => {
     if (toggleSaturnEnabledTab) toggleSaturnEnabledTab.checked = (fxConfig.showSaturnRings !== false);
-    if (selectSaturnTheme) selectSaturnTheme.value = fxConfig.saturnTheme || 'gold';
+    if (selectSaturnTheme) selectSaturnTheme.value = fxConfig.saturnTheme || 'rainbow';
     if (selectSaturnSpeed) selectSaturnSpeed.value = String(fxConfig.saturnSpeed !== undefined ? fxConfig.saturnSpeed : 0.08);
     if (selectSaturnTilt) selectSaturnTilt.value = fxConfig.saturnTilt || 'saturn';
 };
