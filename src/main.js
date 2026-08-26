@@ -621,6 +621,7 @@ const generateHeart = () => {
     });
 
     const cleftMesh = new THREE.Points(cleftGeom, cleftMat);
+    cleftMesh.userData = { isCleft: true, baseOpacity: 0.88 };
     heartPoints.add(cleftMesh);
 
     // =========================================================================
@@ -663,6 +664,7 @@ const generateHeart = () => {
     });
 
     const stardustMesh = new THREE.Points(stardustGeom, stardustMat);
+    stardustMesh.userData = { isStardust: true };
     heartPoints.add(stardustMesh);
 
     // =========================================================================
@@ -1306,10 +1308,8 @@ class Meteor {
 
     updateGeometry() {
         const posAttr = this.line.geometry.attributes.position;
-        const tail = this.direction.clone().multiplyScalar(-this.length);
-        
         posAttr.setXYZ(0, 0, 0, 0);
-        posAttr.setXYZ(1, tail.x, tail.y, tail.z);
+        posAttr.setXYZ(1, -this.direction.x * this.length, -this.direction.y * this.length, -this.direction.z * this.length);
         posAttr.needsUpdate = true;
     }
 
@@ -1479,22 +1479,34 @@ class MajesticComet {
         const theme = colorThemes[currentThemeIndex];
         const tailColor = new THREE.Color(theme.heartGlow);
 
-        const up = new THREE.Vector3(0, 1, 0);
+        if (!MajesticComet.staticUp) {
+            MajesticComet.staticUp = new THREE.Vector3(0, 1, 0);
+            MajesticComet.staticTangent = new THREE.Vector3();
+            MajesticComet.staticSide = new THREE.Vector3();
+            MajesticComet.staticV1 = new THREE.Vector3();
+            MajesticComet.staticV2 = new THREE.Vector3();
+        }
+
+        const up = MajesticComet.staticUp;
+        const tangent = MajesticComet.staticTangent;
+        const side = MajesticComet.staticSide;
+        const v1 = MajesticComet.staticV1;
+        const v2 = MajesticComet.staticV2;
 
         for (let i = 0; i < this.ribbonSegments; i++) {
             const p = this.history[i] || currentPos;
             const nextP = this.history[i + 1] || p;
-            const tangent = nextP.clone().sub(p).normalize();
+            tangent.subVectors(nextP, p).normalize();
             if (tangent.lengthSq() < 0.001) tangent.set(1, 0, 0);
 
-            const side = new THREE.Vector3().crossVectors(tangent, up).normalize();
+            side.crossVectors(tangent, up).normalize();
             if (side.lengthSq() < 0.001) side.set(0, 1, 0);
 
             const ratio = i / this.ribbonSegments;
             const width = (0.1 + ratio * 1.1);
 
-            const v1 = p.clone().addScaledVector(side, width * 0.5);
-            const v2 = p.clone().addScaledVector(side, -width * 0.5);
+            v1.copy(p).addScaledVector(side, width * 0.5);
+            v2.copy(p).addScaledVector(side, -width * 0.5);
 
             const idx = i * 2;
             posAttr.setXYZ(idx, v1.x, v1.y, v1.z);
@@ -1568,6 +1580,11 @@ class HeartFirework {
             vertexColors: true
         });
 
+        this.velocities = [];
+        for (let i = 0; i < this.particleCount; i++) {
+            this.velocities.push(new THREE.Vector3());
+        }
+
         this.points = new THREE.Points(this.geometry, this.material);
         this.points.visible = false;
         fireworksGroup.add(this.points);
@@ -1580,10 +1597,12 @@ class HeartFirework {
         this.maxLife = 1.2 + Math.random() * 0.4;
         this.material.opacity = 1.0;
 
-        const baseColor = new THREE.Color(hexColor);
+        if (!HeartFirework.tempColor) HeartFirework.tempColor = new THREE.Color();
+        HeartFirework.tempColor.set(hexColor);
+        const baseColor = HeartFirework.tempColor;
+
         const colAttr = this.geometry.attributes.color;
         const posAttr = this.geometry.attributes.position;
-        this.velocities = [];
 
         this.points.position.copy(originPos);
 
@@ -1598,11 +1617,13 @@ class HeartFirework {
             const hz = (Math.random() - 0.5) * 0.4;
 
             const speed = 0.035 + Math.random() * 0.025;
-            this.velocities.push(new THREE.Vector3(hx * speed, hy * speed + 0.015, hz * speed));
+            this.velocities[i].set(hx * speed, hy * speed + 0.015, hz * speed);
 
-            const pCol = baseColor.clone();
-            if (Math.random() > 0.4) pCol.lerp(new THREE.Color('#ffffff'), Math.random() * 0.8);
-            colAttr.setXYZ(i3, pCol.r, pCol.g, pCol.b);
+            const whiteMix = Math.random() > 0.4 ? Math.random() * 0.8 : 0;
+            const r = THREE.MathUtils.lerp(baseColor.r, 1.0, whiteMix);
+            const g = THREE.MathUtils.lerp(baseColor.g, 1.0, whiteMix);
+            const b = THREE.MathUtils.lerp(baseColor.b, 1.0, whiteMix);
+            colAttr.setXYZ(i3, r, g, b);
         }
 
         posAttr.needsUpdate = true;
@@ -1642,25 +1663,35 @@ for (let i = 0; i < 15; i++) {
     fireworkPool.push(new HeartFirework());
 }
 
+const staticFireworkOrigin = new THREE.Vector3();
+const staticDoubleLeft = new THREE.Vector3(-1.35, 2.0, 0);
+const staticDoubleRight = new THREE.Vector3(1.35, 2.3, 0);
+
 const triggerHeartFirework = (worldPos = null) => {
     const theme = colorThemes[currentThemeIndex];
-    const origin = worldPos ? worldPos.clone() : new THREE.Vector3(
-        (Math.random() - 0.5) * 6,
-        1.5 + Math.random() * 2.5,
-        (Math.random() - 0.5) * 4
-    );
+    if (worldPos) {
+        staticFireworkOrigin.copy(worldPos);
+    } else {
+        staticFireworkOrigin.set(
+            (Math.random() - 0.5) * 6,
+            1.5 + Math.random() * 2.5,
+            (Math.random() - 0.5) * 4
+        );
+    }
 
     const inactive = fireworkPool.find(f => !f.active);
     if (inactive) {
         const color = Math.random() > 0.4 ? theme.heartBase : theme.heartGlow;
-        inactive.spawn(origin, color);
+        inactive.spawn(staticFireworkOrigin, color);
     }
 };
 
 const triggerDoubleHeartFirework = () => {
-    triggerHeartFirework(new THREE.Vector3(-1.35, 2.0, (Math.random() - 0.5) * 1.5));
+    staticDoubleLeft.z = (Math.random() - 0.5) * 1.5;
+    triggerHeartFirework(staticDoubleLeft);
     setTimeout(() => {
-        triggerHeartFirework(new THREE.Vector3(1.35, 2.3, (Math.random() - 0.5) * 1.5));
+        staticDoubleRight.z = (Math.random() - 0.5) * 1.5;
+        triggerHeartFirework(staticDoubleRight);
     }, 130);
 };
 
@@ -3117,13 +3148,15 @@ window.addEventListener('click', (event) => {
     });
 
     // 3. Tạo Pháo Hoa Trái Tim 3D tại vị trí click
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    const targetPoint = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, targetPoint);
-    if (!targetPoint || isNaN(targetPoint.x)) {
-        raycaster.ray.at(5, targetPoint);
+    if (!window.clickPlane) {
+        window.clickPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        window.clickTargetPoint = new THREE.Vector3();
     }
-    triggerHeartFirework(targetPoint);
+    raycaster.ray.intersectPlane(window.clickPlane, window.clickTargetPoint);
+    if (!window.clickTargetPoint || isNaN(window.clickTargetPoint.x)) {
+        raycaster.ray.at(5, window.clickTargetPoint);
+    }
+    triggerHeartFirework(window.clickTargetPoint);
 });
 
 window.addEventListener('dblclick', (e) => {
@@ -3326,10 +3359,19 @@ const tick = () => {
     if (heartPoints) {
         heartPoints.rotation.y = elapsedTime * 0.08;
 
-        // Xoay nhẹ các dải lụa năng lượng ôm quanh tim
+        // Xoay nhẹ các dải lụa năng lượng và hiệu ứng đa tầng
         heartPoints.children.forEach(child => {
             if (child.isMesh && child.userData && child.userData.speed) {
                 child.rotation.z += child.userData.speed * delta;
+            }
+            if (child.userData && child.userData.isStardust) {
+                child.rotation.y = -elapsedTime * 0.04;
+                child.position.y = Math.sin(elapsedTime * 1.4) * 0.03;
+            }
+            if (child.userData && child.userData.isCleft && child.material) {
+                // Nhấp nháy thở nhẹ ở khe tim theo nhịp đập và âm bass
+                child.material.opacity = child.userData.baseOpacity + Math.sin(elapsedTime * 2.8) * 0.07 + smoothedBass * 0.10;
+                child.material.size = 0.021 + Math.sin(elapsedTime * 3.2) * 0.003 + smoothedBass * 0.006;
             }
         });
 
@@ -3405,8 +3447,10 @@ const tick = () => {
             posAttr.setXYZ(i, Math.cos(angle) * r, yVal, Math.sin(angle) * r);
 
             const mixRatio = 0.5 + Math.sin(angle * 3 + elapsedTime * 2) * 0.5;
-            const col = baseCol.clone().lerp(altCol, mixRatio);
-            colorAttr.setXYZ(i, col.r, col.g, col.b);
+            const rVal = THREE.MathUtils.lerp(baseCol.r, altCol.r, mixRatio);
+            const gVal = THREE.MathUtils.lerp(baseCol.g, altCol.g, mixRatio);
+            const bVal = THREE.MathUtils.lerp(baseCol.b, altCol.b, mixRatio);
+            colorAttr.setXYZ(i, rVal, gVal, bVal);
         }
         posAttr.needsUpdate = true;
         colorAttr.needsUpdate = true;
@@ -3693,7 +3737,8 @@ const tick = () => {
         camera.position.z = Math.cos(ct) * radius;
         camera.position.y = 2.4 + Math.sin(ct * 1.3) * 1.8;
 
-        controls.target.lerp(new THREE.Vector3(0, 2.2, 0), 0.05);
+        if (!window.staticCinemaTarget) window.staticCinemaTarget = new THREE.Vector3(0, 2.2, 0);
+        controls.target.lerp(window.staticCinemaTarget, 0.05);
         controls.update();
     } else {
         controls.autoRotate = (!isResettingView && fxConfig.rotationSpeed > 0);
