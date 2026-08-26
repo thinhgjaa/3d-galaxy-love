@@ -2056,89 +2056,211 @@ const initSFXContext = () => {
     }
 };
 
-// Đã tắt âm thanh pháo hoa theo yêu cầu
-const playFireworkPop = () => {};
+// 🎆 Firework Pop — Tiếng pháo hoa thực tế (noise crack + sparkle tail)
+const playFireworkPop = () => {
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+    try {
+        const now = sfxAudioCtx.currentTime;
+        // Layer 1: Noise crack (tiếng nổ bốp)
+        const len = Math.floor(sfxAudioCtx.sampleRate * 0.18);
+        const cracBuf = sfxAudioCtx.createBuffer(1, len, sfxAudioCtx.sampleRate);
+        const cracData = cracBuf.getChannelData(0);
+        for (let i = 0; i < len; i++) cracData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+        const cracSrc = sfxAudioCtx.createBufferSource();
+        cracSrc.buffer = cracBuf;
+        const cracBpf = sfxAudioCtx.createBiquadFilter();
+        cracBpf.type = 'bandpass'; cracBpf.frequency.value = 2800; cracBpf.Q.value = 1.2;
+        const cracGain = sfxAudioCtx.createGain();
+        cracGain.gain.setValueAtTime(0.7, now);
+        cracGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        cracSrc.connect(cracBpf); cracBpf.connect(cracGain); cracGain.connect(sfxAudioCtx.destination);
+        cracSrc.start(now); cracSrc.stop(now + 0.18);
+        // Layer 2: Sparkle ascending trail
+        [1047, 1319, 1568, 2093, 2637, 3136].forEach((freq, i) => {
+            const sOsc = sfxAudioCtx.createOscillator();
+            const sGain = sfxAudioCtx.createGain();
+            sOsc.type = 'sine';
+            sOsc.frequency.setValueAtTime(freq, now + 0.05 + i * 0.045);
+            sGain.gain.setValueAtTime(0.07, now + 0.05 + i * 0.045);
+            sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05 + i * 0.045 + 0.5);
+            sOsc.connect(sGain); sGain.connect(sfxAudioCtx.destination);
+            sOsc.start(now + 0.05 + i * 0.045); sOsc.stop(now + 0.05 + i * 0.045 + 0.52);
+        });
+        // Layer 3: Sub thud
+        const tOsc = sfxAudioCtx.createOscillator();
+        const tGain = sfxAudioCtx.createGain();
+        tOsc.type = 'sine'; tOsc.frequency.setValueAtTime(90, now);
+        tOsc.frequency.exponentialRampToValueAtTime(32, now + 0.25);
+        tGain.gain.setValueAtTime(0.35, now); tGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        tOsc.connect(tGain); tGain.connect(sfxAudioCtx.destination);
+        tOsc.start(now); tOsc.stop(now + 0.3);
+    } catch (e) {}
+};
 
+// 💖 Heart Burst Chime — Tiếng tim vỡ ấm áp, rung động cảm xúc
 const playHeartBurstChime = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
-
     try {
         const now = sfxAudioCtx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C5, E5, G5, C6, E6, G6
+        // Layer 1: Warm bell arpeggio (C major pentatonic shimmer)
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
         notes.forEach((freq, idx) => {
+            const t = now + idx * 0.058;
+            // Fundamental
             const osc = sfxAudioCtx.createOscillator();
-            const gain = sfxAudioCtx.createGain();
-
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
-
-            gain.gain.setValueAtTime(0, now + idx * 0.05);
-            gain.gain.linearRampToValueAtTime(0.09, now + idx * 0.05 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.05 + 0.65);
-
-            osc.connect(gain);
-            gain.connect(sfxAudioCtx.destination);
-
-            osc.start(now + idx * 0.05);
-            osc.stop(now + idx * 0.05 + 0.68);
+            osc.frequency.setValueAtTime(freq, t);
+            // Soft vibrato via LFO
+            const lfo = sfxAudioCtx.createOscillator();
+            const lfoGain = sfxAudioCtx.createGain();
+            lfo.frequency.value = 5.5; lfoGain.gain.value = freq * 0.006;
+            lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+            // Harmonic overtone
+            const harm = sfxAudioCtx.createOscillator();
+            harm.type = 'sine'; harm.frequency.setValueAtTime(freq * 2.01, t);
+            const harmGain = sfxAudioCtx.createGain();
+            harmGain.gain.setValueAtTime(0.025, t);
+            harmGain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+            harm.connect(harmGain); harmGain.connect(sfxAudioCtx.destination);
+            harm.start(t); harm.stop(t + 0.95);
+            const gain = sfxAudioCtx.createGain();
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.11, t + 0.018);
+            gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.85);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            lfo.start(t); osc.start(t);
+            osc.stop(t + 0.88); lfo.stop(t + 0.88);
         });
+        // Layer 2: Soft pink-noise breath (warmth)
+        const bLen = Math.floor(sfxAudioCtx.sampleRate * 0.6);
+        const bBuf = sfxAudioCtx.createBuffer(1, bLen, sfxAudioCtx.sampleRate);
+        const bData = bBuf.getChannelData(0);
+        let b0=0,b1=0,b2=0;
+        for (let i=0;i<bLen;i++){const w=Math.random()*2-1;b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.96900*b2+w*0.1538520;bData[i]=(b0+b1+b2+w*0.0782232)*0.11;}
+        const bSrc = sfxAudioCtx.createBufferSource(); bSrc.buffer = bBuf;
+        const bLpf = sfxAudioCtx.createBiquadFilter();
+        bLpf.type = 'lowpass'; bLpf.frequency.value = 900;
+        const bGain = sfxAudioCtx.createGain();
+        bGain.gain.setValueAtTime(0.04, now); bGain.gain.linearRampToValueAtTime(0.06, now + 0.1);
+        bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        bSrc.connect(bLpf); bLpf.connect(bGain); bGain.connect(sfxAudioCtx.destination);
+        bSrc.start(now); bSrc.stop(now + 0.6);
     } catch (e) {}
 };
 
+// ✨ Sparkle Chime — Tiếng long lanh pha lê, shimmer cao
 const playSparkleChime = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
-
     try {
         const now = sfxAudioCtx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        // Layer 1: Crystal bell notes (ascending)
+        const notes = [1046.50, 1318.51, 1567.98, 2093.00, 2637.02, 3135.96];
         notes.forEach((freq, idx) => {
+            const t = now + idx * 0.055;
             const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            osc.frequency.linearRampToValueAtTime(freq * 1.003, t + 0.3);
             const gain = sfxAudioCtx.createGain();
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
-
-            gain.gain.setValueAtTime(0, now + idx * 0.06);
-            gain.gain.linearRampToValueAtTime(0.08, now + idx * 0.06 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.45);
-
-            osc.connect(gain);
-            gain.connect(sfxAudioCtx.destination);
-
-            osc.start(now + idx * 0.06);
-            osc.stop(now + idx * 0.06 + 0.46);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.07, t + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.52);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            osc.start(t); osc.stop(t + 0.54);
         });
+        // Layer 2: Ultra-high shimmer dust
+        [4186, 5274, 6272, 7902].forEach((freq, idx) => {
+            const t = now + idx * 0.04 + 0.02;
+            const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            const gain = sfxAudioCtx.createGain();
+            gain.gain.setValueAtTime(0.04, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            osc.start(t); osc.stop(t + 0.36);
+        });
+        // Layer 3: Random glitter micro-blips
+        for (let i = 0; i < 8; i++) {
+            const t = now + Math.random() * 0.35;
+            const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 2000 + Math.random() * 4000;
+            const gain = sfxAudioCtx.createGain();
+            gain.gain.setValueAtTime(0.03, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            osc.start(t); osc.stop(t + 0.13);
+        }
     } catch (e) {}
 };
 
+// 🚀 Warp Sound — Tiếng warp không gian: whoosh + pitch sweep + reverb
 const playWarpSound = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
-
     try {
         const now = sfxAudioCtx.currentTime;
+        // Layer 1: White noise whoosh (gió vũ trụ)
+        const wLen = Math.floor(sfxAudioCtx.sampleRate * 2.8);
+        const wBuf = sfxAudioCtx.createBuffer(1, wLen, sfxAudioCtx.sampleRate);
+        const wData = wBuf.getChannelData(0);
+        for (let i = 0; i < wLen; i++) wData[i] = Math.random() * 2 - 1;
+        const wSrc = sfxAudioCtx.createBufferSource(); wSrc.buffer = wBuf;
+        const wBpf = sfxAudioCtx.createBiquadFilter();
+        wBpf.type = 'bandpass';
+        wBpf.frequency.setValueAtTime(200, now);
+        wBpf.frequency.exponentialRampToValueAtTime(3500, now + 1.4);
+        wBpf.frequency.exponentialRampToValueAtTime(400, now + 2.8);
+        wBpf.Q.value = 2.5;
+        const wGain = sfxAudioCtx.createGain();
+        wGain.gain.setValueAtTime(0.001, now);
+        wGain.gain.linearRampToValueAtTime(0.38, now + 0.6);
+        wGain.gain.linearRampToValueAtTime(0.32, now + 1.5);
+        wGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        wSrc.connect(wBpf); wBpf.connect(wGain); wGain.connect(sfxAudioCtx.destination);
+        wSrc.start(now); wSrc.stop(now + 2.8);
+        // Layer 2: Pitch sweep oscillator (engine spin-up)
         const osc = sfxAudioCtx.createOscillator();
-        const gain = sfxAudioCtx.createGain();
-
+        const dist = sfxAudioCtx.createWaveShaper();
+        const distCurve = new Float32Array(256);
+        for (let i = 0; i < 256; i++) { const x = (i * 2) / 256 - 1; distCurve[i] = (Math.PI + 60) * x / (Math.PI + 60 * Math.abs(x)); }
+        dist.curve = distCurve;
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(120, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 1.2);
-        osc.frequency.exponentialRampToValueAtTime(220, now + 2.5);
-
-        gain.gain.setValueAtTime(0.01, now);
-        gain.gain.linearRampToValueAtTime(0.12, now + 1.0);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
-
-        osc.connect(gain);
-        gain.connect(sfxAudioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + 2.5);
+        osc.frequency.setValueAtTime(65, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 1.5);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 2.8);
+        const oscGain = sfxAudioCtx.createGain();
+        oscGain.gain.setValueAtTime(0.008, now);
+        oscGain.gain.linearRampToValueAtTime(0.14, now + 0.8);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        osc.connect(dist); dist.connect(oscGain); oscGain.connect(sfxAudioCtx.destination);
+        osc.start(now); osc.stop(now + 2.85);
+        // Layer 3: Sub bass rumble on entry
+        const subO = sfxAudioCtx.createOscillator();
+        subO.type = 'sine'; subO.frequency.setValueAtTime(48, now);
+        subO.frequency.exponentialRampToValueAtTime(22, now + 1.0);
+        const subG = sfxAudioCtx.createGain();
+        subG.gain.setValueAtTime(0.28, now); subG.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        subO.connect(subG); subG.connect(sfxAudioCtx.destination);
+        subO.start(now); subO.stop(now + 1.3);
+        // Layer 4: Star-trail shimmer
+        [1200, 1800, 2400, 3200].forEach((freq, i) => {
+            const t = now + 0.3 + i * 0.18;
+            const sO = sfxAudioCtx.createOscillator(); sO.type = 'sine';
+            sO.frequency.setValueAtTime(freq, t);
+            sO.frequency.exponentialRampToValueAtTime(freq * 0.4, t + 0.9);
+            const sG = sfxAudioCtx.createGain();
+            sG.gain.setValueAtTime(0.06, t); sG.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+            sO.connect(sG); sG.connect(sfxAudioCtx.destination); sO.start(t); sO.stop(t + 0.9);
+        });
     } catch (e) {}
 };
 
@@ -3020,52 +3142,110 @@ const playSupernovaDetonationSound = () => {
         sizzleSrc.start(now + 0.05);
         sizzleSrc.stop(now + 2.0);
 
-        // === LAYER 5: SHOCKWAVE CONVOLUTION REVERB TAIL ===
+        // === LAYER 5: DEEP SPACE REVERB TAIL (vang không gian cực sâu) ===
         try {
             const convolver = sfxAudioCtx.createConvolver();
-            convolver.buffer = _createImpulseBuffer(sfxAudioCtx, 4.0, 3.5);
-            const revNoiseBuf = _createNoiseBuffer(sfxAudioCtx, 0.1);
+            // Impulse dài hơn, decay chậm hơn để tạo không gian rộng
+            const irLen = Math.floor(sfxAudioCtx.sampleRate * 6.0);
+            const irBuf = sfxAudioCtx.createBuffer(2, irLen, sfxAudioCtx.sampleRate);
+            for (let ch = 0; ch < 2; ch++) {
+                const d = irBuf.getChannelData(ch);
+                for (let i = 0; i < irLen; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2.2);
+                }
+            }
+            convolver.buffer = irBuf;
+            // Feed với low-frequency noise để reverb mang màu trầm
+            const revLen = Math.floor(sfxAudioCtx.sampleRate * 0.15);
+            const revBuf = sfxAudioCtx.createBuffer(1, revLen, sfxAudioCtx.sampleRate);
+            const revData = revBuf.getChannelData(0);
+            for (let i = 0; i < revLen; i++) revData[i] = Math.random() * 2 - 1;
             const revSrc = sfxAudioCtx.createBufferSource();
-            revSrc.buffer = revNoiseBuf;
+            revSrc.buffer = revBuf;
+            const revLpf = sfxAudioCtx.createBiquadFilter();
+            revLpf.type = 'lowpass'; revLpf.frequency.value = 600;
             const revGain = sfxAudioCtx.createGain();
-            revGain.gain.setValueAtTime(0.7, now);
-            revGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
-            revSrc.connect(convolver);
-            convolver.connect(revGain);
-            revGain.connect(sfxAudioCtx.destination);
-            revSrc.start(now);
-            revSrc.stop(now + 0.1);
+            revGain.gain.setValueAtTime(1.0, now);
+            revGain.gain.exponentialRampToValueAtTime(0.001, now + 6.5);
+            revSrc.connect(revLpf); revLpf.connect(convolver);
+            convolver.connect(revGain); revGain.connect(sfxAudioCtx.destination);
+            revSrc.start(now); revSrc.stop(now + 0.15);
         } catch(re) {}
 
-        // === LAYER 6: PLASMA DISCHARGE HARMONICS (tần số plasma bắn ra) ===
-        [38, 58, 76, 112, 145].forEach((freq, idx) => {
-            const pOsc = sfxAudioCtx.createOscillator();
-            pOsc.type = idx % 2 === 0 ? 'sine' : 'triangle';
-            pOsc.frequency.setValueAtTime(freq * (1 + idx * 0.15), now + idx * 0.04);
-            pOsc.frequency.exponentialRampToValueAtTime(freq * 0.3, now + 2.5 + idx * 0.2);
-            const pGain = sfxAudioCtx.createGain();
-            pGain.gain.setValueAtTime(0.25 - idx * 0.03, now + idx * 0.04);
-            pGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8 + idx * 0.15);
-            pOsc.connect(pGain);
-            pGain.connect(sfxAudioCtx.destination);
-            pOsc.start(now + idx * 0.04);
-            pOsc.stop(now + 3.0 + idx * 0.15);
+        // === LAYER 6: SUB-BASS RESONANCE RUMBLE (tiếng rền vũ trụ kéo dài) ===
+        // Âm trầm rền liên tục, fade out từ từ — nghe như mặt đất còn rung
+        [14, 20, 28, 36].forEach((freq, idx) => {
+            const t = now + 0.3 + idx * 0.2; // bắt đầu sau blast chính
+            const rOsc = sfxAudioCtx.createOscillator();
+            rOsc.type = 'sine';
+            rOsc.frequency.setValueAtTime(freq, t);
+            rOsc.frequency.linearRampToValueAtTime(freq * 0.7, t + 5.0); // drift xuống nhẹ
+            // LFO làm rung nhẹ biên độ (pulsing effect)
+            const lfo = sfxAudioCtx.createOscillator();
+            lfo.type = 'sine'; lfo.frequency.value = 0.4 + idx * 0.15; // ~0.4–0.85 Hz
+            const lfoGain = sfxAudioCtx.createGain();
+            lfoGain.gain.value = 0.06;
+            lfo.connect(lfoGain);
+            const rGain = sfxAudioCtx.createGain();
+            rGain.gain.setValueAtTime(0.0, t);
+            rGain.gain.linearRampToValueAtTime(0.28 - idx * 0.04, t + 0.8);
+            rGain.gain.setValueAtTime(0.28 - idx * 0.04, t + 2.0);
+            rGain.gain.exponentialRampToValueAtTime(0.001, t + 5.5 + idx * 0.4);
+            lfoGain.connect(rGain.gain); // LFO modulate gain
+            rOsc.connect(rGain); rGain.connect(sfxAudioCtx.destination);
+            lfo.start(t); rOsc.start(t);
+            rOsc.stop(t + 6.0 + idx * 0.4); lfo.stop(t + 6.0 + idx * 0.4);
         });
 
-        // === LAYER 7: AFTERGLOW SHIMMER (ánh sáng dư sau vụ nổ) ===
-        [1760, 2637, 3520, 5274].forEach((freq, idx) => {
-            const shimOsc = sfxAudioCtx.createOscillator();
-            shimOsc.type = 'sine';
-            shimOsc.frequency.setValueAtTime(freq + Math.random() * 80 - 40, now + 0.15 + idx * 0.12);
-            const shimGain = sfxAudioCtx.createGain();
-            shimGain.gain.setValueAtTime(0.0, now + 0.15 + idx * 0.12);
-            shimGain.gain.linearRampToValueAtTime(0.08, now + 0.25 + idx * 0.12);
-            shimGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5 + idx * 0.3);
-            shimOsc.connect(shimGain);
-            shimGain.connect(sfxAudioCtx.destination);
-            shimOsc.start(now + 0.15 + idx * 0.12);
-            shimOsc.stop(now + 1.8 + idx * 0.3);
+        // === LAYER 7: GRAVITATIONAL THROB (nhịp đập trọng lực, cực trầm) ===
+        // 3 nhịp đập bass thấp, như heartbeat của vũ trụ sau vụ nổ
+        [0.5, 1.6, 2.8].forEach((tOffset, idx) => {
+            const t = now + tOffset;
+            const tOsc = sfxAudioCtx.createOscillator();
+            tOsc.type = 'sine';
+            tOsc.frequency.setValueAtTime(32, t);
+            tOsc.frequency.exponentialRampToValueAtTime(12, t + 1.2);
+            const tGain = sfxAudioCtx.createGain();
+            tGain.gain.setValueAtTime(0.0, t);
+            tGain.gain.linearRampToValueAtTime(0.45 - idx * 0.08, t + 0.06); // fast attack
+            tGain.gain.exponentialRampToValueAtTime(0.001, t + 1.4 - idx * 0.1);
+            tOsc.connect(tGain); tGain.connect(sfxAudioCtx.destination);
+            tOsc.start(t); tOsc.stop(t + 1.5);
+            // Harmonic trầm đi kèm (sub-harmonic)
+            const hOsc = sfxAudioCtx.createOscillator();
+            hOsc.type = 'triangle';
+            hOsc.frequency.setValueAtTime(64, t);
+            hOsc.frequency.exponentialRampToValueAtTime(24, t + 1.0);
+            const hGain = sfxAudioCtx.createGain();
+            hGain.gain.setValueAtTime(0.0, t);
+            hGain.gain.linearRampToValueAtTime(0.18 - idx * 0.04, t + 0.05);
+            hGain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+            hOsc.connect(hGain); hGain.connect(sfxAudioCtx.destination);
+            hOsc.start(t); hOsc.stop(t + 1.1);
         });
+
+        // === LAYER 8: LOW-MID DEBRIS FIELD (tiếng vật chất vỡ rơi, trầm–trung) ===
+        // Noise filtered ở dải 60–350 Hz, xuất hiện muộn sau vụ nổ chính
+        const debrisLen = Math.floor(sfxAudioCtx.sampleRate * 4.0);
+        const debrisBuf = sfxAudioCtx.createBuffer(1, debrisLen, sfxAudioCtx.sampleRate);
+        const debrisData = debrisBuf.getChannelData(0);
+        for (let i = 0; i < debrisLen; i++) debrisData[i] = Math.random() * 2 - 1;
+        const debrisSrc = sfxAudioCtx.createBufferSource(); debrisSrc.buffer = debrisBuf;
+        const debrisLpf = sfxAudioCtx.createBiquadFilter();
+        debrisLpf.type = 'lowpass';
+        debrisLpf.frequency.setValueAtTime(350, now + 0.8);
+        debrisLpf.frequency.exponentialRampToValueAtTime(60, now + 4.5);
+        debrisLpf.Q.value = 1.5;
+        const debrisHpf = sfxAudioCtx.createBiquadFilter();
+        debrisHpf.type = 'highpass'; debrisHpf.frequency.value = 55;
+        const debrisGain = sfxAudioCtx.createGain();
+        debrisGain.gain.setValueAtTime(0.0, now + 0.8);
+        debrisGain.gain.linearRampToValueAtTime(0.4, now + 1.5);
+        debrisGain.gain.setValueAtTime(0.35, now + 2.5);
+        debrisGain.gain.exponentialRampToValueAtTime(0.001, now + 4.8);
+        debrisSrc.connect(debrisLpf); debrisLpf.connect(debrisHpf);
+        debrisHpf.connect(debrisGain); debrisGain.connect(sfxAudioCtx.destination);
+        debrisSrc.start(now + 0.8); debrisSrc.stop(now + 4.8);
     } catch (e) {}
 };
 
