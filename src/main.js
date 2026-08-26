@@ -5,6 +5,18 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 
+// Dynamic Base URL Resolver cho GitHub Pages & môi trường host khác nhau
+const getAssetUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('blob:') || path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+    const cleanPath = path.replace(/^\/+/, '');
+    const baseUrl = import.meta.env.BASE_URL || './';
+    return baseUrl.endsWith('/') ? `${baseUrl}${cleanPath}` : `${baseUrl}/${cleanPath}`;
+};
+
+
 /**
  * =========================================================================
  * 1. COLOR THEMES (Bộ màu vũ trụ) & LOCALSTORAGE
@@ -2372,7 +2384,7 @@ const initDefaultSprites = () => {
     });
 
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('/photos/cat.jpg', (tex) => {
+    textureLoader.load(getAssetUrl('photos/cat.jpg'), (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         for (let i = 0; i < 3; i++) {
             addSpriteToOrbit(tex, true);
@@ -3324,14 +3336,14 @@ const defaultPlaylist = [
         id: 'why-not-me',
         title: 'Why Not Me',
         artist: 'Enrique Iglesias',
-        src: '/audio/why-not-me.mp3',
+        src: getAssetUrl('audio/why-not-me.mp3'),
         sourceType: 'local'
     },
     {
         id: 'melody-of-universe',
         title: 'Melody of Universe',
         artist: 'Galaxy Ambient & Love',
-        src: '/audio/music.mp3',
+        src: getAssetUrl('audio/music.mp3'),
         sourceType: 'local'
     }
 ];
