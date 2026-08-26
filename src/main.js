@@ -341,6 +341,70 @@ scene.add(starfieldPoints);
  */
 let heartPoints = null;
 
+// Texture hạt phát sáng mềm mịn cho trái tim (không bị vuông cạnh, tạo độ lung linh như tinh thể pha lê)
+let heartParticleTexture = null;
+const getHeartParticleTexture = () => {
+    if (heartParticleTexture) return heartParticleTexture;
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.9)');
+    grad.addColorStop(0.55, 'rgba(255, 255, 255, 0.35)');
+    grad.addColorStop(0.85, 'rgba(255, 255, 255, 0.08)');
+    grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    heartParticleTexture = new THREE.CanvasTexture(canvas);
+    return heartParticleTexture;
+};
+
+// Hàm tính toán toạ độ 3D Trái Tim Điêu Khắc (True 3D Dual-Lobe Heart with Sculpted Cleft)
+const sampleHeart3D = (u, phi, scale = 0.086, scaleZ = 0.068, jitterAmount = 0.006) => {
+    const sinU = Math.sin(u);
+    const cosU = Math.cos(u);
+    const sinPhi = Math.sin(phi);
+    const cosPhi = Math.cos(phi);
+
+    // 1. Dáng 2D chuẩn trái tim thanh thoát
+    const x0 = 16 * Math.pow(sinU, 3);
+    let y0 = 13 * cosU - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u);
+
+    // 2. Điêu khắc khe tim hình chữ V sâu & mềm mại (Top Cleft Notch)
+    // Tăng độ sâu và độ thon của khe trên u = 0, giúp 2 bầu tim tách biệt rõ ràng và duyên dáng
+    const cleftProximity = Math.exp(-Math.pow(u / 0.48, 2));
+    y0 -= cleftProximity * 0.95;
+
+    // 3. Độ dày phồng 3D đa chiều & Rãnh giữa trước/sau (Anatomical Central Groove)
+    const lobeDist = Math.abs(sinU);
+    let maxThickness = 6.2 * Math.pow(lobeDist, 0.45) * (0.85 + 0.15 * cosU);
+    const grooveFactor = Math.exp(-Math.pow(x0 / 3.2, 2));
+    // Rãnh giữa lõm nhẹ tạo chiều sâu 3D khi xoay
+    maxThickness *= (1.0 - 0.28 * grooveFactor);
+
+    // 4. Toạ độ 3D thực thụ (2 bầu tim tròn trịa, không bị suy biến thành trục dọc)
+    const x = x0 * (0.35 + 0.65 * cosPhi) * scale;
+    const y = y0 * scale;
+    const z = maxThickness * sinPhi * scaleZ;
+
+    const jitter = (Math.random() - 0.5) * jitterAmount;
+
+    return {
+        x: x + jitter,
+        y: y + jitter,
+        z: z + jitter,
+        u,
+        phi,
+        cleftProximity,
+        grooveFactor,
+        lobeDist
+    };
+};
+
 const generateHeart = () => {
     if (heartPoints !== null) {
         while (heartPoints.children.length > 0) {
@@ -362,31 +426,41 @@ const generateHeart = () => {
     const insideColor = new THREE.Color(theme.insideColor || '#ff99cc');
     const lightColor = new THREE.Color(theme.lightColor || '#ffffff');
     const whiteColor = new THREE.Color('#ffffff');
+    const particleTex = getHeartParticleTexture();
 
-    // 1. PRECISION 3D PARAMETRIC SURFACE SHELL (8.000 hạt bề mặt điêu khắc rõ nét 100%)
-    const surfaceCount = 8000;
+    // =========================================================================
+    // 1. PRECISION 3D DIAMOND SURFACE SHELL (9.000 hạt bề mặt điêu khắc siêu mịn)
+    // =========================================================================
+    const surfaceCount = 9000;
     const surfaceGeom = new THREE.BufferGeometry();
     const surfacePos = new Float32Array(surfaceCount * 3);
     const surfaceCols = new Float32Array(surfaceCount * 3);
 
     for (let i = 0; i < surfaceCount; i++) {
-        const u = Math.PI * (2 * Math.random() - 1);
-        const v = Math.PI * (2 * Math.random() - 1);
-        
-        const sinU = Math.sin(u);
-        const x = 16 * Math.pow(sinU, 3) * Math.sin(v) * 0.086;
-        const y = (13 * Math.cos(u) - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.086;
-        const z = 16 * Math.pow(sinU, 3) * Math.cos(v) * 0.052;
+        // Phân bổ s đều đặn -> u không bị dồn cục tại x=0
+        const s = 2 * Math.random() - 1;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.55)) * 2;
+        const phi = (Math.random() - 0.5) * Math.PI;
 
-        const jitter = (Math.random() - 0.5) * 0.012;
-        surfacePos[i * 3] = x + jitter;
-        surfacePos[i * 3 + 1] = y + jitter;
-        surfacePos[i * 3 + 2] = z + jitter;
+        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.008);
+        surfacePos[i * 3] = pt.x;
+        surfacePos[i * 3 + 1] = pt.y;
+        surfacePos[i * 3 + 2] = pt.z;
 
-        const normY = (y + 1.3) / 2.6;
-        const col = baseColor.clone().lerp(glowColor, normY);
-        if (Math.random() > 0.88) {
-            col.lerp(whiteColor, 0.4); // Tinh thể kim cương lấp lánh nhẹ
+        // Gradient màu sắc tinh tế:
+        // Đỉnh 2 bầu tim & viền ngoài: Ánh sáng rực rỡ (glowColor / insideColor)
+        // Rãnh khe tim & đáy: Màu đậm đà có độ sâu huyền ảo (baseColor / ruby tone), không bị cháy sáng
+        const normY = (pt.y + 1.4) / 2.6;
+        let col = baseColor.clone().lerp(glowColor, normY);
+
+        if (pt.cleftProximity > 0.4) {
+            // Khu vực rãnh khe tim: Phối màu mềm dịu, có độ sâu tương phản 3D
+            col = baseColor.clone().lerp(insideColor, 0.35 + 0.3 * (1 - pt.cleftProximity));
+        }
+
+        // Tinh thể kim cương lấp lánh (Diamond Sparkles)
+        if (Math.random() > 0.86) {
+            col.lerp(whiteColor, 0.55);
         }
 
         surfaceCols[i * 3] = col.r;
@@ -398,9 +472,10 @@ const generateHeart = () => {
     surfaceGeom.setAttribute('color', new THREE.BufferAttribute(surfaceCols, 3));
 
     const surfaceMat = new THREE.PointsMaterial({
-        size: 0.021,
+        size: 0.024,
+        map: particleTex,
         transparent: true,
-        opacity: 0.82,
+        opacity: 0.85,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -410,27 +485,26 @@ const generateHeart = () => {
     const surfaceMesh = new THREE.Points(surfaceGeom, surfaceMat);
     heartPoints.add(surfaceMesh);
 
-    // 2. SOLID CRYSTAL VOLUME (5.000 hạt lòng khối đặc ruột, tạo chiều sâu 3D chân thực)
-    const volumeCount = 5000;
+    // =========================================================================
+    // 2. SOLID CRYSTAL VOLUME (5.500 hạt lòng khối 3D trong suốt đa tầng)
+    // =========================================================================
+    const volumeCount = 5500;
     const volumeGeom = new THREE.BufferGeometry();
     const volumePos = new Float32Array(volumeCount * 3);
     const volumeCols = new Float32Array(volumeCount * 3);
 
     for (let i = 0; i < volumeCount; i++) {
-        const u = Math.PI * (2 * Math.random() - 1);
-        const v = Math.PI * (2 * Math.random() - 1);
-        const s = Math.pow(Math.random(), 0.65) * 0.90; // Phân bổ lớp lõi
-        
-        const sinU = Math.sin(u);
-        const x = 16 * Math.pow(sinU, 3) * Math.sin(v) * 0.086 * s;
-        const y = (13 * Math.cos(u) - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.086 * s;
-        const z = 16 * Math.pow(sinU, 3) * Math.cos(v) * 0.052 * s;
+        const s = 2 * Math.random() - 1;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.55)) * 2;
+        const phi = (Math.random() - 0.5) * Math.PI;
+        const r = Math.pow(Math.random(), 0.6) * 0.90; // Phân bổ lớp lõi
 
-        volumePos[i * 3] = x;
-        volumePos[i * 3 + 1] = y;
-        volumePos[i * 3 + 2] = z;
+        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.005);
+        volumePos[i * 3] = pt.x * r;
+        volumePos[i * 3 + 1] = pt.y * r;
+        volumePos[i * 3 + 2] = pt.z * r;
 
-        const col = glowColor.clone().lerp(baseColor, s * 0.7);
+        const col = glowColor.clone().lerp(baseColor, r * 0.75);
         volumeCols[i * 3] = col.r;
         volumeCols[i * 3 + 1] = col.g;
         volumeCols[i * 3 + 2] = col.b;
@@ -440,9 +514,10 @@ const generateHeart = () => {
     volumeGeom.setAttribute('color', new THREE.BufferAttribute(volumeCols, 3));
 
     const volumeMat = new THREE.PointsMaterial({
-        size: 0.018,
+        size: 0.019,
+        map: particleTex,
         transparent: true,
-        opacity: 0.58,
+        opacity: 0.52,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -452,24 +527,25 @@ const generateHeart = () => {
     const volumeMesh = new THREE.Points(volumeGeom, volumeMat);
     heartPoints.add(volumeMesh);
 
-    // 3. RAZOR-SHARP CONTOUR SILHOUETTE RIM (2.000 hạt viền sắc nét định hình đường cong trái tim)
-    const contourCount = 2000;
+    // =========================================================================
+    // 3. RAZOR-SHARP CONTOUR SILHOUETTE (2.500 hạt viền sắc nét định hình đường cong tim)
+    // =========================================================================
+    const contourCount = 2500;
     const contourGeom = new THREE.BufferGeometry();
     const contourPos = new Float32Array(contourCount * 3);
     const contourCols = new Float32Array(contourCount * 3);
 
     for (let i = 0; i < contourCount; i++) {
-        const u = (i / contourCount) * Math.PI * 2;
-        const sinU = Math.sin(u);
-        const x = 16 * Math.pow(sinU, 3) * 0.086;
-        const y = (13 * Math.cos(u) - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.086;
-        const z = (Math.random() - 0.5) * 0.06;
+        const u = (i / contourCount) * Math.PI * 2 - Math.PI;
+        const pt = sampleHeart3D(u, 0, 0.086, 0.068, 0.002);
 
-        contourPos[i * 3] = x;
-        contourPos[i * 3 + 1] = y;
-        contourPos[i * 3 + 2] = z;
+        contourPos[i * 3] = pt.x;
+        contourPos[i * 3 + 1] = pt.y;
+        contourPos[i * 3 + 2] = (Math.random() - 0.5) * 0.035;
 
-        const col = glowColor.clone().lerp(insideColor, Math.random() * 0.5);
+        const col = glowColor.clone().lerp(insideColor, Math.random() * 0.6);
+        if (Math.random() > 0.8) col.lerp(whiteColor, 0.4);
+
         contourCols[i * 3] = col.r;
         contourCols[i * 3 + 1] = col.g;
         contourCols[i * 3 + 2] = col.b;
@@ -479,9 +555,10 @@ const generateHeart = () => {
     contourGeom.setAttribute('color', new THREE.BufferAttribute(contourCols, 3));
 
     const contourMat = new THREE.PointsMaterial({
-        size: 0.022,
+        size: 0.023,
+        map: particleTex,
         transparent: true,
-        opacity: 0.88,
+        opacity: 0.90,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -491,7 +568,97 @@ const generateHeart = () => {
     const contourMesh = new THREE.Points(contourGeom, contourMat);
     heartPoints.add(contourMesh);
 
-    // 4. ENERGY ORBITING RIBBONS (2 Dải lụa năng lượng mềm mại)
+    // =========================================================================
+    // 4. SCULPTED CLEFT RIDGE & SULCUS HIGHLIGHT (1.500 hạt viền khe tim phát sáng lung linh)
+    // =========================================================================
+    const cleftCount = 1500;
+    const cleftGeom = new THREE.BufferGeometry();
+    const cleftPos = new Float32Array(cleftCount * 3);
+    const cleftCols = new Float32Array(cleftCount * 3);
+
+    for (let i = 0; i < cleftCount; i++) {
+        // Tập trung dọc theo rãnh chữ V của khe tim phía trên và rãnh giữa trước/sau
+        const u = (Math.random() - 0.5) * 0.95;
+        const phi = (Math.random() - 0.5) * Math.PI * 0.7;
+        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.004);
+
+        cleftPos[i * 3] = pt.x;
+        cleftPos[i * 3 + 1] = pt.y;
+        cleftPos[i * 3 + 2] = pt.z;
+
+        // Điểm xuyết tinh thể lấp lánh như giọt sương mai trên khe tim
+        const col = glowColor.clone().lerp(lightColor, Math.random() * 0.7);
+        if (Math.random() > 0.6) {
+            col.lerp(whiteColor, 0.6);
+        }
+
+        cleftCols[i * 3] = col.r;
+        cleftCols[i * 3 + 1] = col.g;
+        cleftCols[i * 3 + 2] = col.b;
+    }
+
+    cleftGeom.setAttribute('position', new THREE.BufferAttribute(cleftPos, 3));
+    cleftGeom.setAttribute('color', new THREE.BufferAttribute(cleftCols, 3));
+
+    const cleftMat = new THREE.PointsMaterial({
+        size: 0.021,
+        map: particleTex,
+        transparent: true,
+        opacity: 0.88,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    const cleftMesh = new THREE.Points(cleftGeom, cleftMat);
+    heartPoints.add(cleftMesh);
+
+    // =========================================================================
+    // 5. AMBIENT FLOATING FAIRY STARDUST (800 hạt bụi sao lơ lửng quanh tim)
+    // =========================================================================
+    const stardustCount = 800;
+    const stardustGeom = new THREE.BufferGeometry();
+    const stardustPos = new Float32Array(stardustCount * 3);
+    const stardustCols = new Float32Array(stardustCount * 3);
+
+    for (let i = 0; i < stardustCount; i++) {
+        const s = 2 * Math.random() - 1;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.55)) * 2;
+        const phi = (Math.random() - 0.5) * Math.PI;
+        const auraDist = 1.06 + Math.random() * 0.28;
+
+        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.04);
+        stardustPos[i * 3] = pt.x * auraDist;
+        stardustPos[i * 3 + 1] = pt.y * auraDist;
+        stardustPos[i * 3 + 2] = pt.z * auraDist;
+
+        const col = insideColor.clone().lerp(whiteColor, Math.random() * 0.65);
+        stardustCols[i * 3] = col.r;
+        stardustCols[i * 3 + 1] = col.g;
+        stardustCols[i * 3 + 2] = col.b;
+    }
+
+    stardustGeom.setAttribute('position', new THREE.BufferAttribute(stardustPos, 3));
+    stardustGeom.setAttribute('color', new THREE.BufferAttribute(stardustCols, 3));
+
+    const stardustMat = new THREE.PointsMaterial({
+        size: 0.016,
+        map: particleTex,
+        transparent: true,
+        opacity: 0.70,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    const stardustMesh = new THREE.Points(stardustGeom, stardustMat);
+    heartPoints.add(stardustMesh);
+
+    // =========================================================================
+    // 6. ENERGY ORBITING RIBBONS (2 Dải lụa năng lượng mềm mại)
+    // =========================================================================
     const ribbonRadii = [1.45, 1.7];
     const ribbonTilts = [0.45, -0.4];
     ribbonRadii.forEach((rad, idx) => {
