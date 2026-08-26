@@ -2056,6 +2056,41 @@ const initSFXContext = () => {
     }
 };
 
+// ------- Mobile Landscape Enforcement -------
+const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (('ontouchstart' in window || navigator.maxTouchPoints > 0) && Math.min(window.innerWidth, window.innerHeight) <= 850);
+};
+
+const isCurrentlyPortrait = () => window.innerHeight > window.innerWidth;
+const shouldEnforceLandscape = () => isMobileDevice() && isCurrentlyPortrait();
+
+let hasGalaxyJourneyStarted = false;
+let isAssetsLoadingFinished = false;
+let dismissLoadingScreenFn = null;
+
+function enforceLandscape() {
+    const guard = document.getElementById('orientation-guard');
+    if (!guard) return;
+
+    if (shouldEnforceLandscape()) {
+        guard.classList.add('active');
+    } else {
+        guard.classList.remove('active');
+        // Nếu đã load xong nhưng trước đó bị giữ lại vì xoay dọc -> bây giờ bắt đầu du hành!
+        if (isAssetsLoadingFinished && !hasGalaxyJourneyStarted && typeof dismissLoadingScreenFn === 'function') {
+            dismissLoadingScreenFn();
+        }
+    }
+}
+
+enforceLandscape(); // Immediate orientation check
+window.addEventListener('resize', enforceLandscape);
+window.addEventListener('orientationchange', enforceLandscape);
+// ------- End of Mobile Landscape Enforcement -------
+
+
+
 // 🎆 Firework Pop — Tiếng pháo hoa thực tế (noise crack + sparkle tail)
 const playFireworkPop = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
@@ -5371,11 +5406,24 @@ const initLoadingScreen = () => {
 
     const loadingBar = document.getElementById('loading-bar');
     const loadingPercent = document.getElementById('loading-percent');
+    const loadingHint = loadingScreen.querySelector('.loading-hint');
 
     let isDismissed = false;
     const dismissLoading = () => {
         if (isDismissed) return;
+
+        // Nếu đang ở màn hình dọc trên điện thoại -> Giữ lại, không cho bắt đầu cho đến khi xoay ngang
+        if (shouldEnforceLandscape()) {
+            isAssetsLoadingFinished = true;
+            if (loadingBar) loadingBar.style.width = '100%';
+            if (loadingPercent) loadingPercent.textContent = '100%';
+            if (loadingHint) loadingHint.textContent = '📱 Vui lòng xoay ngang điện thoại để du hành vào Vũ Trụ 💖';
+            enforceLandscape();
+            return;
+        }
+
         isDismissed = true;
+        hasGalaxyJourneyStarted = true;
         clearInterval(progressInterval);
         if (loadingBar) loadingBar.style.width = '100%';
         if (loadingPercent) loadingPercent.textContent = '100%';
@@ -5392,6 +5440,8 @@ const initLoadingScreen = () => {
         }
     };
 
+    dismissLoadingScreenFn = dismissLoading;
+
     // Chạm/Click vào màn hình loading để bắt đầu ngay lập tức
     loadingScreen.addEventListener('click', dismissLoading, { passive: true });
     loadingScreen.addEventListener('touchstart', dismissLoading, { passive: true });
@@ -5404,7 +5454,13 @@ const initLoadingScreen = () => {
             currentProgress = 100;
             if (loadingBar) loadingBar.style.width = '100%';
             if (loadingPercent) loadingPercent.textContent = '100%';
-            dismissLoading();
+            isAssetsLoadingFinished = true;
+            if (shouldEnforceLandscape()) {
+                if (loadingHint) loadingHint.textContent = '📱 Vui lòng xoay ngang điện thoại để du hành vào Vũ Trụ 💖';
+                enforceLandscape();
+            } else {
+                dismissLoading();
+            }
         } else {
             if (loadingBar) loadingBar.style.width = `${currentProgress}%`;
             if (loadingPercent) loadingPercent.textContent = `${currentProgress}%`;
@@ -5413,3 +5469,4 @@ const initLoadingScreen = () => {
 };
 
 initLoadingScreen();
+
