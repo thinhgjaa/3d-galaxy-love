@@ -123,15 +123,23 @@ const sizes = {
 
 const isPortrait = () => window.innerWidth < window.innerHeight;
 
+const defaultCameraPos = (window.innerWidth < window.innerHeight)
+    ? new THREE.Vector3(0, 2.8, 8.8)
+    : new THREE.Vector3(0, 2.5, 7.2);
+const defaultTarget = new THREE.Vector3(0, 1.35, 0);
+
+const entryWarpStartPos = new THREE.Vector3(0, 15.0, 42.0);
+const entryWarpControlPos = new THREE.Vector3(0, 7.2, 18.0);
+const entryWarpStartTarget = new THREE.Vector3(0, 2.2, 0);
+
 // Camera (Tối ưu FOV & khoảng cách cho cả điện thoại dọc và màn hình ngang)
 const camera = new THREE.PerspectiveCamera(
-    isPortrait() ? 80 : 75,
+    isPortrait() ? 96 : 90,
     sizes.width / sizes.height,
     0.1,
-    100
+    150
 );
-const initialCamPos = isPortrait() ? new THREE.Vector3(0, 2.8, 8.8) : new THREE.Vector3(0, 2.5, 7.2);
-camera.position.copy(initialCamPos);
+camera.position.copy(entryWarpStartPos);
 scene.add(camera);
 
 // OrbitControls (Tối ưu vuốt đa điểm & Pinch-to-zoom điện thoại)
@@ -140,13 +148,14 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enableZoom = true;
 controls.zoomSpeed = 0.85;
-controls.target.set(0, 1.35, 0);
-controls.autoRotate = (fxConfig.rotationSpeed > 0);
+controls.target.copy(defaultTarget);
+controls.autoRotate = false;
 controls.autoRotateSpeed = fxConfig.rotationSpeed;
 controls.touches = {
     ONE: THREE.TOUCH.ROTATE,
     TWO: THREE.TOUCH.DOLLY_PAN
 };
+controls.enabled = false;
 controls.update();
 
 // Lighting
@@ -157,6 +166,70 @@ const initialTheme = colorThemes[currentThemeIndex];
 const pointLight = new THREE.PointLight(initialTheme.lightColor, 1.1, 18);
 pointLight.position.set(0, 2.8, 0);
 scene.add(pointLight);
+
+/**
+ * =========================================================================
+ * 2.1 COSMIC WARP ENTRY FLIGHT (Bay Xuyên Vũ Trụ Vào Tâm Thiên Hà)
+ * =========================================================================
+ */
+const entryWarpCount = 450;
+const entryWarpGeom = new THREE.BufferGeometry();
+const entryWarpPositions = new Float32Array(entryWarpCount * 6);
+const entryWarpColors = new Float32Array(entryWarpCount * 6);
+
+for (let i = 0; i < entryWarpCount; i++) {
+    const i6 = i * 6;
+    const rad = 1.0 + Math.random() * 14.0;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * rad;
+    const y = Math.sin(angle) * rad + 2.4;
+    const z = (Math.random() - 0.5) * 60.0;
+    const len = 4.0 + Math.random() * 6.5;
+
+    entryWarpPositions[i6] = x;
+    entryWarpPositions[i6 + 1] = y;
+    entryWarpPositions[i6 + 2] = z;
+    entryWarpPositions[i6 + 3] = x;
+    entryWarpPositions[i6 + 4] = y;
+    entryWarpPositions[i6 + 5] = z - len;
+
+    entryWarpColors[i6] = 1.0;
+    entryWarpColors[i6 + 1] = 0.85;
+    entryWarpColors[i6 + 2] = 1.0;
+    entryWarpColors[i6 + 3] = 0.35;
+    entryWarpColors[i6 + 4] = 0.1;
+    entryWarpColors[i6 + 5] = 0.6;
+}
+
+entryWarpGeom.setAttribute('position', new THREE.BufferAttribute(entryWarpPositions, 3));
+entryWarpGeom.setAttribute('color', new THREE.BufferAttribute(entryWarpColors, 3));
+
+const entryWarpMat = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending
+});
+const entryWarpMesh = new THREE.LineSegments(entryWarpGeom, entryWarpMat);
+entryWarpMesh.visible = true;
+scene.add(entryWarpMesh);
+
+let isEntryWarping = false;
+let entryWarpProgress = 0;
+const entryWarpDuration = 2.6;
+
+const startCosmicEntryFlight = () => {
+    isEntryWarping = true;
+    entryWarpProgress = 0;
+    entryWarpMesh.visible = true;
+    entryWarpMat.opacity = 0.95;
+    controls.enabled = false;
+    camera.position.copy(entryWarpStartPos);
+    camera.fov = isPortrait() ? 96 : 90;
+    camera.updateProjectionMatrix();
+    controls.target.copy(entryWarpStartTarget);
+    camera.lookAt(entryWarpStartTarget);
+};
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -1724,7 +1797,250 @@ window.addEventListener('touchend', (e) => {
 
 /**
  * =========================================================================
- * 7.1 WEB AUDIO SYNTHESIZER (Âm thanh hiệu ứng không gian)
+ * 7.1 HEART BURST INTERACTION ENGINE (Bùng Nổ Sóng Ánh Sáng & Trái Tim Pha Lê Mini)
+ * =========================================================================
+ */
+// 1. Tạo texture hình trái tim phát sáng pha lê cho các hạt mini
+const createMiniCrystalHeartTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.save();
+    ctx.translate(32, 28);
+    ctx.scale(1.25, 1.25);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 4);
+    ctx.bezierCurveTo(-14, -14, -24, 6, 0, 22);
+    ctx.bezierCurveTo(24, 6, 14, -14, 0, 4);
+    ctx.closePath();
+
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+    ctx.restore();
+
+    return new THREE.CanvasTexture(canvas);
+};
+
+const miniCrystalHeartTexture = createMiniCrystalHeartTexture();
+
+// 2. Shockwave Mesh (Vòng sóng ánh sáng lan tỏa từ tâm khe tim)
+const heartBurstShockwaveGroup = new THREE.Group();
+scene.add(heartBurstShockwaveGroup);
+
+const heartBurstShockwaveGeom = new THREE.RingGeometry(0.08, 0.42, 64);
+const heartBurstShockwaveMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+});
+const heartBurstShockwaveMesh = new THREE.Mesh(heartBurstShockwaveGeom, heartBurstShockwaveMat);
+heartBurstShockwaveMesh.rotation.x = Math.PI / 2;
+heartBurstShockwaveMesh.visible = false;
+heartBurstShockwaveGroup.add(heartBurstShockwaveMesh);
+
+let heartBurstShockwaveLife = 0;
+const heartBurstShockwaveMaxLife = 1.35;
+
+// 3. Mini Crystal Hearts Particle Cloud (180 hạt trái tim pha lê mini bay vút lên bầu trời)
+const MINI_HEART_COUNT = 180;
+const miniHeartsGeom = new THREE.BufferGeometry();
+const miniHeartsPos = new Float32Array(MINI_HEART_COUNT * 3);
+const miniHeartsCols = new Float32Array(MINI_HEART_COUNT * 3);
+
+miniHeartsGeom.setAttribute('position', new THREE.BufferAttribute(miniHeartsPos, 3));
+miniHeartsGeom.setAttribute('color', new THREE.BufferAttribute(miniHeartsCols, 3));
+
+const miniHeartsMat = new THREE.PointsMaterial({
+    size: 0.16,
+    map: miniCrystalHeartTexture,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true
+});
+
+const miniHeartsPoints = new THREE.Points(miniHeartsGeom, miniHeartsMat);
+miniHeartsPoints.visible = false;
+scene.add(miniHeartsPoints);
+
+const miniHeartsData = [];
+for (let i = 0; i < MINI_HEART_COUNT; i++) {
+    miniHeartsData.push({
+        x: 0, y: 0, z: 0,
+        vx: 0, vy: 0, vz: 0,
+        swirlAngle: 0,
+        swirlSpeed: 0,
+        swirlRadius: 0,
+        life: 0,
+        maxLife: 1.0,
+        baseR: 1, baseG: 1, baseB: 1
+    });
+}
+
+let isHeartBurstActive = false;
+
+// Kích hoạt Bùng Nổ Trái Tim
+const triggerHeartBurst = () => {
+    isHeartBurstActive = true;
+    const theme = colorThemes[currentThemeIndex];
+    const baseColor = new THREE.Color(theme.heartBase);
+    const glowColor = new THREE.Color(theme.heartGlow);
+    const insideColor = new THREE.Color(theme.insideColor || '#ff99cc');
+    const whiteColor = new THREE.Color('#ffffff');
+
+    // 1. Kích hoạt Shockwave từ tâm khe tim (0, 2.65, 0)
+    heartBurstShockwaveMesh.position.set(0, 2.65, 0);
+    heartBurstShockwaveMesh.scale.set(0.2, 0.2, 0.2);
+    heartBurstShockwaveMat.color.copy(glowColor);
+    heartBurstShockwaveMat.opacity = 0.95;
+    heartBurstShockwaveMesh.visible = true;
+    heartBurstShockwaveLife = 1.0;
+
+    // 2. Kích hoạt 180 Trái Tim Pha Lê Mini
+    miniHeartsPoints.visible = true;
+    miniHeartsMat.opacity = 1.0;
+
+    const posAttr = miniHeartsGeom.attributes.position;
+    const colAttr = miniHeartsGeom.attributes.color;
+
+    for (let i = 0; i < MINI_HEART_COUNT; i++) {
+        const d = miniHeartsData[i];
+        d.life = 1.0;
+        d.maxLife = 1.6 + Math.random() * 1.3; // Bay từ 1.6 - 2.9s
+
+        // Xuất phát từ vùng khe tim và thân tim
+        const spreadX = (Math.random() - 0.5) * 0.55;
+        const spreadY = 2.55 + (Math.random() - 0.5) * 0.45;
+        const spreadZ = (Math.random() - 0.5) * 0.4;
+
+        d.x = spreadX;
+        d.y = spreadY;
+        d.z = spreadZ;
+
+        // Vận tốc bung nở hình phễu hướng lên trời
+        const burstAngle = Math.random() * Math.PI * 2;
+        const radialSpeed = 0.015 + Math.random() * 0.045;
+        d.vx = Math.cos(burstAngle) * radialSpeed;
+        d.vy = 0.042 + Math.random() * 0.058; // Vút bay lên cao
+        d.vz = Math.sin(burstAngle) * radialSpeed;
+
+        d.swirlAngle = burstAngle;
+        d.swirlSpeed = (Math.random() - 0.5) * 0.09;
+        d.swirlRadius = 0.015 + Math.random() * 0.035;
+
+        posAttr.setXYZ(i, d.x, d.y, d.z);
+
+        // Phối màu sắc phong phú lấp lánh theo theme
+        let c = glowColor.clone();
+        const rand = Math.random();
+        if (rand < 0.35) {
+            c = baseColor.clone();
+        } else if (rand < 0.65) {
+            c = insideColor.clone();
+        } else {
+            c = whiteColor.clone();
+        }
+        if (Math.random() > 0.45) c.lerp(whiteColor, 0.6);
+
+        d.baseR = c.r;
+        d.baseG = c.g;
+        d.baseB = c.b;
+
+        colAttr.setXYZ(i, c.r, c.g, c.b);
+    }
+
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+
+    // 3. Đập nảy trái tim đàn hồi mạnh mẽ ("Thình... Thịch!")
+    currentHeartScale = 1.30;
+
+    // 4. Âm thanh hợp âm pha lê ngân vang
+    playHeartBurstChime();
+};
+
+const updateHeartBurst = (delta, elapsedTime) => {
+    if (!isHeartBurstActive) return;
+
+    let stillActive = false;
+
+    // 1. Cập nhật Shockwave
+    if (heartBurstShockwaveMesh.visible) {
+        heartBurstShockwaveLife -= delta / heartBurstShockwaveMaxLife;
+        if (heartBurstShockwaveLife > 0) {
+            stillActive = true;
+            const progress = 1.0 - heartBurstShockwaveLife;
+            const scale = 0.2 + progress * 5.6;
+            heartBurstShockwaveMesh.scale.set(scale, scale, scale);
+            heartBurstShockwaveMat.opacity = Math.pow(heartBurstShockwaveLife, 1.4) * 0.85;
+            heartBurstShockwaveMesh.rotation.z += delta * 0.9;
+        } else {
+            heartBurstShockwaveMesh.visible = false;
+        }
+    }
+
+    // 2. Cập nhật Mini Hearts
+    if (miniHeartsPoints.visible) {
+        const posAttr = miniHeartsGeom.attributes.position;
+        const colAttr = miniHeartsGeom.attributes.color;
+        let anyMiniHeartActive = false;
+
+        for (let i = 0; i < MINI_HEART_COUNT; i++) {
+            const d = miniHeartsData[i];
+            if (d.life > 0) {
+                anyMiniHeartActive = true;
+                d.life -= delta / d.maxLife;
+
+                d.swirlAngle += d.swirlSpeed;
+                d.x += d.vx + Math.cos(d.swirlAngle) * d.swirlRadius;
+                d.y += d.vy;
+                d.z += d.vz + Math.sin(d.swirlAngle) * d.swirlRadius;
+
+                d.vx *= 0.985;
+                d.vz *= 0.985;
+                d.vy *= 0.992;
+
+                posAttr.setXYZ(i, d.x, d.y, d.z);
+
+                const alpha = Math.max(0, d.life);
+                const shimmer = 0.75 + Math.sin(elapsedTime * 8.0 + i) * 0.25;
+                const brightness = alpha * shimmer;
+                colAttr.setXYZ(i, d.baseR * brightness, d.baseG * brightness, d.baseB * brightness);
+            }
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+
+        if (anyMiniHeartActive) {
+            stillActive = true;
+        } else {
+            miniHeartsPoints.visible = false;
+        }
+    }
+
+    if (!stillActive) {
+        isHeartBurstActive = false;
+    }
+};
+
+/**
+ * =========================================================================
+ * 7.2 WEB AUDIO SYNTHESIZER (Âm thanh hiệu ứng không gian)
  * =========================================================================
  */
 let sfxAudioCtx = null;
@@ -1742,6 +2058,34 @@ const initSFXContext = () => {
 
 // Đã tắt âm thanh pháo hoa theo yêu cầu
 const playFireworkPop = () => {};
+
+const playHeartBurstChime = () => {
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+
+    try {
+        const now = sfxAudioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; // C5, E5, G5, C6, E6, G6
+        notes.forEach((freq, idx) => {
+            const osc = sfxAudioCtx.createOscillator();
+            const gain = sfxAudioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+            gain.gain.setValueAtTime(0, now + idx * 0.05);
+            gain.gain.linearRampToValueAtTime(0.09, now + idx * 0.05 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.05 + 0.65);
+
+            osc.connect(gain);
+            gain.connect(sfxAudioCtx.destination);
+
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.68);
+        });
+    } catch (e) {}
+};
 
 const playSparkleChime = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
@@ -2513,25 +2857,92 @@ const supernovaMat = new THREE.PointsMaterial({
 const supernovaPoints = new THREE.Points(supernovaGeom, supernovaMat);
 scene.add(supernovaPoints);
 
-// Âm thanh Siêu Tân Tinh (Implosion Sweep + Detonation Boom)
+// Âm thanh Siêu Tân Tinh - Phiên bản thực tế cực đỉnh
+// Helper: tạo white noise buffer
+const _createNoiseBuffer = (ctx, durationSec) => {
+    const sampleRate = ctx.sampleRate;
+    const length = Math.floor(sampleRate * durationSec);
+    const buffer = ctx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+    return buffer;
+};
+// Helper: impulse reverb (simulate large space tail)
+const _createImpulseBuffer = (ctx, durationSec, decay) => {
+    const sampleRate = ctx.sampleRate;
+    const length = Math.floor(sampleRate * durationSec);
+    const buffer = ctx.createBuffer(2, length, sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+        const data = buffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+        }
+    }
+    return buffer;
+};
+
 const playSupernovaImplosionSound = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
     try {
         const now = sfxAudioCtx.currentTime;
-        const osc = sfxAudioCtx.createOscillator();
-        const gain = sfxAudioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(38, now + 1.25);
-        gain.gain.setValueAtTime(0.01, now);
-        gain.gain.linearRampToValueAtTime(0.45, now + 0.9);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
-        osc.connect(gain);
-        gain.connect(sfxAudioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 1.35);
+        const dur = 1.6;
+
+        // === LAYER 1: White noise suck-in (implosion vacuum) ===
+        const noiseBuf = _createNoiseBuffer(sfxAudioCtx, dur);
+        const noiseSource = sfxAudioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuf;
+        const bandpass = sfxAudioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(2200, now);
+        bandpass.frequency.exponentialRampToValueAtTime(60, now + dur);
+        bandpass.Q.value = 1.8;
+        const noiseGain = sfxAudioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.001, now);
+        noiseGain.gain.linearRampToValueAtTime(0.55, now + 0.5);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noiseSource.connect(bandpass);
+        bandpass.connect(noiseGain);
+        noiseGain.connect(sfxAudioCtx.destination);
+        noiseSource.start(now);
+        noiseSource.stop(now + dur);
+
+        // === LAYER 2: Gravitational frequency sweep (deep sub pull) ===
+        const oscPull = sfxAudioCtx.createOscillator();
+        oscPull.type = 'sawtooth';
+        oscPull.frequency.setValueAtTime(280, now);
+        oscPull.frequency.exponentialRampToValueAtTime(22, now + dur);
+        const distortion = sfxAudioCtx.createWaveShaper();
+        const distCurve = new Float32Array(256);
+        for (let i = 0; i < 256; i++) {
+            const x = (i * 2) / 256 - 1;
+            distCurve[i] = (Math.PI + 80) * x / (Math.PI + 80 * Math.abs(x));
+        }
+        distortion.curve = distCurve;
+        const pullGain = sfxAudioCtx.createGain();
+        pullGain.gain.setValueAtTime(0.01, now);
+        pullGain.gain.linearRampToValueAtTime(0.35, now + 0.7);
+        pullGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        oscPull.connect(distortion);
+        distortion.connect(pullGain);
+        pullGain.connect(sfxAudioCtx.destination);
+        oscPull.start(now);
+        oscPull.stop(now + dur);
+
+        // === LAYER 3: High tension whistle (energy building up) ===
+        const oscTension = sfxAudioCtx.createOscillator();
+        oscTension.type = 'sine';
+        oscTension.frequency.setValueAtTime(120, now + 0.3);
+        oscTension.frequency.exponentialRampToValueAtTime(880, now + dur - 0.1);
+        const tensionGain = sfxAudioCtx.createGain();
+        tensionGain.gain.setValueAtTime(0.001, now + 0.3);
+        tensionGain.gain.linearRampToValueAtTime(0.22, now + 0.9);
+        tensionGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        oscTension.connect(tensionGain);
+        tensionGain.connect(sfxAudioCtx.destination);
+        oscTension.start(now + 0.3);
+        oscTension.stop(now + dur);
     } catch (e) {}
 };
 
@@ -2541,32 +2952,119 @@ const playSupernovaDetonationSound = () => {
     if (!sfxAudioCtx) return;
     try {
         const now = sfxAudioCtx.currentTime;
-        
-        // Deep sub boom
-        const osc = sfxAudioCtx.createOscillator();
-        const gain = sfxAudioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(95, now);
-        osc.frequency.exponentialRampToValueAtTime(28, now + 1.8);
-        gain.gain.setValueAtTime(0.9, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
-        osc.connect(gain);
-        gain.connect(sfxAudioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 2.3);
 
-        // Sparkle arpeggio
-        [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00].forEach((freq, idx) => {
-            const sOsc = sfxAudioCtx.createOscillator();
-            const sGain = sfxAudioCtx.createGain();
-            sOsc.type = 'triangle';
-            sOsc.frequency.setValueAtTime(freq, now + idx * 0.09);
-            sGain.gain.setValueAtTime(0.28, now + idx * 0.09);
-            sGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.9);
-            sOsc.connect(sGain);
-            sGain.connect(sfxAudioCtx.destination);
-            sOsc.start(now + idx * 0.09);
-            sOsc.stop(now + idx * 0.09 + 1.0);
+        // === LAYER 1: MASSIVE SUB-BASS THUD (tiếng nổ cực sâu) ===
+        const subOsc = sfxAudioCtx.createOscillator();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(55, now);
+        subOsc.frequency.exponentialRampToValueAtTime(18, now + 3.5);
+        const subGain = sfxAudioCtx.createGain();
+        subGain.gain.setValueAtTime(1.2, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 3.8);
+        subOsc.connect(subGain);
+        subGain.connect(sfxAudioCtx.destination);
+        subOsc.start(now);
+        subOsc.stop(now + 4.0);
+
+        // === LAYER 2: WHITE NOISE EXPLOSION BLAST (tiếng nổ trắng thực tế) ===
+        const blastBuf = _createNoiseBuffer(sfxAudioCtx, 3.5);
+        const blastSrc = sfxAudioCtx.createBufferSource();
+        blastSrc.buffer = blastBuf;
+        // Lowpass filter để cho ra tiếng nổ ầm ầm, không chói
+        const lpf = sfxAudioCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.setValueAtTime(8000, now);
+        lpf.frequency.exponentialRampToValueAtTime(280, now + 2.0);
+        lpf.Q.value = 0.5;
+        const blastGain = sfxAudioCtx.createGain();
+        blastGain.gain.setValueAtTime(0.9, now);
+        blastGain.gain.setValueAtTime(0.7, now + 0.02);
+        blastGain.gain.exponentialRampToValueAtTime(0.001, now + 3.2);
+        blastSrc.connect(lpf);
+        lpf.connect(blastGain);
+        blastGain.connect(sfxAudioCtx.destination);
+        blastSrc.start(now);
+        blastSrc.stop(now + 3.5);
+
+        // === LAYER 3: MID-RANGE CRACK (tiếng nứt vỡ trung) ===
+        const crackBuf = _createNoiseBuffer(sfxAudioCtx, 0.4);
+        const crackSrc = sfxAudioCtx.createBufferSource();
+        crackSrc.buffer = crackBuf;
+        const bpf1 = sfxAudioCtx.createBiquadFilter();
+        bpf1.type = 'bandpass';
+        bpf1.frequency.value = 1800;
+        bpf1.Q.value = 3;
+        const crackGain = sfxAudioCtx.createGain();
+        crackGain.gain.setValueAtTime(0.8, now);
+        crackGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        crackSrc.connect(bpf1);
+        bpf1.connect(crackGain);
+        crackGain.connect(sfxAudioCtx.destination);
+        crackSrc.start(now);
+        crackSrc.stop(now + 0.4);
+
+        // === LAYER 4: HIGH-FREQ DEBRIS SIZZLE (tia lửa, mảnh vỡ) ===
+        const sizzleBuf = _createNoiseBuffer(sfxAudioCtx, 2.0);
+        const sizzleSrc = sfxAudioCtx.createBufferSource();
+        sizzleSrc.buffer = sizzleBuf;
+        const hpf = sfxAudioCtx.createBiquadFilter();
+        hpf.type = 'highpass';
+        hpf.frequency.setValueAtTime(4000, now + 0.05);
+        hpf.frequency.exponentialRampToValueAtTime(12000, now + 1.5);
+        const sizzleGain = sfxAudioCtx.createGain();
+        sizzleGain.gain.setValueAtTime(0.35, now + 0.05);
+        sizzleGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+        sizzleSrc.connect(hpf);
+        hpf.connect(sizzleGain);
+        sizzleGain.connect(sfxAudioCtx.destination);
+        sizzleSrc.start(now + 0.05);
+        sizzleSrc.stop(now + 2.0);
+
+        // === LAYER 5: SHOCKWAVE CONVOLUTION REVERB TAIL ===
+        try {
+            const convolver = sfxAudioCtx.createConvolver();
+            convolver.buffer = _createImpulseBuffer(sfxAudioCtx, 4.0, 3.5);
+            const revNoiseBuf = _createNoiseBuffer(sfxAudioCtx, 0.1);
+            const revSrc = sfxAudioCtx.createBufferSource();
+            revSrc.buffer = revNoiseBuf;
+            const revGain = sfxAudioCtx.createGain();
+            revGain.gain.setValueAtTime(0.7, now);
+            revGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+            revSrc.connect(convolver);
+            convolver.connect(revGain);
+            revGain.connect(sfxAudioCtx.destination);
+            revSrc.start(now);
+            revSrc.stop(now + 0.1);
+        } catch(re) {}
+
+        // === LAYER 6: PLASMA DISCHARGE HARMONICS (tần số plasma bắn ra) ===
+        [38, 58, 76, 112, 145].forEach((freq, idx) => {
+            const pOsc = sfxAudioCtx.createOscillator();
+            pOsc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+            pOsc.frequency.setValueAtTime(freq * (1 + idx * 0.15), now + idx * 0.04);
+            pOsc.frequency.exponentialRampToValueAtTime(freq * 0.3, now + 2.5 + idx * 0.2);
+            const pGain = sfxAudioCtx.createGain();
+            pGain.gain.setValueAtTime(0.25 - idx * 0.03, now + idx * 0.04);
+            pGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8 + idx * 0.15);
+            pOsc.connect(pGain);
+            pGain.connect(sfxAudioCtx.destination);
+            pOsc.start(now + idx * 0.04);
+            pOsc.stop(now + 3.0 + idx * 0.15);
+        });
+
+        // === LAYER 7: AFTERGLOW SHIMMER (ánh sáng dư sau vụ nổ) ===
+        [1760, 2637, 3520, 5274].forEach((freq, idx) => {
+            const shimOsc = sfxAudioCtx.createOscillator();
+            shimOsc.type = 'sine';
+            shimOsc.frequency.setValueAtTime(freq + Math.random() * 80 - 40, now + 0.15 + idx * 0.12);
+            const shimGain = sfxAudioCtx.createGain();
+            shimGain.gain.setValueAtTime(0.0, now + 0.15 + idx * 0.12);
+            shimGain.gain.linearRampToValueAtTime(0.08, now + 0.25 + idx * 0.12);
+            shimGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5 + idx * 0.3);
+            shimOsc.connect(shimGain);
+            shimGain.connect(sfxAudioCtx.destination);
+            shimOsc.start(now + 0.15 + idx * 0.12);
+            shimOsc.stop(now + 1.8 + idx * 0.3);
         });
     } catch (e) {}
 };
@@ -2595,10 +3093,6 @@ const triggerSupernovaLoveBurst = () => {
  */
 let isCinemaMode = false;
 let isResettingView = false;
-const defaultCameraPos = (window.innerWidth < window.innerHeight)
-    ? new THREE.Vector3(0, 2.8, 8.8)
-    : new THREE.Vector3(0, 2.5, 7.2);
-const defaultTarget = new THREE.Vector3(0, 1.35, 0);
 
 controls.addEventListener('start', () => {
     isResettingView = false;
@@ -3147,7 +3641,22 @@ window.addEventListener('click', (event) => {
         }
     });
 
-    // 3. Tạo Pháo Hoa Trái Tim 3D tại vị trí click
+    if (clickedSprite) {
+        return;
+    }
+
+    // 2.5 Kiểm tra click trực tiếp vào Trái Tim 3D
+    if (fxConfig.showHeart !== false && heartPoints) {
+        if (!window.staticHeartCenter) window.staticHeartCenter = new THREE.Vector3(0, 2.4, 0);
+        const distToHeart = raycaster.ray.distanceToPoint(window.staticHeartCenter);
+        if (distToHeart < 1.65) {
+            // Click trúng Trái Tim -> Bùng nổ sóng ánh sáng & Trái tim pha lê mini bay vút lên trời!
+            triggerHeartBurst();
+            return;
+        }
+    }
+
+    // 3. Tạo Pháo Hoa Trái Tim 3D tại vị trí click nền không gian
     if (!window.clickPlane) {
         window.clickPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
         window.clickTargetPoint = new THREE.Vector3();
@@ -3205,6 +3714,72 @@ const tick = () => {
 
     const delta = Math.min(0.1, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
+
+    // 0.0 Cosmic Warp Entry Flight Animation (Lướt xuyên không gian vào tâm thiên hà)
+    if (isEntryWarping) {
+        entryWarpProgress += delta / entryWarpDuration;
+        const p = Math.min(1.0, entryWarpProgress);
+
+        // Perlin Smootherstep (f'(0)=0, f''(0)=0, f'(1)=0, f''(1)=0) -> Triệt tiêu 100% hiện tượng khựng giật khi hạ cánh
+        const easeT = p * p * p * (p * (p * 6 - 15) + 10);
+
+        // Đường cong Bézier bậc 2 cho quỹ đạo bay lượn uốn lượn mượt mà tuyệt đối
+        const u = 1 - easeT;
+        const tt = easeT * easeT;
+        const uu = u * u;
+        const ut2 = 2 * u * easeT;
+
+        camera.position.x = uu * entryWarpStartPos.x + ut2 * entryWarpControlPos.x + tt * defaultCameraPos.x;
+        camera.position.y = uu * entryWarpStartPos.y + ut2 * entryWarpControlPos.y + tt * defaultCameraPos.y;
+        camera.position.z = uu * entryWarpStartPos.z + ut2 * entryWarpControlPos.z + tt * defaultCameraPos.z;
+
+        const targetFOV = isPortrait() ? 80 : 75;
+        const startFOV = isPortrait() ? 96 : 90;
+        camera.fov = startFOV + (targetFOV - startFOV) * easeT;
+        camera.updateProjectionMatrix();
+
+        controls.target.lerpVectors(entryWarpStartTarget, defaultTarget, easeT);
+        camera.lookAt(controls.target);
+
+        // Đồng bộ liên tục ma trận nội bộ của OrbitControls để chuyển giao điều khiển mượt mà êm ru
+        controls.update();
+
+        // Hiệu ứng vệt sao tốc độ cao (Hyperspace Star Streaks)
+        if (entryWarpMesh && entryWarpMesh.visible) {
+            const posAttr = entryWarpMesh.geometry.attributes.position;
+            const warpSpeed = 1.0 + (1.0 - easeT) * 4.5;
+            for (let i = 0; i < entryWarpCount; i++) {
+                const i6 = i * 6;
+                posAttr.array[i6 + 2] += warpSpeed;
+                posAttr.array[i6 + 5] += warpSpeed;
+                if (posAttr.array[i6 + 2] > 45) {
+                    posAttr.array[i6 + 2] -= 80;
+                    posAttr.array[i6 + 5] -= 80;
+                }
+            }
+            posAttr.needsUpdate = true;
+            // Mờ dần êm ái trước khi chạm đích
+            const fade = Math.max(0, Math.min(0.95, (1.0 - easeT) * 1.5));
+            entryWarpMat.opacity = fade;
+            if (fade <= 0.01) {
+                entryWarpMesh.visible = false;
+            }
+        }
+
+        if (p >= 1.0) {
+            isEntryWarping = false;
+            if (entryWarpMesh) entryWarpMesh.visible = false;
+            controls.enabled = true;
+            controls.autoRotate = (fxConfig.rotationSpeed > 0);
+            camera.position.copy(defaultCameraPos);
+            controls.target.copy(defaultTarget);
+            camera.fov = targetFOV;
+            camera.updateProjectionMatrix();
+            controls.update();
+            playSparkleChime();
+            spawnMeteorShower();
+        }
+    }
 
     // 0. Audio Visualizer & YouTube Rhythm Engine
     let rawBass = 0;
@@ -3503,6 +4078,7 @@ const tick = () => {
 
     // 5. Pháo hoa Trái Tim 3D update
     fireworkPool.forEach(f => f.update(delta));
+    updateHeartBurst(delta, elapsedTime);
 
     // 6. Floating Sprites Orbit
     getAllOrbitSprites().forEach(sprite => {
@@ -4628,6 +5204,8 @@ const initLoadingScreen = () => {
         setTimeout(() => {
             loadingScreen.remove();
         }, 850);
+
+        startCosmicEntryFlight();
 
         if (!musicStarted && !isSoundMuted) {
             startMusic();
