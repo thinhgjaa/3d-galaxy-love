@@ -364,32 +364,40 @@ const getHeartParticleTexture = () => {
 };
 
 // Hàm tính toán toạ độ 3D Trái Tim Điêu Khắc (True 3D Dual-Lobe Heart with Sculpted Cleft)
-const sampleHeart3D = (u, phi, scale = 0.086, scaleZ = 0.068, jitterAmount = 0.006) => {
+const sampleHeart3D = (u, phi, jitterAmount = 0.006) => {
     const sinU = Math.sin(u);
     const cosU = Math.cos(u);
     const sinPhi = Math.sin(phi);
     const cosPhi = Math.cos(phi);
 
-    // 1. Dáng 2D chuẩn trái tim thanh thoát
-    const x0 = 16 * Math.pow(sinU, 3);
-    let y0 = 13 * cosU - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u);
+    // 1. Dáng 2D chuẩn trái tim nở rộng lãng mạn & quyến rũ
+    const xBase = 16 * Math.pow(sinU, 3);
+    let yBase = 13 * cosU - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u);
 
     // 2. Điêu khắc khe tim hình chữ V sâu & mềm mại (Top Cleft Notch)
-    // Tăng độ sâu và độ thon của khe trên u = 0, giúp 2 bầu tim tách biệt rõ ràng và duyên dáng
-    const cleftProximity = Math.exp(-Math.pow(u / 0.48, 2));
-    y0 -= cleftProximity * 0.95;
+    // Tách biệt rõ ràng 2 bầu tim trái và phải với độ dốc thanh thoát (cleft dip ~ 0.7 đơn vị)
+    const cleftProximity = Math.exp(-Math.pow(u / 0.52, 2));
+    yBase -= cleftProximity * 1.75;
 
     // 3. Độ dày phồng 3D đa chiều & Rãnh giữa trước/sau (Anatomical Central Groove)
     const lobeDist = Math.abs(sinU);
-    let maxThickness = 6.2 * Math.pow(lobeDist, 0.45) * (0.85 + 0.15 * cosU);
-    const grooveFactor = Math.exp(-Math.pow(x0 / 3.2, 2));
-    // Rãnh giữa lõm nhẹ tạo chiều sâu 3D khi xoay
-    maxThickness *= (1.0 - 0.28 * grooveFactor);
+    let lobeThickness = Math.pow(lobeDist, 0.55) * (7.2 + 2.4 * cosU);
+    const grooveFactor = Math.exp(-Math.pow(xBase / 3.4, 2));
+    // Rãnh giữa lõm nhẹ trước/sau tạo chiều sâu 3D chân thực khi xoay
+    lobeThickness *= (1.0 - 0.30 * grooveFactor);
 
-    // 4. Toạ độ 3D thực thụ (2 bầu tim tròn trịa, không bị suy biến thành trục dọc)
-    const x = x0 * (0.35 + 0.65 * cosPhi) * scale;
-    const y = y0 * scale;
-    const z = maxThickness * sinPhi * scaleZ;
+    // 4. Giữ trọn độ rộng căng mọng của 2 bầu tim
+    const widthFactor = 0.52 + 0.48 * cosPhi;
+    const x3D = xBase * widthFactor;
+
+    // Tỉ lệ vàng: Rộng 3.1, Cao 2.5, Dày 1.2 (căng mọng, không bị dẹt hay thon dài)
+    const scaleX = 0.098;
+    const scaleY = 0.088;
+    const scaleZ = 0.075;
+
+    const x = x3D * scaleX;
+    const y = yBase * scaleY;
+    const z = lobeThickness * sinPhi * scaleZ;
 
     const jitter = (Math.random() - 0.5) * jitterAmount;
 
@@ -401,7 +409,8 @@ const sampleHeart3D = (u, phi, scale = 0.086, scaleZ = 0.068, jitterAmount = 0.0
         phi,
         cleftProximity,
         grooveFactor,
-        lobeDist
+        lobeDist,
+        isLobePeak: (Math.abs(u) > 0.5 && Math.abs(u) < 1.1)
     };
 };
 
@@ -429,9 +438,9 @@ const generateHeart = () => {
     const particleTex = getHeartParticleTexture();
 
     // =========================================================================
-    // 1. PRECISION 3D DIAMOND SURFACE SHELL (9.000 hạt bề mặt điêu khắc siêu mịn)
+    // 1. PRECISION 3D DIAMOND SURFACE SHELL (9.500 hạt bề mặt điêu khắc siêu mịn)
     // =========================================================================
-    const surfaceCount = 9000;
+    const surfaceCount = 9500;
     const surfaceGeom = new THREE.BufferGeometry();
     const surfacePos = new Float32Array(surfaceCount * 3);
     const surfaceCols = new Float32Array(surfaceCount * 3);
@@ -439,28 +448,28 @@ const generateHeart = () => {
     for (let i = 0; i < surfaceCount; i++) {
         // Phân bổ s đều đặn -> u không bị dồn cục tại x=0
         const s = 2 * Math.random() - 1;
-        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.55)) * 2;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.58)) * 2;
         const phi = (Math.random() - 0.5) * Math.PI;
 
-        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.008);
+        const pt = sampleHeart3D(u, phi, 0.008);
         surfacePos[i * 3] = pt.x;
         surfacePos[i * 3 + 1] = pt.y;
         surfacePos[i * 3 + 2] = pt.z;
 
-        // Gradient màu sắc tinh tế:
+        // Gradient màu sắc nghệ thuật:
         // Đỉnh 2 bầu tim & viền ngoài: Ánh sáng rực rỡ (glowColor / insideColor)
-        // Rãnh khe tim & đáy: Màu đậm đà có độ sâu huyền ảo (baseColor / ruby tone), không bị cháy sáng
-        const normY = (pt.y + 1.4) / 2.6;
+        // Rãnh khe tim & đáy: Màu đậm đà có chiều sâu huyền bí, tương phản tự nhiên
+        const normY = (pt.y + 1.4) / 2.5;
         let col = baseColor.clone().lerp(glowColor, normY);
 
-        if (pt.cleftProximity > 0.4) {
-            // Khu vực rãnh khe tim: Phối màu mềm dịu, có độ sâu tương phản 3D
-            col = baseColor.clone().lerp(insideColor, 0.35 + 0.3 * (1 - pt.cleftProximity));
+        if (pt.cleftProximity > 0.3) {
+            // Khu vực rãnh khe tim: Đổ bóng màu hồng ngọc êm dịu, không bị chói lóa
+            col = baseColor.clone().lerp(insideColor, 0.45 * (1 - pt.cleftProximity));
         }
 
         // Tinh thể kim cương lấp lánh (Diamond Sparkles)
-        if (Math.random() > 0.86) {
-            col.lerp(whiteColor, 0.55);
+        if (Math.random() > 0.88) {
+            col.lerp(whiteColor, 0.5);
         }
 
         surfaceCols[i * 3] = col.r;
@@ -495,11 +504,11 @@ const generateHeart = () => {
 
     for (let i = 0; i < volumeCount; i++) {
         const s = 2 * Math.random() - 1;
-        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.55)) * 2;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.58)) * 2;
         const phi = (Math.random() - 0.5) * Math.PI;
         const r = Math.pow(Math.random(), 0.6) * 0.90; // Phân bổ lớp lõi
 
-        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.005);
+        const pt = sampleHeart3D(u, phi, 0.005);
         volumePos[i * 3] = pt.x * r;
         volumePos[i * 3 + 1] = pt.y * r;
         volumePos[i * 3 + 2] = pt.z * r;
@@ -517,7 +526,7 @@ const generateHeart = () => {
         size: 0.019,
         map: particleTex,
         transparent: true,
-        opacity: 0.52,
+        opacity: 0.50,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -537,7 +546,7 @@ const generateHeart = () => {
 
     for (let i = 0; i < contourCount; i++) {
         const u = (i / contourCount) * Math.PI * 2 - Math.PI;
-        const pt = sampleHeart3D(u, 0, 0.086, 0.068, 0.002);
+        const pt = sampleHeart3D(u, 0, 0.002);
 
         contourPos[i * 3] = pt.x;
         contourPos[i * 3 + 1] = pt.y;
@@ -569,27 +578,27 @@ const generateHeart = () => {
     heartPoints.add(contourMesh);
 
     // =========================================================================
-    // 4. SCULPTED CLEFT RIDGE & SULCUS HIGHLIGHT (1.500 hạt viền khe tim phát sáng lung linh)
+    // 4. SCULPTED CLEFT RIDGE & SULCUS HIGHLIGHT (1.600 hạt viền khe tim phát sáng lung linh)
     // =========================================================================
-    const cleftCount = 1500;
+    const cleftCount = 1600;
     const cleftGeom = new THREE.BufferGeometry();
     const cleftPos = new Float32Array(cleftCount * 3);
     const cleftCols = new Float32Array(cleftCount * 3);
 
     for (let i = 0; i < cleftCount; i++) {
         // Tập trung dọc theo rãnh chữ V của khe tim phía trên và rãnh giữa trước/sau
-        const u = (Math.random() - 0.5) * 0.95;
-        const phi = (Math.random() - 0.5) * Math.PI * 0.7;
-        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.004);
+        const u = (Math.random() - 0.5) * 1.05;
+        const phi = (Math.random() - 0.5) * Math.PI * 0.75;
+        const pt = sampleHeart3D(u, phi, 0.004);
 
         cleftPos[i * 3] = pt.x;
         cleftPos[i * 3 + 1] = pt.y;
         cleftPos[i * 3 + 2] = pt.z;
 
         // Điểm xuyết tinh thể lấp lánh như giọt sương mai trên khe tim
-        const col = glowColor.clone().lerp(lightColor, Math.random() * 0.7);
-        if (Math.random() > 0.6) {
-            col.lerp(whiteColor, 0.6);
+        const col = glowColor.clone().lerp(lightColor, Math.random() * 0.65);
+        if (Math.random() > 0.55) {
+            col.lerp(whiteColor, 0.55);
         }
 
         cleftCols[i * 3] = col.r;
@@ -624,11 +633,11 @@ const generateHeart = () => {
 
     for (let i = 0; i < stardustCount; i++) {
         const s = 2 * Math.random() - 1;
-        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.55)) * 2;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.58)) * 2;
         const phi = (Math.random() - 0.5) * Math.PI;
         const auraDist = 1.06 + Math.random() * 0.28;
 
-        const pt = sampleHeart3D(u, phi, 0.086, 0.068, 0.04);
+        const pt = sampleHeart3D(u, phi, 0.035);
         stardustPos[i * 3] = pt.x * auraDist;
         stardustPos[i * 3 + 1] = pt.y * auraDist;
         stardustPos[i * 3 + 2] = pt.z * auraDist;
