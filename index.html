@@ -3,13 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Galaxy of Love 💖 | Vũ Trụ Tình Yêu 3D</title>
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- LOADING SCREEN — Màn hình chào mừng Vũ Trụ Tình Yêu       -->
+    <!-- ORIENTATION GUARD — Khóa màn hình & Yêu cầu xoay ngang    -->
     <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="orientation-guard" class="orientation-guard">
+      <div class="guard-stars"></div>
+      <div class="guard-content">
+        <div class="guard-phone-animation">
+          <div class="phone-icon-box">
+            <div class="phone-frame">
+              <div class="phone-screen">💖</div>
+            </div>
+            <div class="rotate-glow-orbit"></div>
+          </div>
+          <div class="guard-pulse-ring"></div>
+        </div>
+        <h2 class="guard-title">🌀 Vui Lòng Xoay Ngang Màn Hình</h2>
+        <p class="guard-desc">Vũ Trụ Tình Yêu 3D và hành trình du hành không gian được thiết kế hoàn hảo nhất ở chế độ nằm ngang. Hãy xoay điện thoại để bắt đầu khám phá nhé!</p>
+        <div class="guard-badge">
+          <span class="guard-dot"></span>
+          <span>Đang đợi góc nhìn xoay ngang&hellip;</span>
+        </div>
+      </div>
+    </div>
+
     <div id="loading-screen">
       <div class="loading-stars-bg"></div>
       <div class="loading-nebula"></div>
@@ -52,9 +77,10 @@
       <button id="btn-cinema" title="Chế Độ Điện Ảnh (Cinema Tour)">🎥</button>
       <button id="btn-text" title="Đổi Lời Nhắn Tình Yêu">💌</button>
       <button id="btn-upload" title="Tải Ảnh Cá Nhân Lên">🖼️</button>
-      <button id="btn-change-music" title="Đổi Nhạc (Preset & YouTube)">📻</button>
+      <button id="btn-change-music" title="Trình Phát & Chọn Bài Hát (Playlist Audio)">📻</button>
       <button id="btn-music" title="Bật/Tắt Âm Thanh">🎵</button>
       <button id="btn-reset-view" title="Về Góc Nhìn Toàn Cảnh">🌐</button>
+      <button id="btn-fullscreen" title="Chế Độ Toàn Màn Hình (Fullscreen)">⛶</button>
       <button id="btn-toggle-ui" title="Ẩn Thanh Công Cụ (Zen Mode)">👁️</button>
     </div>
 
@@ -65,8 +91,9 @@
     <div id="wormhole-flash" class="wormhole-flash"></div>
     <div id="supernova-flash" class="supernova-flash"></div>
 
-    <!-- Ẩn input chọn file ảnh -->
+    <!-- Ẩn input chọn file ảnh & file nhạc -->
     <input type="file" id="image-upload-input" accept="image/*" multiple style="display: none;" />
+    <input type="file" id="audio-upload-input" accept="audio/*" multiple style="display: none;" />
 
     <!-- Container cho trình phát YouTube ngầm -->
     <div id="youtube-player-container" style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;">
@@ -135,26 +162,93 @@
       </div>
     </div>
 
-    <!-- 6. Modal Đổi Nhạc & Preset Playlist -->
+    <!-- 6. Modal Đổi Nhạc & Trình Phát Nhạc Vũ Trụ -->
     <div id="music-modal" class="text-modal">
       <div class="text-modal-content music-modal-content">
-        <h3>📻 Chọn Nhạc Vũ Trụ Lãng Mạn</h3>
-        
-        <div class="music-presets-title">🌟 Danh Sách Phát Chọn Nhanh:</div>
-        <div class="music-presets-grid">
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=GxldQ9eX2wo">💖 Until I Found You</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=HAa8d_eG_g8">✨ Golden Hour (Piano)</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=p4vW7B4_69g">🌙 Can't Help Falling in Love</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=2Vv-BfVoq4g">🪐 Ed Sheeran - Perfect</button>
-          <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=5qap5aO4i9A">☕ Lofi Hip Hop / Chill Love</button>
+        <div class="music-modal-header">
+          <h3>🎵 Trình Phát & Danh Sách Nhạc Vũ Trụ</h3>
+          <p class="settings-subtitle">Thư viện bài hát trong thư mục audio & Tuyển tập không gian</p>
         </div>
 
-        <div class="music-custom-divider"><span>HOẶC DÁN LINK YOUTUBE</span></div>
-        <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
-        
-        <div class="modal-buttons">
-          <button id="btn-play-youtube">Phát Link Này</button>
-          <button id="btn-default-music">Nhạc Gốc</button>
+        <!-- Now Playing Card -->
+        <div class="now-playing-card">
+          <div class="now-playing-disc-wrapper">
+            <div id="player-disc" class="now-playing-disc">
+              <span class="disc-icon">🪐</span>
+            </div>
+          </div>
+          <div class="now-playing-details">
+            <div class="now-playing-top">
+              <span class="now-playing-label">ĐANG PHÁT</span>
+              <span id="player-status-badge" class="player-badge">🎵 Local Audio</span>
+            </div>
+            <h4 id="player-current-title" class="player-title">Why Not Me</h4>
+            <p id="player-current-artist" class="player-artist">Enrique Iglesias • /audio/why-not-me.mp3</p>
+          </div>
+        </div>
+
+        <!-- Player Progress & Time -->
+        <div class="player-progress-container">
+          <span id="player-current-time" class="time-text">00:00</span>
+          <div class="progress-bar-wrap">
+            <input type="range" id="player-progress-bar" min="0" max="100" value="0" step="0.1" class="custom-range-slider" />
+          </div>
+          <span id="player-duration-time" class="time-text">00:00</span>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="player-controls-row">
+          <button type="button" id="btn-player-shuffle" class="player-ctrl-btn" title="Phát Ngẫu Nhiên">🔀</button>
+          <button type="button" id="btn-player-prev" class="player-ctrl-btn" title="Bài Trước Đó">⏮️</button>
+          <button type="button" id="btn-player-play" class="player-ctrl-btn player-play-main" title="Phát / Tạm Dừng">▶️</button>
+          <button type="button" id="btn-player-next" class="player-ctrl-btn" title="Bài Kế Tiếp">⏭️</button>
+          <button type="button" id="btn-player-loop" class="player-ctrl-btn active" title="Lặp Lại">🔁</button>
+        </div>
+
+        <!-- Volume Control -->
+        <div class="player-volume-row">
+          <span class="volume-icon">🔊</span>
+          <input type="range" id="player-volume-slider" min="0" max="1" step="0.01" value="0.65" class="custom-volume-slider" />
+          <span id="player-volume-percent" class="volume-percent">65%</span>
+        </div>
+
+        <!-- Music Navigation Tabs -->
+        <div class="music-tabs-nav">
+          <button type="button" class="music-tab-btn active" id="tab-btn-local" data-tab="local">📁 Thư Mục Audio (<span id="local-song-count">2</span>)</button>
+          <button type="button" class="music-tab-btn" id="tab-btn-yt" data-tab="youtube">📺 Nhạc YouTube</button>
+        </div>
+
+        <!-- Tab 1: Local Audio Files (Thư Mục Audio) -->
+        <div id="tab-local-music" class="music-tab-content active">
+          <div class="playlist-header">
+            <span class="playlist-subtext">Nhấp vào bất kỳ bài hát nào để phát ngay:</span>
+            <button type="button" id="btn-trigger-upload-audio" class="btn-upload-music">➕ Thêm bài hát từ máy</button>
+          </div>
+          <div id="local-playlist-list" class="local-playlist-list">
+            <!-- Sẽ được render động bằng JS -->
+          </div>
+        </div>
+
+        <!-- Tab 2: YouTube Presets & Custom URL -->
+        <div id="tab-youtube-music" class="music-tab-content">
+          <div class="music-presets-title">🌟 Tuyển Tập YouTube Lãng Mạn:</div>
+          <div class="music-presets-grid">
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=GxldQ9eX2wo">💖 Until I Found You</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=HAa8d_eG_g8">✨ Golden Hour (Piano)</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=p4vW7B4_69g">🌙 Can't Help Falling in Love</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=2Vv-BfVoq4g">🪐 Ed Sheeran - Perfect</button>
+            <button class="btn-preset-song" data-url="https://www.youtube.com/watch?v=5qap5aO4i9A">☕ Lofi Hip Hop / Chill Love</button>
+          </div>
+
+          <div class="music-custom-divider"><span>HOẶC DÁN LINK YOUTUBE BẤT KỲ</span></div>
+          <div class="yt-input-row">
+            <input type="text" id="youtube-url-input" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" />
+            <button id="btn-play-youtube" class="btn-primary-gradient" style="padding: 10px 18px; border-radius: 12px; white-space: nowrap;">Phát Link</button>
+          </div>
+        </div>
+
+        <div class="modal-buttons" style="margin-top: 14px;">
+          <button id="btn-default-music" class="btn-secondary-action">🔄 Nhạc Gốc Mặc Định</button>
           <button id="btn-cancel-music">Đóng</button>
         </div>
       </div>
@@ -268,7 +362,7 @@
                 <span class="setting-desc">Tự động bung pháo hoa trái tim 3D không ngừng</span>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="toggle-auto-fireworks" />
+                <input type="checkbox" id="toggle-auto-fireworks" checked />
                 <span class="slider"></span>
               </label>
             </div>
@@ -279,7 +373,7 @@
                 <span class="setting-desc">Sao băng bay dày đặc liên hồi qua dải ngân hà</span>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="toggle-auto-meteors" />
+                <input type="checkbox" id="toggle-auto-meteors" checked />
                 <span class="slider"></span>
               </label>
             </div>
@@ -290,7 +384,7 @@
                 <span class="setting-desc">Tăng tần suất sao chổi đuôi lụa kỳ vĩ</span>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="toggle-frequent-comets" />
+                <input type="checkbox" id="toggle-frequent-comets" checked />
                 <span class="slider"></span>
               </label>
             </div>
@@ -330,7 +424,7 @@
                 <span class="setting-desc">Bật/Tắt ảnh trong thư mục photos và ảnh tải lên</span>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="toggle-show-photos" checked />
+                <input type="checkbox" id="toggle-show-photos" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -419,11 +513,11 @@
               <span class="setting-desc">Tông màu bụi sao & hào quang vành đai</span>
             </div>
             <select id="select-saturn-theme" class="setting-select">
-              <option value="gold" selected>🌟 Vàng Kim Tinh Tú (Golden)</option>
+              <option value="rainbow" selected>🌈 Cầu Vồng Vũ Trụ (Rainbow Dream)</option>
+              <option value="gold">🌟 Vàng Kim Tinh Tú (Golden)</option>
               <option value="pink">💖 Hồng Pha Lê (Rose Crystal)</option>
               <option value="cyan">💎 Lam Ngọc Kỳ Ảo (Cyan Nebula)</option>
               <option value="purple">🌌 Tím Huyền Bí (Deep Purple)</option>
-              <option value="rainbow">🌈 Cầu Vồng Vũ Trụ (Rainbow Dream)</option>
             </select>
           </div>
 
@@ -463,7 +557,7 @@
 
     <!-- Hướng dẫn tương tác nhỏ xinh ở góc trái -->
     <div id="hint-box" class="hint-box">
-      <span>✨ <b>Chạm / Click:</b> Pháo hoa tim | <b>Nhấp ảnh / icon:</b> Phóng to 🖼️ | <b>Vuốt 2 ngón:</b> Phóng to/Thu nhỏ | <b>Space:</b> Sao băng</span>
+      <span>✨ <b>Click Trái Tim:</b> Bùng nổ sóng ánh sáng & Trái tim mini 💖 | <b>Click nền:</b> Pháo hoa | <b>Nhấp ảnh / icon:</b> Phóng to 🖼️ | <b>Space:</b> Sao băng</span>
     </div>
 
     <script type="module" src="/src/main.js"></script>

@@ -76,12 +76,12 @@ let fxConfig = {
     showStarfield: true,
     showSaturnRings: true,
     cosmicSeason: 'spring',
-    autoFireworks: false,
-    autoMeteors: false,
-    frequentComets: false,
+    autoFireworks: true,
+    autoMeteors: true,
+    frequentComets: true,
     fairyDust: true,
-    showPhotos: true,
-    saturnTheme: 'gold',
+    showPhotos: false,
+    saturnTheme: 'rainbow',
     saturnSpeed: 0.08,
     saturnTilt: 'saturn',
     showConstellations: true,
@@ -121,9 +121,25 @@ const sizes = {
     height: window.innerHeight
 };
 
-// Camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
-camera.position.set(0, 2.5, 7.2);
+const isPortrait = () => window.innerWidth < window.innerHeight;
+
+const defaultCameraPos = (window.innerWidth < window.innerHeight)
+    ? new THREE.Vector3(0, 2.8, 8.8)
+    : new THREE.Vector3(0, 2.5, 7.2);
+const defaultTarget = new THREE.Vector3(0, 1.35, 0);
+
+const entryWarpStartPos = new THREE.Vector3(0, 15.0, 42.0);
+const entryWarpControlPos = new THREE.Vector3(0, 7.2, 18.0);
+const entryWarpStartTarget = new THREE.Vector3(0, 2.2, 0);
+
+// Camera (Tối ưu FOV & khoảng cách cho cả điện thoại dọc và màn hình ngang)
+const camera = new THREE.PerspectiveCamera(
+    isPortrait() ? 96 : 90,
+    sizes.width / sizes.height,
+    0.1,
+    150
+);
+camera.position.copy(entryWarpStartPos);
 scene.add(camera);
 
 // OrbitControls (Tối ưu vuốt đa điểm & Pinch-to-zoom điện thoại)
@@ -132,13 +148,14 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enableZoom = true;
 controls.zoomSpeed = 0.85;
-controls.target.set(0, 1.35, 0);
-controls.autoRotate = (fxConfig.rotationSpeed > 0);
+controls.target.copy(defaultTarget);
+controls.autoRotate = false;
 controls.autoRotateSpeed = fxConfig.rotationSpeed;
 controls.touches = {
     ONE: THREE.TOUCH.ROTATE,
     TWO: THREE.TOUCH.DOLLY_PAN
 };
+controls.enabled = false;
 controls.update();
 
 // Lighting
@@ -146,9 +163,73 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 
 const initialTheme = colorThemes[currentThemeIndex];
-const pointLight = new THREE.PointLight(initialTheme.lightColor, 2.2, 22);
+const pointLight = new THREE.PointLight(initialTheme.lightColor, 1.1, 18);
 pointLight.position.set(0, 2.8, 0);
 scene.add(pointLight);
+
+/**
+ * =========================================================================
+ * 2.1 COSMIC WARP ENTRY FLIGHT (Bay Xuyên Vũ Trụ Vào Tâm Thiên Hà)
+ * =========================================================================
+ */
+const entryWarpCount = 450;
+const entryWarpGeom = new THREE.BufferGeometry();
+const entryWarpPositions = new Float32Array(entryWarpCount * 6);
+const entryWarpColors = new Float32Array(entryWarpCount * 6);
+
+for (let i = 0; i < entryWarpCount; i++) {
+    const i6 = i * 6;
+    const rad = 1.0 + Math.random() * 14.0;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * rad;
+    const y = Math.sin(angle) * rad + 2.4;
+    const z = (Math.random() - 0.5) * 60.0;
+    const len = 4.0 + Math.random() * 6.5;
+
+    entryWarpPositions[i6] = x;
+    entryWarpPositions[i6 + 1] = y;
+    entryWarpPositions[i6 + 2] = z;
+    entryWarpPositions[i6 + 3] = x;
+    entryWarpPositions[i6 + 4] = y;
+    entryWarpPositions[i6 + 5] = z - len;
+
+    entryWarpColors[i6] = 1.0;
+    entryWarpColors[i6 + 1] = 0.85;
+    entryWarpColors[i6 + 2] = 1.0;
+    entryWarpColors[i6 + 3] = 0.35;
+    entryWarpColors[i6 + 4] = 0.1;
+    entryWarpColors[i6 + 5] = 0.6;
+}
+
+entryWarpGeom.setAttribute('position', new THREE.BufferAttribute(entryWarpPositions, 3));
+entryWarpGeom.setAttribute('color', new THREE.BufferAttribute(entryWarpColors, 3));
+
+const entryWarpMat = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending
+});
+const entryWarpMesh = new THREE.LineSegments(entryWarpGeom, entryWarpMat);
+entryWarpMesh.visible = true;
+scene.add(entryWarpMesh);
+
+let isEntryWarping = false;
+let entryWarpProgress = 0;
+const entryWarpDuration = 2.6;
+
+const startCosmicEntryFlight = () => {
+    isEntryWarping = true;
+    entryWarpProgress = 0;
+    entryWarpMesh.visible = true;
+    entryWarpMat.opacity = 0.95;
+    controls.enabled = false;
+    camera.position.copy(entryWarpStartPos);
+    camera.fov = isPortrait() ? 96 : 90;
+    camera.updateProjectionMatrix();
+    controls.target.copy(entryWarpStartTarget);
+    camera.lookAt(entryWarpStartTarget);
+};
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -158,37 +239,46 @@ const renderer = new THREE.WebGLRenderer({
     preserveDrawingBuffer: true // Cho phép chụp ảnh canvas xuất sắc
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
 renderer.setClearColor('#000000');
 renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.autoClear = false;
 
-// Post Processing (Bloom Pass - Tối ưu êm dịu, không chói lóa)
+// Post Processing (Bloom Pass - Tinh chỉnh êm dịu, trong trẻo, không chói lóa)
 const renderScene = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2)),
-    0.85,
-    0.35,
+    0.68,
+    0.28,
     0.85
 );
-bloomPass.threshold = 0.08;
-bloomPass.strength = 0.85;
-bloomPass.radius = 0.35;
+bloomPass.threshold = 0.12;
+bloomPass.strength = 0.68;
+bloomPass.radius = 0.28;
 
 const composer = new EffectComposer(renderer);
 composer.addPass(renderScene);
 composer.addPass(bloomPass);
 
-// Resize handler
+// Resize handler (Tự động canh chỉnh khi xoay màn hình điện thoại hoặc thay đổi kích thước)
 window.addEventListener('resize', () => {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
 
     camera.aspect = sizes.width / sizes.height;
+    camera.fov = (sizes.width < sizes.height) ? 80 : 75;
     camera.updateProjectionMatrix();
 
+    if (typeof defaultCameraPos !== 'undefined') {
+        if (sizes.width < sizes.height) {
+            defaultCameraPos.set(0, 2.8, 8.8);
+        } else {
+            defaultCameraPos.set(0, 2.5, 7.2);
+        }
+    }
+
     renderer.setSize(sizes.width, sizes.height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
 
     composer.setSize(sizes.width, sizes.height);
     bloomPass.setSize(Math.floor(sizes.width / 2), Math.floor(sizes.height / 2));
@@ -197,17 +287,17 @@ window.addEventListener('resize', () => {
 
 /**
  * =========================================================================
- * 3. GALAXY GENERATION (28.000 hạt ngân hà xoắn ốc)
+ * 3. GALAXY GENERATION (Ngân hà xoắn ốc sắc nét, tinh xảo & không bị nhòe)
  * =========================================================================
  */
 const galaxyParams = {
-    count: 28000,
-    size: 0.016,
-    radius: 6.5,
+    count: 24000,
+    size: 0.013,
+    radius: 8.0,
     branches: 4,
-    spin: 1.2,
-    randomness: 0.4,
-    randomnessPower: 3.5
+    spin: 1.25,
+    randomness: 0.28,
+    randomnessPower: 4.2
 };
 
 let galaxyGeometry = null;
@@ -259,7 +349,9 @@ const generateGalaxy = () => {
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-        vertexColors: true
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85
     });
 
     galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
@@ -317,70 +409,359 @@ scene.add(starfieldPoints);
 
 /**
  * =========================================================================
- * 4. 3D HEART SYSTEM (6.500 hạt trái tim tham số 3D)
+ * 4. 3D CRYSTAL HEART GENERATION (Trái Tim Pha Lê Đa Tầng Lộng Lẫy)
  * =========================================================================
  */
 let heartPoints = null;
-let heartGeometry = null;
-let heartMaterial = null;
+
+// Texture hạt phát sáng mềm mịn cho trái tim (không bị vuông cạnh, tạo độ lung linh như tinh thể pha lê)
+let heartParticleTexture = null;
+const getHeartParticleTexture = () => {
+    if (heartParticleTexture) return heartParticleTexture;
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.9)');
+    grad.addColorStop(0.55, 'rgba(255, 255, 255, 0.35)');
+    grad.addColorStop(0.85, 'rgba(255, 255, 255, 0.08)');
+    grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    heartParticleTexture = new THREE.CanvasTexture(canvas);
+    return heartParticleTexture;
+};
+
+// Hàm tính toán toạ độ 3D Trái Tim Điêu Khắc (True 3D Dual-Lobe Heart with Sculpted Cleft)
+const sampleHeart3D = (u, phi, jitterAmount = 0.006) => {
+    const sinU = Math.sin(u);
+    const cosU = Math.cos(u);
+    const sinPhi = Math.sin(phi);
+    const cosPhi = Math.cos(phi);
+
+    // 1. Dáng 2D chuẩn trái tim nở rộng lãng mạn & quyến rũ
+    const xBase = 16 * Math.pow(sinU, 3);
+    let yBase = 13 * cosU - 5 * Math.cos(2 * u) - 2 * Math.cos(3 * u) - Math.cos(4 * u);
+
+    // 2. Điêu khắc khe tim hình chữ V sâu & mềm mại (Top Cleft Notch)
+    // Tách biệt rõ ràng 2 bầu tim trái và phải với độ dốc thanh thoát (cleft dip ~ 0.7 đơn vị)
+    const cleftProximity = Math.exp(-Math.pow(u / 0.52, 2));
+    yBase -= cleftProximity * 1.75;
+
+    // 3. Độ dày phồng 3D đa chiều & Rãnh giữa trước/sau (Anatomical Central Groove)
+    const lobeDist = Math.abs(sinU);
+    let lobeThickness = Math.pow(lobeDist, 0.55) * (7.2 + 2.4 * cosU);
+    const grooveFactor = Math.exp(-Math.pow(xBase / 3.4, 2));
+    // Rãnh giữa lõm nhẹ trước/sau tạo chiều sâu 3D chân thực khi xoay
+    lobeThickness *= (1.0 - 0.30 * grooveFactor);
+
+    // 4. Giữ trọn độ rộng căng mọng của 2 bầu tim
+    const widthFactor = 0.52 + 0.48 * cosPhi;
+    const x3D = xBase * widthFactor;
+
+    // Tỉ lệ vàng: Rộng 3.1, Cao 2.5, Dày 1.2 (căng mọng, không bị dẹt hay thon dài)
+    const scaleX = 0.098;
+    const scaleY = 0.088;
+    const scaleZ = 0.075;
+
+    const x = x3D * scaleX;
+    const y = yBase * scaleY;
+    const z = lobeThickness * sinPhi * scaleZ;
+
+    const jitter = (Math.random() - 0.5) * jitterAmount;
+
+    return {
+        x: x + jitter,
+        y: y + jitter,
+        z: z + jitter,
+        u,
+        phi,
+        cleftProximity,
+        grooveFactor,
+        lobeDist,
+        isLobePeak: (Math.abs(u) > 0.5 && Math.abs(u) < 1.1)
+    };
+};
 
 const generateHeart = () => {
     if (heartPoints !== null) {
-        heartGeometry.dispose();
-        heartMaterial.dispose();
+        while (heartPoints.children.length > 0) {
+            const child = heartPoints.children[0];
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+            heartPoints.remove(child);
+        }
         scene.remove(heartPoints);
     }
 
-    const theme = colorThemes[currentThemeIndex];
-    heartGeometry = new THREE.BufferGeometry();
-    const heartCount = 6500;
-    const positions = new Float32Array(heartCount * 3);
-    const colors = new Float32Array(heartCount * 3);
+    heartPoints = new THREE.Group();
+    heartPoints.position.y = 2.4;
+    heartPoints.visible = (fxConfig.showHeart !== false);
 
+    const theme = colorThemes[currentThemeIndex];
     const baseColor = new THREE.Color(theme.heartBase);
     const glowColor = new THREE.Color(theme.heartGlow);
+    const insideColor = new THREE.Color(theme.insideColor || '#ff99cc');
+    const lightColor = new THREE.Color(theme.lightColor || '#ffffff');
+    const whiteColor = new THREE.Color('#ffffff');
+    const particleTex = getHeartParticleTexture();
 
-    let count = 0;
-    while (count < heartCount) {
-        const x = (Math.random() - 0.5) * 3;
-        const y = (Math.random() - 0.5) * 3;
-        const z = (Math.random() - 0.5) * 3;
+    // =========================================================================
+    // 1. PRECISION 3D DIAMOND SURFACE SHELL (9.500 hạt bề mặt điêu khắc siêu mịn)
+    // =========================================================================
+    const surfaceCount = 9500;
+    const surfaceGeom = new THREE.BufferGeometry();
+    const surfacePos = new Float32Array(surfaceCount * 3);
+    const surfaceCols = new Float32Array(surfaceCount * 3);
 
-        const a = x * x + 2.25 * y * y + z * z - 1;
-        const val = a * a * a - (x * x * z * z * z) - (0.1125 * y * y * z * z * z);
+    for (let i = 0; i < surfaceCount; i++) {
+        // Phân bổ s đều đặn -> u không bị dồn cục tại x=0
+        const s = 2 * Math.random() - 1;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.58)) * 2;
+        const phi = (Math.random() - 0.5) * Math.PI;
 
-        if (val <= 0.0) {
-            positions[count * 3] = x * 1.0;
-            positions[count * 3 + 1] = z * 1.0;
-            positions[count * 3 + 2] = y * 1.0;
+        const pt = sampleHeart3D(u, phi, 0.008);
+        surfacePos[i * 3] = pt.x;
+        surfacePos[i * 3 + 1] = pt.y;
+        surfacePos[i * 3 + 2] = pt.z;
 
-            const mixedColor = baseColor.clone();
-            if (Math.random() > 0.5) mixedColor.lerp(glowColor, Math.random());
+        // Gradient màu sắc nghệ thuật:
+        // Đỉnh 2 bầu tim & viền ngoài: Ánh sáng rực rỡ (glowColor / insideColor)
+        // Rãnh khe tim & đáy: Màu đậm đà có chiều sâu huyền bí, tương phản tự nhiên
+        const normY = (pt.y + 1.4) / 2.5;
+        let col = baseColor.clone().lerp(glowColor, normY);
 
-            colors[count * 3] = mixedColor.r;
-            colors[count * 3 + 1] = mixedColor.g;
-            colors[count * 3 + 2] = mixedColor.b;
-
-            count++;
+        if (pt.cleftProximity > 0.3) {
+            // Khu vực rãnh khe tim: Đổ bóng màu hồng ngọc êm dịu, không bị chói lóa
+            col = baseColor.clone().lerp(insideColor, 0.45 * (1 - pt.cleftProximity));
         }
+
+        // Tinh thể kim cương lấp lánh (Diamond Sparkles)
+        if (Math.random() > 0.88) {
+            col.lerp(whiteColor, 0.5);
+        }
+
+        surfaceCols[i * 3] = col.r;
+        surfaceCols[i * 3 + 1] = col.g;
+        surfaceCols[i * 3 + 2] = col.b;
     }
 
-    heartGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    heartGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    surfaceGeom.setAttribute('position', new THREE.BufferAttribute(surfacePos, 3));
+    surfaceGeom.setAttribute('color', new THREE.BufferAttribute(surfaceCols, 3));
 
-    heartMaterial = new THREE.PointsMaterial({
-        size: 0.018,
+    const surfaceMat = new THREE.PointsMaterial({
+        size: 0.024,
+        map: particleTex,
         transparent: true,
-        opacity: 0.58,
+        opacity: 0.85,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         vertexColors: true
     });
 
-    heartPoints = new THREE.Points(heartGeometry, heartMaterial);
-    heartPoints.position.y = 2.4;
-    heartPoints.visible = (fxConfig.showHeart !== false);
+    const surfaceMesh = new THREE.Points(surfaceGeom, surfaceMat);
+    heartPoints.add(surfaceMesh);
+
+    // =========================================================================
+    // 2. SOLID CRYSTAL VOLUME (5.500 hạt lòng khối 3D trong suốt đa tầng)
+    // =========================================================================
+    const volumeCount = 5500;
+    const volumeGeom = new THREE.BufferGeometry();
+    const volumePos = new Float32Array(volumeCount * 3);
+    const volumeCols = new Float32Array(volumeCount * 3);
+
+    for (let i = 0; i < volumeCount; i++) {
+        const s = 2 * Math.random() - 1;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.58)) * 2;
+        const phi = (Math.random() - 0.5) * Math.PI;
+        const r = Math.pow(Math.random(), 0.6) * 0.90; // Phân bổ lớp lõi
+
+        const pt = sampleHeart3D(u, phi, 0.005);
+        volumePos[i * 3] = pt.x * r;
+        volumePos[i * 3 + 1] = pt.y * r;
+        volumePos[i * 3 + 2] = pt.z * r;
+
+        const col = glowColor.clone().lerp(baseColor, r * 0.75);
+        volumeCols[i * 3] = col.r;
+        volumeCols[i * 3 + 1] = col.g;
+        volumeCols[i * 3 + 2] = col.b;
+    }
+
+    volumeGeom.setAttribute('position', new THREE.BufferAttribute(volumePos, 3));
+    volumeGeom.setAttribute('color', new THREE.BufferAttribute(volumeCols, 3));
+
+    const volumeMat = new THREE.PointsMaterial({
+        size: 0.019,
+        map: particleTex,
+        transparent: true,
+        opacity: 0.50,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    const volumeMesh = new THREE.Points(volumeGeom, volumeMat);
+    heartPoints.add(volumeMesh);
+
+    // =========================================================================
+    // 3. RAZOR-SHARP CONTOUR SILHOUETTE (2.500 hạt viền sắc nét định hình đường cong tim)
+    // =========================================================================
+    const contourCount = 2500;
+    const contourGeom = new THREE.BufferGeometry();
+    const contourPos = new Float32Array(contourCount * 3);
+    const contourCols = new Float32Array(contourCount * 3);
+
+    for (let i = 0; i < contourCount; i++) {
+        const u = (i / contourCount) * Math.PI * 2 - Math.PI;
+        const pt = sampleHeart3D(u, 0, 0.002);
+
+        contourPos[i * 3] = pt.x;
+        contourPos[i * 3 + 1] = pt.y;
+        contourPos[i * 3 + 2] = (Math.random() - 0.5) * 0.035;
+
+        const col = glowColor.clone().lerp(insideColor, Math.random() * 0.6);
+        if (Math.random() > 0.8) col.lerp(whiteColor, 0.4);
+
+        contourCols[i * 3] = col.r;
+        contourCols[i * 3 + 1] = col.g;
+        contourCols[i * 3 + 2] = col.b;
+    }
+
+    contourGeom.setAttribute('position', new THREE.BufferAttribute(contourPos, 3));
+    contourGeom.setAttribute('color', new THREE.BufferAttribute(contourCols, 3));
+
+    const contourMat = new THREE.PointsMaterial({
+        size: 0.023,
+        map: particleTex,
+        transparent: true,
+        opacity: 0.90,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    const contourMesh = new THREE.Points(contourGeom, contourMat);
+    heartPoints.add(contourMesh);
+
+    // =========================================================================
+    // 4. SCULPTED CLEFT RIDGE & SULCUS HIGHLIGHT (1.600 hạt viền khe tim phát sáng lung linh)
+    // =========================================================================
+    const cleftCount = 1600;
+    const cleftGeom = new THREE.BufferGeometry();
+    const cleftPos = new Float32Array(cleftCount * 3);
+    const cleftCols = new Float32Array(cleftCount * 3);
+
+    for (let i = 0; i < cleftCount; i++) {
+        // Tập trung dọc theo rãnh chữ V của khe tim phía trên và rãnh giữa trước/sau
+        const u = (Math.random() - 0.5) * 1.05;
+        const phi = (Math.random() - 0.5) * Math.PI * 0.75;
+        const pt = sampleHeart3D(u, phi, 0.004);
+
+        cleftPos[i * 3] = pt.x;
+        cleftPos[i * 3 + 1] = pt.y;
+        cleftPos[i * 3 + 2] = pt.z;
+
+        // Điểm xuyết tinh thể lấp lánh như giọt sương mai trên khe tim
+        const col = glowColor.clone().lerp(lightColor, Math.random() * 0.65);
+        if (Math.random() > 0.55) {
+            col.lerp(whiteColor, 0.55);
+        }
+
+        cleftCols[i * 3] = col.r;
+        cleftCols[i * 3 + 1] = col.g;
+        cleftCols[i * 3 + 2] = col.b;
+    }
+
+    cleftGeom.setAttribute('position', new THREE.BufferAttribute(cleftPos, 3));
+    cleftGeom.setAttribute('color', new THREE.BufferAttribute(cleftCols, 3));
+
+    const cleftMat = new THREE.PointsMaterial({
+        size: 0.021,
+        map: particleTex,
+        transparent: true,
+        opacity: 0.88,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    const cleftMesh = new THREE.Points(cleftGeom, cleftMat);
+    cleftMesh.userData = { isCleft: true, baseOpacity: 0.88 };
+    heartPoints.add(cleftMesh);
+
+    // =========================================================================
+    // 5. AMBIENT FLOATING FAIRY STARDUST (800 hạt bụi sao lơ lửng quanh tim)
+    // =========================================================================
+    const stardustCount = 800;
+    const stardustGeom = new THREE.BufferGeometry();
+    const stardustPos = new Float32Array(stardustCount * 3);
+    const stardustCols = new Float32Array(stardustCount * 3);
+
+    for (let i = 0; i < stardustCount; i++) {
+        const s = 2 * Math.random() - 1;
+        const u = Math.sign(s) * Math.asin(Math.pow(Math.abs(s), 0.58)) * 2;
+        const phi = (Math.random() - 0.5) * Math.PI;
+        const auraDist = 1.06 + Math.random() * 0.28;
+
+        const pt = sampleHeart3D(u, phi, 0.035);
+        stardustPos[i * 3] = pt.x * auraDist;
+        stardustPos[i * 3 + 1] = pt.y * auraDist;
+        stardustPos[i * 3 + 2] = pt.z * auraDist;
+
+        const col = insideColor.clone().lerp(whiteColor, Math.random() * 0.65);
+        stardustCols[i * 3] = col.r;
+        stardustCols[i * 3 + 1] = col.g;
+        stardustCols[i * 3 + 2] = col.b;
+    }
+
+    stardustGeom.setAttribute('position', new THREE.BufferAttribute(stardustPos, 3));
+    stardustGeom.setAttribute('color', new THREE.BufferAttribute(stardustCols, 3));
+
+    const stardustMat = new THREE.PointsMaterial({
+        size: 0.016,
+        map: particleTex,
+        transparent: true,
+        opacity: 0.70,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true
+    });
+
+    const stardustMesh = new THREE.Points(stardustGeom, stardustMat);
+    stardustMesh.userData = { isStardust: true };
+    heartPoints.add(stardustMesh);
+
+    // =========================================================================
+    // 6. ENERGY ORBITING RIBBONS (2 Dải lụa năng lượng mềm mại)
+    // =========================================================================
+    const ribbonRadii = [1.45, 1.7];
+    const ribbonTilts = [0.45, -0.4];
+    ribbonRadii.forEach((rad, idx) => {
+        const ringGeom = new THREE.RingGeometry(rad - 0.02, rad + 0.02, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: new THREE.Color(idx === 0 ? theme.heartGlow : theme.insideColor),
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.14,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const ringMesh = new THREE.Mesh(ringGeom, ringMat);
+        ringMesh.rotation.x = Math.PI / 2 + ribbonTilts[idx];
+        ringMesh.rotation.y = idx * 0.8;
+        ringMesh.userData = { speed: (idx % 2 === 0 ? 0.3 : -0.25) };
+        heartPoints.add(ringMesh);
+    });
+
     scene.add(heartPoints);
 };
 
@@ -868,25 +1249,31 @@ const triggerWormhole = () => {
     playWarpSound();
 
     const startP = camera.position.clone();
-    const approachP = new THREE.Vector3(startP.x * 0.4, 2.4 + (startP.y - 2.4) * 0.3, Math.max(2.0, startP.z * 0.5));
-    const heartCenterP = new THREE.Vector3(0, 2.4, 0.0);
-    const exitBackP = new THREE.Vector3(0, 1.8, -4.5);
-    const sweepSideP = new THREE.Vector3(4.2, 2.8, 2.0);
+    // Khởi tạo các điểm mốc mượt mà chuẩn điện ảnh
+    const approachP = new THREE.Vector3(startP.x * 0.45, 2.4 + (startP.y - 2.4) * 0.4, Math.max(3.2, startP.z * 0.55));
+    const entryP = new THREE.Vector3(0, 2.4, 1.4);
+    const heartCenterP = new THREE.Vector3(0, 2.4, -0.4);
+    const exitBackP = new THREE.Vector3(0, 2.1, -4.8);
+    const sweepSideP = new THREE.Vector3(4.6, 2.7, 1.8);
+    const settleP = new THREE.Vector3(1.8, 2.6, 6.4);
     const endDefaultP = defaultCameraPos.clone();
 
     warpFlightCurve = new THREE.CatmullRomCurve3([
         startP,
         approachP,
+        entryP,
         heartCenterP,
         exitBackP,
         sweepSideP,
+        settleP,
         endDefaultP
-    ]);
+    ], false, 'centripetal', 0.5);
 
     wormholePortalGroup.visible = true;
     wormholePortalGroup.scale.set(0.01, 0.01, 0.01);
     warpStarsGroup.visible = true;
 
+    controls.enabled = false;
     isCinemaMode = false;
     isResettingView = false;
     document.getElementById('btn-cinema')?.classList.remove('active');
@@ -994,10 +1381,8 @@ class Meteor {
 
     updateGeometry() {
         const posAttr = this.line.geometry.attributes.position;
-        const tail = this.direction.clone().multiplyScalar(-this.length);
-        
         posAttr.setXYZ(0, 0, 0, 0);
-        posAttr.setXYZ(1, tail.x, tail.y, tail.z);
+        posAttr.setXYZ(1, -this.direction.x * this.length, -this.direction.y * this.length, -this.direction.z * this.length);
         posAttr.needsUpdate = true;
     }
 
@@ -1167,22 +1552,34 @@ class MajesticComet {
         const theme = colorThemes[currentThemeIndex];
         const tailColor = new THREE.Color(theme.heartGlow);
 
-        const up = new THREE.Vector3(0, 1, 0);
+        if (!MajesticComet.staticUp) {
+            MajesticComet.staticUp = new THREE.Vector3(0, 1, 0);
+            MajesticComet.staticTangent = new THREE.Vector3();
+            MajesticComet.staticSide = new THREE.Vector3();
+            MajesticComet.staticV1 = new THREE.Vector3();
+            MajesticComet.staticV2 = new THREE.Vector3();
+        }
+
+        const up = MajesticComet.staticUp;
+        const tangent = MajesticComet.staticTangent;
+        const side = MajesticComet.staticSide;
+        const v1 = MajesticComet.staticV1;
+        const v2 = MajesticComet.staticV2;
 
         for (let i = 0; i < this.ribbonSegments; i++) {
             const p = this.history[i] || currentPos;
             const nextP = this.history[i + 1] || p;
-            const tangent = nextP.clone().sub(p).normalize();
+            tangent.subVectors(nextP, p).normalize();
             if (tangent.lengthSq() < 0.001) tangent.set(1, 0, 0);
 
-            const side = new THREE.Vector3().crossVectors(tangent, up).normalize();
+            side.crossVectors(tangent, up).normalize();
             if (side.lengthSq() < 0.001) side.set(0, 1, 0);
 
             const ratio = i / this.ribbonSegments;
             const width = (0.1 + ratio * 1.1);
 
-            const v1 = p.clone().addScaledVector(side, width * 0.5);
-            const v2 = p.clone().addScaledVector(side, -width * 0.5);
+            v1.copy(p).addScaledVector(side, width * 0.5);
+            v2.copy(p).addScaledVector(side, -width * 0.5);
 
             const idx = i * 2;
             posAttr.setXYZ(idx, v1.x, v1.y, v1.z);
@@ -1256,6 +1653,11 @@ class HeartFirework {
             vertexColors: true
         });
 
+        this.velocities = [];
+        for (let i = 0; i < this.particleCount; i++) {
+            this.velocities.push(new THREE.Vector3());
+        }
+
         this.points = new THREE.Points(this.geometry, this.material);
         this.points.visible = false;
         fireworksGroup.add(this.points);
@@ -1268,10 +1670,12 @@ class HeartFirework {
         this.maxLife = 1.2 + Math.random() * 0.4;
         this.material.opacity = 1.0;
 
-        const baseColor = new THREE.Color(hexColor);
+        if (!HeartFirework.tempColor) HeartFirework.tempColor = new THREE.Color();
+        HeartFirework.tempColor.set(hexColor);
+        const baseColor = HeartFirework.tempColor;
+
         const colAttr = this.geometry.attributes.color;
         const posAttr = this.geometry.attributes.position;
-        this.velocities = [];
 
         this.points.position.copy(originPos);
 
@@ -1286,11 +1690,13 @@ class HeartFirework {
             const hz = (Math.random() - 0.5) * 0.4;
 
             const speed = 0.035 + Math.random() * 0.025;
-            this.velocities.push(new THREE.Vector3(hx * speed, hy * speed + 0.015, hz * speed));
+            this.velocities[i].set(hx * speed, hy * speed + 0.015, hz * speed);
 
-            const pCol = baseColor.clone();
-            if (Math.random() > 0.4) pCol.lerp(new THREE.Color('#ffffff'), Math.random() * 0.8);
-            colAttr.setXYZ(i3, pCol.r, pCol.g, pCol.b);
+            const whiteMix = Math.random() > 0.4 ? Math.random() * 0.8 : 0;
+            const r = THREE.MathUtils.lerp(baseColor.r, 1.0, whiteMix);
+            const g = THREE.MathUtils.lerp(baseColor.g, 1.0, whiteMix);
+            const b = THREE.MathUtils.lerp(baseColor.b, 1.0, whiteMix);
+            colAttr.setXYZ(i3, r, g, b);
         }
 
         posAttr.needsUpdate = true;
@@ -1330,25 +1736,35 @@ for (let i = 0; i < 15; i++) {
     fireworkPool.push(new HeartFirework());
 }
 
+const staticFireworkOrigin = new THREE.Vector3();
+const staticDoubleLeft = new THREE.Vector3(-1.35, 2.0, 0);
+const staticDoubleRight = new THREE.Vector3(1.35, 2.3, 0);
+
 const triggerHeartFirework = (worldPos = null) => {
     const theme = colorThemes[currentThemeIndex];
-    const origin = worldPos ? worldPos.clone() : new THREE.Vector3(
-        (Math.random() - 0.5) * 6,
-        1.5 + Math.random() * 2.5,
-        (Math.random() - 0.5) * 4
-    );
+    if (worldPos) {
+        staticFireworkOrigin.copy(worldPos);
+    } else {
+        staticFireworkOrigin.set(
+            (Math.random() - 0.5) * 6,
+            1.5 + Math.random() * 2.5,
+            (Math.random() - 0.5) * 4
+        );
+    }
 
     const inactive = fireworkPool.find(f => !f.active);
     if (inactive) {
         const color = Math.random() > 0.4 ? theme.heartBase : theme.heartGlow;
-        inactive.spawn(origin, color);
+        inactive.spawn(staticFireworkOrigin, color);
     }
 };
 
 const triggerDoubleHeartFirework = () => {
-    triggerHeartFirework(new THREE.Vector3(-1.35, 2.0, (Math.random() - 0.5) * 1.5));
+    staticDoubleLeft.z = (Math.random() - 0.5) * 1.5;
+    triggerHeartFirework(staticDoubleLeft);
     setTimeout(() => {
-        triggerHeartFirework(new THREE.Vector3(1.35, 2.3, (Math.random() - 0.5) * 1.5));
+        staticDoubleRight.z = (Math.random() - 0.5) * 1.5;
+        triggerHeartFirework(staticDoubleRight);
     }, 130);
 };
 
@@ -1381,7 +1797,250 @@ window.addEventListener('touchend', (e) => {
 
 /**
  * =========================================================================
- * 7.1 WEB AUDIO SYNTHESIZER (Âm thanh hiệu ứng không gian)
+ * 7.1 HEART BURST INTERACTION ENGINE (Bùng Nổ Sóng Ánh Sáng & Trái Tim Pha Lê Mini)
+ * =========================================================================
+ */
+// 1. Tạo texture hình trái tim phát sáng pha lê cho các hạt mini
+const createMiniCrystalHeartTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.save();
+    ctx.translate(32, 28);
+    ctx.scale(1.25, 1.25);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 4);
+    ctx.bezierCurveTo(-14, -14, -24, 6, 0, 22);
+    ctx.bezierCurveTo(24, 6, 14, -14, 0, 4);
+    ctx.closePath();
+
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+    ctx.restore();
+
+    return new THREE.CanvasTexture(canvas);
+};
+
+const miniCrystalHeartTexture = createMiniCrystalHeartTexture();
+
+// 2. Shockwave Mesh (Vòng sóng ánh sáng lan tỏa từ tâm khe tim)
+const heartBurstShockwaveGroup = new THREE.Group();
+scene.add(heartBurstShockwaveGroup);
+
+const heartBurstShockwaveGeom = new THREE.RingGeometry(0.08, 0.42, 64);
+const heartBurstShockwaveMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+});
+const heartBurstShockwaveMesh = new THREE.Mesh(heartBurstShockwaveGeom, heartBurstShockwaveMat);
+heartBurstShockwaveMesh.rotation.x = Math.PI / 2;
+heartBurstShockwaveMesh.visible = false;
+heartBurstShockwaveGroup.add(heartBurstShockwaveMesh);
+
+let heartBurstShockwaveLife = 0;
+const heartBurstShockwaveMaxLife = 1.35;
+
+// 3. Mini Crystal Hearts Particle Cloud (180 hạt trái tim pha lê mini bay vút lên bầu trời)
+const MINI_HEART_COUNT = 180;
+const miniHeartsGeom = new THREE.BufferGeometry();
+const miniHeartsPos = new Float32Array(MINI_HEART_COUNT * 3);
+const miniHeartsCols = new Float32Array(MINI_HEART_COUNT * 3);
+
+miniHeartsGeom.setAttribute('position', new THREE.BufferAttribute(miniHeartsPos, 3));
+miniHeartsGeom.setAttribute('color', new THREE.BufferAttribute(miniHeartsCols, 3));
+
+const miniHeartsMat = new THREE.PointsMaterial({
+    size: 0.16,
+    map: miniCrystalHeartTexture,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true
+});
+
+const miniHeartsPoints = new THREE.Points(miniHeartsGeom, miniHeartsMat);
+miniHeartsPoints.visible = false;
+scene.add(miniHeartsPoints);
+
+const miniHeartsData = [];
+for (let i = 0; i < MINI_HEART_COUNT; i++) {
+    miniHeartsData.push({
+        x: 0, y: 0, z: 0,
+        vx: 0, vy: 0, vz: 0,
+        swirlAngle: 0,
+        swirlSpeed: 0,
+        swirlRadius: 0,
+        life: 0,
+        maxLife: 1.0,
+        baseR: 1, baseG: 1, baseB: 1
+    });
+}
+
+let isHeartBurstActive = false;
+
+// Kích hoạt Bùng Nổ Trái Tim
+const triggerHeartBurst = () => {
+    isHeartBurstActive = true;
+    const theme = colorThemes[currentThemeIndex];
+    const baseColor = new THREE.Color(theme.heartBase);
+    const glowColor = new THREE.Color(theme.heartGlow);
+    const insideColor = new THREE.Color(theme.insideColor || '#ff99cc');
+    const whiteColor = new THREE.Color('#ffffff');
+
+    // 1. Kích hoạt Shockwave từ tâm khe tim (0, 2.65, 0)
+    heartBurstShockwaveMesh.position.set(0, 2.65, 0);
+    heartBurstShockwaveMesh.scale.set(0.2, 0.2, 0.2);
+    heartBurstShockwaveMat.color.copy(glowColor);
+    heartBurstShockwaveMat.opacity = 0.95;
+    heartBurstShockwaveMesh.visible = true;
+    heartBurstShockwaveLife = 1.0;
+
+    // 2. Kích hoạt 180 Trái Tim Pha Lê Mini
+    miniHeartsPoints.visible = true;
+    miniHeartsMat.opacity = 1.0;
+
+    const posAttr = miniHeartsGeom.attributes.position;
+    const colAttr = miniHeartsGeom.attributes.color;
+
+    for (let i = 0; i < MINI_HEART_COUNT; i++) {
+        const d = miniHeartsData[i];
+        d.life = 1.0;
+        d.maxLife = 1.6 + Math.random() * 1.3; // Bay từ 1.6 - 2.9s
+
+        // Xuất phát từ vùng khe tim và thân tim
+        const spreadX = (Math.random() - 0.5) * 0.55;
+        const spreadY = 2.55 + (Math.random() - 0.5) * 0.45;
+        const spreadZ = (Math.random() - 0.5) * 0.4;
+
+        d.x = spreadX;
+        d.y = spreadY;
+        d.z = spreadZ;
+
+        // Vận tốc bung nở hình phễu hướng lên trời
+        const burstAngle = Math.random() * Math.PI * 2;
+        const radialSpeed = 0.015 + Math.random() * 0.045;
+        d.vx = Math.cos(burstAngle) * radialSpeed;
+        d.vy = 0.042 + Math.random() * 0.058; // Vút bay lên cao
+        d.vz = Math.sin(burstAngle) * radialSpeed;
+
+        d.swirlAngle = burstAngle;
+        d.swirlSpeed = (Math.random() - 0.5) * 0.09;
+        d.swirlRadius = 0.015 + Math.random() * 0.035;
+
+        posAttr.setXYZ(i, d.x, d.y, d.z);
+
+        // Phối màu sắc phong phú lấp lánh theo theme
+        let c = glowColor.clone();
+        const rand = Math.random();
+        if (rand < 0.35) {
+            c = baseColor.clone();
+        } else if (rand < 0.65) {
+            c = insideColor.clone();
+        } else {
+            c = whiteColor.clone();
+        }
+        if (Math.random() > 0.45) c.lerp(whiteColor, 0.6);
+
+        d.baseR = c.r;
+        d.baseG = c.g;
+        d.baseB = c.b;
+
+        colAttr.setXYZ(i, c.r, c.g, c.b);
+    }
+
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+
+    // 3. Đập nảy trái tim đàn hồi mạnh mẽ ("Thình... Thịch!")
+    currentHeartScale = 1.30;
+
+    // 4. Âm thanh hợp âm pha lê ngân vang
+    playHeartBurstChime();
+};
+
+const updateHeartBurst = (delta, elapsedTime) => {
+    if (!isHeartBurstActive) return;
+
+    let stillActive = false;
+
+    // 1. Cập nhật Shockwave
+    if (heartBurstShockwaveMesh.visible) {
+        heartBurstShockwaveLife -= delta / heartBurstShockwaveMaxLife;
+        if (heartBurstShockwaveLife > 0) {
+            stillActive = true;
+            const progress = 1.0 - heartBurstShockwaveLife;
+            const scale = 0.2 + progress * 5.6;
+            heartBurstShockwaveMesh.scale.set(scale, scale, scale);
+            heartBurstShockwaveMat.opacity = Math.pow(heartBurstShockwaveLife, 1.4) * 0.85;
+            heartBurstShockwaveMesh.rotation.z += delta * 0.9;
+        } else {
+            heartBurstShockwaveMesh.visible = false;
+        }
+    }
+
+    // 2. Cập nhật Mini Hearts
+    if (miniHeartsPoints.visible) {
+        const posAttr = miniHeartsGeom.attributes.position;
+        const colAttr = miniHeartsGeom.attributes.color;
+        let anyMiniHeartActive = false;
+
+        for (let i = 0; i < MINI_HEART_COUNT; i++) {
+            const d = miniHeartsData[i];
+            if (d.life > 0) {
+                anyMiniHeartActive = true;
+                d.life -= delta / d.maxLife;
+
+                d.swirlAngle += d.swirlSpeed;
+                d.x += d.vx + Math.cos(d.swirlAngle) * d.swirlRadius;
+                d.y += d.vy;
+                d.z += d.vz + Math.sin(d.swirlAngle) * d.swirlRadius;
+
+                d.vx *= 0.985;
+                d.vz *= 0.985;
+                d.vy *= 0.992;
+
+                posAttr.setXYZ(i, d.x, d.y, d.z);
+
+                const alpha = Math.max(0, d.life);
+                const shimmer = 0.75 + Math.sin(elapsedTime * 8.0 + i) * 0.25;
+                const brightness = alpha * shimmer;
+                colAttr.setXYZ(i, d.baseR * brightness, d.baseG * brightness, d.baseB * brightness);
+            }
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+
+        if (anyMiniHeartActive) {
+            stillActive = true;
+        } else {
+            miniHeartsPoints.visible = false;
+        }
+    }
+
+    if (!stillActive) {
+        isHeartBurstActive = false;
+    }
+};
+
+/**
+ * =========================================================================
+ * 7.2 WEB AUDIO SYNTHESIZER (Âm thanh hiệu ứng không gian)
  * =========================================================================
  */
 let sfxAudioCtx = null;
@@ -1397,61 +2056,246 @@ const initSFXContext = () => {
     }
 };
 
-// Đã tắt âm thanh pháo hoa theo yêu cầu
-const playFireworkPop = () => {};
+// ------- Mobile Landscape Enforcement -------
+const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           (('ontouchstart' in window || navigator.maxTouchPoints > 0) && Math.min(window.innerWidth, window.innerHeight) <= 850);
+};
 
+const isCurrentlyPortrait = () => window.innerHeight > window.innerWidth;
+const shouldEnforceLandscape = () => isMobileDevice() && isCurrentlyPortrait();
+
+let hasGalaxyJourneyStarted = false;
+let isAssetsLoadingFinished = false;
+let dismissLoadingScreenFn = null;
+
+function enforceLandscape() {
+    const guard = document.getElementById('orientation-guard');
+    if (!guard) return;
+
+    if (shouldEnforceLandscape()) {
+        guard.classList.add('active');
+    } else {
+        guard.classList.remove('active');
+        // Nếu đã load xong nhưng trước đó bị giữ lại vì xoay dọc -> bây giờ bắt đầu du hành!
+        if (isAssetsLoadingFinished && !hasGalaxyJourneyStarted && typeof dismissLoadingScreenFn === 'function') {
+            dismissLoadingScreenFn();
+        }
+    }
+}
+
+enforceLandscape(); // Immediate orientation check
+window.addEventListener('resize', enforceLandscape);
+window.addEventListener('orientationchange', enforceLandscape);
+// ------- End of Mobile Landscape Enforcement -------
+
+
+
+// 🎆 Firework Pop — Tiếng pháo hoa thực tế (noise crack + sparkle tail)
+const playFireworkPop = () => {
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+    try {
+        const now = sfxAudioCtx.currentTime;
+        // Layer 1: Noise crack (tiếng nổ bốp)
+        const len = Math.floor(sfxAudioCtx.sampleRate * 0.18);
+        const cracBuf = sfxAudioCtx.createBuffer(1, len, sfxAudioCtx.sampleRate);
+        const cracData = cracBuf.getChannelData(0);
+        for (let i = 0; i < len; i++) cracData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+        const cracSrc = sfxAudioCtx.createBufferSource();
+        cracSrc.buffer = cracBuf;
+        const cracBpf = sfxAudioCtx.createBiquadFilter();
+        cracBpf.type = 'bandpass'; cracBpf.frequency.value = 2800; cracBpf.Q.value = 1.2;
+        const cracGain = sfxAudioCtx.createGain();
+        cracGain.gain.setValueAtTime(0.7, now);
+        cracGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        cracSrc.connect(cracBpf); cracBpf.connect(cracGain); cracGain.connect(sfxAudioCtx.destination);
+        cracSrc.start(now); cracSrc.stop(now + 0.18);
+        // Layer 2: Sparkle ascending trail
+        [1047, 1319, 1568, 2093, 2637, 3136].forEach((freq, i) => {
+            const sOsc = sfxAudioCtx.createOscillator();
+            const sGain = sfxAudioCtx.createGain();
+            sOsc.type = 'sine';
+            sOsc.frequency.setValueAtTime(freq, now + 0.05 + i * 0.045);
+            sGain.gain.setValueAtTime(0.07, now + 0.05 + i * 0.045);
+            sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05 + i * 0.045 + 0.5);
+            sOsc.connect(sGain); sGain.connect(sfxAudioCtx.destination);
+            sOsc.start(now + 0.05 + i * 0.045); sOsc.stop(now + 0.05 + i * 0.045 + 0.52);
+        });
+        // Layer 3: Sub thud
+        const tOsc = sfxAudioCtx.createOscillator();
+        const tGain = sfxAudioCtx.createGain();
+        tOsc.type = 'sine'; tOsc.frequency.setValueAtTime(90, now);
+        tOsc.frequency.exponentialRampToValueAtTime(32, now + 0.25);
+        tGain.gain.setValueAtTime(0.35, now); tGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        tOsc.connect(tGain); tGain.connect(sfxAudioCtx.destination);
+        tOsc.start(now); tOsc.stop(now + 0.3);
+    } catch (e) {}
+};
+
+// 💖 Heart Burst Chime — Tiếng tim vỡ ấm áp, rung động cảm xúc
+const playHeartBurstChime = () => {
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
+    try {
+        const now = sfxAudioCtx.currentTime;
+        // Layer 1: Warm bell arpeggio (C major pentatonic shimmer)
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+        notes.forEach((freq, idx) => {
+            const t = now + idx * 0.058;
+            // Fundamental
+            const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, t);
+            // Soft vibrato via LFO
+            const lfo = sfxAudioCtx.createOscillator();
+            const lfoGain = sfxAudioCtx.createGain();
+            lfo.frequency.value = 5.5; lfoGain.gain.value = freq * 0.006;
+            lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+            // Harmonic overtone
+            const harm = sfxAudioCtx.createOscillator();
+            harm.type = 'sine'; harm.frequency.setValueAtTime(freq * 2.01, t);
+            const harmGain = sfxAudioCtx.createGain();
+            harmGain.gain.setValueAtTime(0.025, t);
+            harmGain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+            harm.connect(harmGain); harmGain.connect(sfxAudioCtx.destination);
+            harm.start(t); harm.stop(t + 0.95);
+            const gain = sfxAudioCtx.createGain();
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.11, t + 0.018);
+            gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.85);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            lfo.start(t); osc.start(t);
+            osc.stop(t + 0.88); lfo.stop(t + 0.88);
+        });
+        // Layer 2: Soft pink-noise breath (warmth)
+        const bLen = Math.floor(sfxAudioCtx.sampleRate * 0.6);
+        const bBuf = sfxAudioCtx.createBuffer(1, bLen, sfxAudioCtx.sampleRate);
+        const bData = bBuf.getChannelData(0);
+        let b0=0,b1=0,b2=0;
+        for (let i=0;i<bLen;i++){const w=Math.random()*2-1;b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.96900*b2+w*0.1538520;bData[i]=(b0+b1+b2+w*0.0782232)*0.11;}
+        const bSrc = sfxAudioCtx.createBufferSource(); bSrc.buffer = bBuf;
+        const bLpf = sfxAudioCtx.createBiquadFilter();
+        bLpf.type = 'lowpass'; bLpf.frequency.value = 900;
+        const bGain = sfxAudioCtx.createGain();
+        bGain.gain.setValueAtTime(0.04, now); bGain.gain.linearRampToValueAtTime(0.06, now + 0.1);
+        bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        bSrc.connect(bLpf); bLpf.connect(bGain); bGain.connect(sfxAudioCtx.destination);
+        bSrc.start(now); bSrc.stop(now + 0.6);
+    } catch (e) {}
+};
+
+// ✨ Sparkle Chime — Tiếng long lanh pha lê, shimmer cao
 const playSparkleChime = () => {
     if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
-
     try {
         const now = sfxAudioCtx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        // Layer 1: Crystal bell notes (ascending)
+        const notes = [1046.50, 1318.51, 1567.98, 2093.00, 2637.02, 3135.96];
         notes.forEach((freq, idx) => {
+            const t = now + idx * 0.055;
             const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            osc.frequency.linearRampToValueAtTime(freq * 1.003, t + 0.3);
             const gain = sfxAudioCtx.createGain();
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
-
-            gain.gain.setValueAtTime(0, now + idx * 0.06);
-            gain.gain.linearRampToValueAtTime(0.08, now + idx * 0.06 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.45);
-
-            osc.connect(gain);
-            gain.connect(sfxAudioCtx.destination);
-
-            osc.start(now + idx * 0.06);
-            osc.stop(now + idx * 0.06 + 0.46);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.07, t + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.52);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            osc.start(t); osc.stop(t + 0.54);
         });
+        // Layer 2: Ultra-high shimmer dust
+        [4186, 5274, 6272, 7902].forEach((freq, idx) => {
+            const t = now + idx * 0.04 + 0.02;
+            const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, t);
+            const gain = sfxAudioCtx.createGain();
+            gain.gain.setValueAtTime(0.04, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            osc.start(t); osc.stop(t + 0.36);
+        });
+        // Layer 3: Random glitter micro-blips
+        for (let i = 0; i < 8; i++) {
+            const t = now + Math.random() * 0.35;
+            const osc = sfxAudioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 2000 + Math.random() * 4000;
+            const gain = sfxAudioCtx.createGain();
+            gain.gain.setValueAtTime(0.03, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+            osc.connect(gain); gain.connect(sfxAudioCtx.destination);
+            osc.start(t); osc.stop(t + 0.13);
+        }
     } catch (e) {}
 };
 
+// 🚀 Warp Sound — Tiếng warp không gian: whoosh + pitch sweep + reverb
 const playWarpSound = () => {
-    if (isSoundMuted) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
     initSFXContext();
     if (!sfxAudioCtx) return;
-
     try {
         const now = sfxAudioCtx.currentTime;
+        // Layer 1: White noise whoosh (gió vũ trụ)
+        const wLen = Math.floor(sfxAudioCtx.sampleRate * 2.8);
+        const wBuf = sfxAudioCtx.createBuffer(1, wLen, sfxAudioCtx.sampleRate);
+        const wData = wBuf.getChannelData(0);
+        for (let i = 0; i < wLen; i++) wData[i] = Math.random() * 2 - 1;
+        const wSrc = sfxAudioCtx.createBufferSource(); wSrc.buffer = wBuf;
+        const wBpf = sfxAudioCtx.createBiquadFilter();
+        wBpf.type = 'bandpass';
+        wBpf.frequency.setValueAtTime(200, now);
+        wBpf.frequency.exponentialRampToValueAtTime(3500, now + 1.4);
+        wBpf.frequency.exponentialRampToValueAtTime(400, now + 2.8);
+        wBpf.Q.value = 2.5;
+        const wGain = sfxAudioCtx.createGain();
+        wGain.gain.setValueAtTime(0.001, now);
+        wGain.gain.linearRampToValueAtTime(0.38, now + 0.6);
+        wGain.gain.linearRampToValueAtTime(0.32, now + 1.5);
+        wGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        wSrc.connect(wBpf); wBpf.connect(wGain); wGain.connect(sfxAudioCtx.destination);
+        wSrc.start(now); wSrc.stop(now + 2.8);
+        // Layer 2: Pitch sweep oscillator (engine spin-up)
         const osc = sfxAudioCtx.createOscillator();
-        const gain = sfxAudioCtx.createGain();
-
+        const dist = sfxAudioCtx.createWaveShaper();
+        const distCurve = new Float32Array(256);
+        for (let i = 0; i < 256; i++) { const x = (i * 2) / 256 - 1; distCurve[i] = (Math.PI + 60) * x / (Math.PI + 60 * Math.abs(x)); }
+        dist.curve = distCurve;
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(120, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 1.2);
-        osc.frequency.exponentialRampToValueAtTime(220, now + 2.5);
-
-        gain.gain.setValueAtTime(0.01, now);
-        gain.gain.linearRampToValueAtTime(0.12, now + 1.0);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
-
-        osc.connect(gain);
-        gain.connect(sfxAudioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + 2.5);
+        osc.frequency.setValueAtTime(65, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 1.5);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 2.8);
+        const oscGain = sfxAudioCtx.createGain();
+        oscGain.gain.setValueAtTime(0.008, now);
+        oscGain.gain.linearRampToValueAtTime(0.14, now + 0.8);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+        osc.connect(dist); dist.connect(oscGain); oscGain.connect(sfxAudioCtx.destination);
+        osc.start(now); osc.stop(now + 2.85);
+        // Layer 3: Sub bass rumble on entry
+        const subO = sfxAudioCtx.createOscillator();
+        subO.type = 'sine'; subO.frequency.setValueAtTime(48, now);
+        subO.frequency.exponentialRampToValueAtTime(22, now + 1.0);
+        const subG = sfxAudioCtx.createGain();
+        subG.gain.setValueAtTime(0.28, now); subG.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        subO.connect(subG); subG.connect(sfxAudioCtx.destination);
+        subO.start(now); subO.stop(now + 1.3);
+        // Layer 4: Star-trail shimmer
+        [1200, 1800, 2400, 3200].forEach((freq, i) => {
+            const t = now + 0.3 + i * 0.18;
+            const sO = sfxAudioCtx.createOscillator(); sO.type = 'sine';
+            sO.frequency.setValueAtTime(freq, t);
+            sO.frequency.exponentialRampToValueAtTime(freq * 0.4, t + 0.9);
+            const sG = sfxAudioCtx.createGain();
+            sG.gain.setValueAtTime(0.06, t); sG.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+            sO.connect(sG); sG.connect(sfxAudioCtx.destination); sO.start(t); sO.stop(t + 0.9);
+        });
     } catch (e) {}
 };
 
@@ -1821,13 +2665,17 @@ const generateSaturnDustAndRibbons = () => {
 
     // Thêm các vòng lụa ánh sáng (Silk Ribbons) tăng độ mềm mại lộng lẫy
     const ribbonRadii = [3.9, 4.4, 5.2, 5.8];
+    const rainbowRibbonColors = ['#ff007f', '#00f0ff', '#ffaa00', '#a855f7'];
     ribbonRadii.forEach((rad, idx) => {
         const ringGeom = new THREE.RingGeometry(rad - 0.04, rad + 0.04, 64);
+        const ribbonColorHex = (themeKey === 'rainbow') 
+            ? rainbowRibbonColors[idx % rainbowRibbonColors.length]
+            : (idx % 2 === 0 ? theme.inner : theme.mid);
         const ringMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(idx % 2 === 0 ? theme.inner : theme.mid),
+            color: new THREE.Color(ribbonColorHex),
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.18,
+            opacity: 0.24,
             depthWrite: false,
             blending: THREE.AdditiveBlending
         });
@@ -2166,61 +3014,273 @@ const supernovaMat = new THREE.PointsMaterial({
 const supernovaPoints = new THREE.Points(supernovaGeom, supernovaMat);
 scene.add(supernovaPoints);
 
-// Âm thanh Siêu Tân Tinh (Implosion Sweep + Detonation Boom)
+// Âm thanh Siêu Tân Tinh - Phiên bản thực tế cực đỉnh
+// Helper: tạo white noise buffer
+const _createNoiseBuffer = (ctx, durationSec) => {
+    const sampleRate = ctx.sampleRate;
+    const length = Math.floor(sampleRate * durationSec);
+    const buffer = ctx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+    return buffer;
+};
+// Helper: impulse reverb (simulate large space tail)
+const _createImpulseBuffer = (ctx, durationSec, decay) => {
+    const sampleRate = ctx.sampleRate;
+    const length = Math.floor(sampleRate * durationSec);
+    const buffer = ctx.createBuffer(2, length, sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+        const data = buffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+        }
+    }
+    return buffer;
+};
+
 const playSupernovaImplosionSound = () => {
-    if (!fxConfig.soundFx) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
     try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(38, now + 1.25);
-        gain.gain.setValueAtTime(0.01, now);
-        gain.gain.linearRampToValueAtTime(0.45, now + 0.9);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 1.35);
+        const now = sfxAudioCtx.currentTime;
+        const dur = 1.6;
+
+        // === LAYER 1: White noise suck-in (implosion vacuum) ===
+        const noiseBuf = _createNoiseBuffer(sfxAudioCtx, dur);
+        const noiseSource = sfxAudioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuf;
+        const bandpass = sfxAudioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(2200, now);
+        bandpass.frequency.exponentialRampToValueAtTime(60, now + dur);
+        bandpass.Q.value = 1.8;
+        const noiseGain = sfxAudioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.001, now);
+        noiseGain.gain.linearRampToValueAtTime(0.55, now + 0.5);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noiseSource.connect(bandpass);
+        bandpass.connect(noiseGain);
+        noiseGain.connect(sfxAudioCtx.destination);
+        noiseSource.start(now);
+        noiseSource.stop(now + dur);
+
+        // === LAYER 2: Gravitational frequency sweep (deep sub pull) ===
+        const oscPull = sfxAudioCtx.createOscillator();
+        oscPull.type = 'sawtooth';
+        oscPull.frequency.setValueAtTime(280, now);
+        oscPull.frequency.exponentialRampToValueAtTime(22, now + dur);
+        const distortion = sfxAudioCtx.createWaveShaper();
+        const distCurve = new Float32Array(256);
+        for (let i = 0; i < 256; i++) {
+            const x = (i * 2) / 256 - 1;
+            distCurve[i] = (Math.PI + 80) * x / (Math.PI + 80 * Math.abs(x));
+        }
+        distortion.curve = distCurve;
+        const pullGain = sfxAudioCtx.createGain();
+        pullGain.gain.setValueAtTime(0.01, now);
+        pullGain.gain.linearRampToValueAtTime(0.35, now + 0.7);
+        pullGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        oscPull.connect(distortion);
+        distortion.connect(pullGain);
+        pullGain.connect(sfxAudioCtx.destination);
+        oscPull.start(now);
+        oscPull.stop(now + dur);
+
+        // === LAYER 3: High tension whistle (energy building up) ===
+        const oscTension = sfxAudioCtx.createOscillator();
+        oscTension.type = 'sine';
+        oscTension.frequency.setValueAtTime(120, now + 0.3);
+        oscTension.frequency.exponentialRampToValueAtTime(880, now + dur - 0.1);
+        const tensionGain = sfxAudioCtx.createGain();
+        tensionGain.gain.setValueAtTime(0.001, now + 0.3);
+        tensionGain.gain.linearRampToValueAtTime(0.22, now + 0.9);
+        tensionGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        oscTension.connect(tensionGain);
+        tensionGain.connect(sfxAudioCtx.destination);
+        oscTension.start(now + 0.3);
+        oscTension.stop(now + dur);
     } catch (e) {}
 };
 
 const playSupernovaDetonationSound = () => {
-    if (!fxConfig.soundFx) return;
+    if (isSoundMuted || !fxConfig.soundFx) return;
+    initSFXContext();
+    if (!sfxAudioCtx) return;
     try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-        
-        // Deep sub boom
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(95, now);
-        osc.frequency.exponentialRampToValueAtTime(28, now + 1.8);
-        gain.gain.setValueAtTime(0.9, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 2.3);
+        const now = sfxAudioCtx.currentTime;
 
-        // Sparkle arpeggio
-        [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00].forEach((freq, idx) => {
-            const sOsc = ctx.createOscillator();
-            const sGain = ctx.createGain();
-            sOsc.type = 'triangle';
-            sOsc.frequency.setValueAtTime(freq, now + idx * 0.09);
-            sGain.gain.setValueAtTime(0.28, now + idx * 0.09);
-            sGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.9);
-            sOsc.connect(sGain);
-            sGain.connect(ctx.destination);
-            sOsc.start(now + idx * 0.09);
-            sOsc.stop(now + idx * 0.09 + 1.0);
+        // === LAYER 1: MASSIVE SUB-BASS THUD (tiếng nổ cực sâu) ===
+        const subOsc = sfxAudioCtx.createOscillator();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(55, now);
+        subOsc.frequency.exponentialRampToValueAtTime(18, now + 3.5);
+        const subGain = sfxAudioCtx.createGain();
+        subGain.gain.setValueAtTime(1.2, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 3.8);
+        subOsc.connect(subGain);
+        subGain.connect(sfxAudioCtx.destination);
+        subOsc.start(now);
+        subOsc.stop(now + 4.0);
+
+        // === LAYER 2: WHITE NOISE EXPLOSION BLAST (tiếng nổ trắng thực tế) ===
+        const blastBuf = _createNoiseBuffer(sfxAudioCtx, 3.5);
+        const blastSrc = sfxAudioCtx.createBufferSource();
+        blastSrc.buffer = blastBuf;
+        // Lowpass filter để cho ra tiếng nổ ầm ầm, không chói
+        const lpf = sfxAudioCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.setValueAtTime(8000, now);
+        lpf.frequency.exponentialRampToValueAtTime(280, now + 2.0);
+        lpf.Q.value = 0.5;
+        const blastGain = sfxAudioCtx.createGain();
+        blastGain.gain.setValueAtTime(0.9, now);
+        blastGain.gain.setValueAtTime(0.7, now + 0.02);
+        blastGain.gain.exponentialRampToValueAtTime(0.001, now + 3.2);
+        blastSrc.connect(lpf);
+        lpf.connect(blastGain);
+        blastGain.connect(sfxAudioCtx.destination);
+        blastSrc.start(now);
+        blastSrc.stop(now + 3.5);
+
+        // === LAYER 3: MID-RANGE CRACK (tiếng nứt vỡ trung) ===
+        const crackBuf = _createNoiseBuffer(sfxAudioCtx, 0.4);
+        const crackSrc = sfxAudioCtx.createBufferSource();
+        crackSrc.buffer = crackBuf;
+        const bpf1 = sfxAudioCtx.createBiquadFilter();
+        bpf1.type = 'bandpass';
+        bpf1.frequency.value = 1800;
+        bpf1.Q.value = 3;
+        const crackGain = sfxAudioCtx.createGain();
+        crackGain.gain.setValueAtTime(0.8, now);
+        crackGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        crackSrc.connect(bpf1);
+        bpf1.connect(crackGain);
+        crackGain.connect(sfxAudioCtx.destination);
+        crackSrc.start(now);
+        crackSrc.stop(now + 0.4);
+
+        // === LAYER 4: HIGH-FREQ DEBRIS SIZZLE (tia lửa, mảnh vỡ) ===
+        const sizzleBuf = _createNoiseBuffer(sfxAudioCtx, 2.0);
+        const sizzleSrc = sfxAudioCtx.createBufferSource();
+        sizzleSrc.buffer = sizzleBuf;
+        const hpf = sfxAudioCtx.createBiquadFilter();
+        hpf.type = 'highpass';
+        hpf.frequency.setValueAtTime(4000, now + 0.05);
+        hpf.frequency.exponentialRampToValueAtTime(12000, now + 1.5);
+        const sizzleGain = sfxAudioCtx.createGain();
+        sizzleGain.gain.setValueAtTime(0.35, now + 0.05);
+        sizzleGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+        sizzleSrc.connect(hpf);
+        hpf.connect(sizzleGain);
+        sizzleGain.connect(sfxAudioCtx.destination);
+        sizzleSrc.start(now + 0.05);
+        sizzleSrc.stop(now + 2.0);
+
+        // === LAYER 5: DEEP SPACE REVERB TAIL (vang không gian cực sâu) ===
+        try {
+            const convolver = sfxAudioCtx.createConvolver();
+            // Impulse dài hơn, decay chậm hơn để tạo không gian rộng
+            const irLen = Math.floor(sfxAudioCtx.sampleRate * 6.0);
+            const irBuf = sfxAudioCtx.createBuffer(2, irLen, sfxAudioCtx.sampleRate);
+            for (let ch = 0; ch < 2; ch++) {
+                const d = irBuf.getChannelData(ch);
+                for (let i = 0; i < irLen; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2.2);
+                }
+            }
+            convolver.buffer = irBuf;
+            // Feed với low-frequency noise để reverb mang màu trầm
+            const revLen = Math.floor(sfxAudioCtx.sampleRate * 0.15);
+            const revBuf = sfxAudioCtx.createBuffer(1, revLen, sfxAudioCtx.sampleRate);
+            const revData = revBuf.getChannelData(0);
+            for (let i = 0; i < revLen; i++) revData[i] = Math.random() * 2 - 1;
+            const revSrc = sfxAudioCtx.createBufferSource();
+            revSrc.buffer = revBuf;
+            const revLpf = sfxAudioCtx.createBiquadFilter();
+            revLpf.type = 'lowpass'; revLpf.frequency.value = 600;
+            const revGain = sfxAudioCtx.createGain();
+            revGain.gain.setValueAtTime(1.0, now);
+            revGain.gain.exponentialRampToValueAtTime(0.001, now + 6.5);
+            revSrc.connect(revLpf); revLpf.connect(convolver);
+            convolver.connect(revGain); revGain.connect(sfxAudioCtx.destination);
+            revSrc.start(now); revSrc.stop(now + 0.15);
+        } catch(re) {}
+
+        // === LAYER 6: SUB-BASS RESONANCE RUMBLE (tiếng rền vũ trụ kéo dài) ===
+        // Âm trầm rền liên tục, fade out từ từ — nghe như mặt đất còn rung
+        [14, 20, 28, 36].forEach((freq, idx) => {
+            const t = now + 0.3 + idx * 0.2; // bắt đầu sau blast chính
+            const rOsc = sfxAudioCtx.createOscillator();
+            rOsc.type = 'sine';
+            rOsc.frequency.setValueAtTime(freq, t);
+            rOsc.frequency.linearRampToValueAtTime(freq * 0.7, t + 5.0); // drift xuống nhẹ
+            // LFO làm rung nhẹ biên độ (pulsing effect)
+            const lfo = sfxAudioCtx.createOscillator();
+            lfo.type = 'sine'; lfo.frequency.value = 0.4 + idx * 0.15; // ~0.4–0.85 Hz
+            const lfoGain = sfxAudioCtx.createGain();
+            lfoGain.gain.value = 0.06;
+            lfo.connect(lfoGain);
+            const rGain = sfxAudioCtx.createGain();
+            rGain.gain.setValueAtTime(0.0, t);
+            rGain.gain.linearRampToValueAtTime(0.28 - idx * 0.04, t + 0.8);
+            rGain.gain.setValueAtTime(0.28 - idx * 0.04, t + 2.0);
+            rGain.gain.exponentialRampToValueAtTime(0.001, t + 5.5 + idx * 0.4);
+            lfoGain.connect(rGain.gain); // LFO modulate gain
+            rOsc.connect(rGain); rGain.connect(sfxAudioCtx.destination);
+            lfo.start(t); rOsc.start(t);
+            rOsc.stop(t + 6.0 + idx * 0.4); lfo.stop(t + 6.0 + idx * 0.4);
         });
+
+        // === LAYER 7: GRAVITATIONAL THROB (nhịp đập trọng lực, cực trầm) ===
+        // 3 nhịp đập bass thấp, như heartbeat của vũ trụ sau vụ nổ
+        [0.5, 1.6, 2.8].forEach((tOffset, idx) => {
+            const t = now + tOffset;
+            const tOsc = sfxAudioCtx.createOscillator();
+            tOsc.type = 'sine';
+            tOsc.frequency.setValueAtTime(32, t);
+            tOsc.frequency.exponentialRampToValueAtTime(12, t + 1.2);
+            const tGain = sfxAudioCtx.createGain();
+            tGain.gain.setValueAtTime(0.0, t);
+            tGain.gain.linearRampToValueAtTime(0.45 - idx * 0.08, t + 0.06); // fast attack
+            tGain.gain.exponentialRampToValueAtTime(0.001, t + 1.4 - idx * 0.1);
+            tOsc.connect(tGain); tGain.connect(sfxAudioCtx.destination);
+            tOsc.start(t); tOsc.stop(t + 1.5);
+            // Harmonic trầm đi kèm (sub-harmonic)
+            const hOsc = sfxAudioCtx.createOscillator();
+            hOsc.type = 'triangle';
+            hOsc.frequency.setValueAtTime(64, t);
+            hOsc.frequency.exponentialRampToValueAtTime(24, t + 1.0);
+            const hGain = sfxAudioCtx.createGain();
+            hGain.gain.setValueAtTime(0.0, t);
+            hGain.gain.linearRampToValueAtTime(0.18 - idx * 0.04, t + 0.05);
+            hGain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+            hOsc.connect(hGain); hGain.connect(sfxAudioCtx.destination);
+            hOsc.start(t); hOsc.stop(t + 1.1);
+        });
+
+        // === LAYER 8: LOW-MID DEBRIS FIELD (tiếng vật chất vỡ rơi, trầm–trung) ===
+        // Noise filtered ở dải 60–350 Hz, xuất hiện muộn sau vụ nổ chính
+        const debrisLen = Math.floor(sfxAudioCtx.sampleRate * 4.0);
+        const debrisBuf = sfxAudioCtx.createBuffer(1, debrisLen, sfxAudioCtx.sampleRate);
+        const debrisData = debrisBuf.getChannelData(0);
+        for (let i = 0; i < debrisLen; i++) debrisData[i] = Math.random() * 2 - 1;
+        const debrisSrc = sfxAudioCtx.createBufferSource(); debrisSrc.buffer = debrisBuf;
+        const debrisLpf = sfxAudioCtx.createBiquadFilter();
+        debrisLpf.type = 'lowpass';
+        debrisLpf.frequency.setValueAtTime(350, now + 0.8);
+        debrisLpf.frequency.exponentialRampToValueAtTime(60, now + 4.5);
+        debrisLpf.Q.value = 1.5;
+        const debrisHpf = sfxAudioCtx.createBiquadFilter();
+        debrisHpf.type = 'highpass'; debrisHpf.frequency.value = 55;
+        const debrisGain = sfxAudioCtx.createGain();
+        debrisGain.gain.setValueAtTime(0.0, now + 0.8);
+        debrisGain.gain.linearRampToValueAtTime(0.4, now + 1.5);
+        debrisGain.gain.setValueAtTime(0.35, now + 2.5);
+        debrisGain.gain.exponentialRampToValueAtTime(0.001, now + 4.8);
+        debrisSrc.connect(debrisLpf); debrisLpf.connect(debrisHpf);
+        debrisHpf.connect(debrisGain); debrisGain.connect(sfxAudioCtx.destination);
+        debrisSrc.start(now + 0.8); debrisSrc.stop(now + 4.8);
     } catch (e) {}
 };
 
@@ -2248,8 +3308,6 @@ const triggerSupernovaLoveBurst = () => {
  */
 let isCinemaMode = false;
 let isResettingView = false;
-const defaultCameraPos = new THREE.Vector3(0, 2.5, 7.2);
-const defaultTarget = new THREE.Vector3(0, 1.35, 0);
 
 controls.addEventListener('start', () => {
     isResettingView = false;
@@ -2258,11 +3316,34 @@ controls.addEventListener('start', () => {
 
 /**
  * =========================================================================
- * 10. AUDIO BACKGROUND & AUDIO VISUALIZER
+ * 10. AUDIO BACKGROUND & AUDIO VISUALIZER (Thư mục Audio & Playlist)
  * =========================================================================
  */
-const bgMusic = new Audio('/music.mp3');
-bgMusic.loop = true;
+const defaultPlaylist = [
+    {
+        id: 'why-not-me',
+        title: 'Why Not Me',
+        artist: 'Enrique Iglesias',
+        src: '/audio/why-not-me.mp3',
+        sourceType: 'local'
+    },
+    {
+        id: 'melody-of-universe',
+        title: 'Melody of Universe',
+        artist: 'Galaxy Ambient & Love',
+        src: '/audio/music.mp3',
+        sourceType: 'local'
+    }
+];
+
+let localPlaylist = [...defaultPlaylist];
+let currentTrackIndex = 0;
+let isShuffleMode = false;
+let isLoopMode = true;
+let isPlayerSeeking = false;
+
+const bgMusic = new Audio(localPlaylist[0].src);
+bgMusic.loop = false;
 bgMusic.volume = 0.65;
 let musicStarted = false;
 
@@ -2273,6 +3354,13 @@ let audioDataArray = null;
 let ytPlayer = null;
 let isUsingYouTube = false;
 let isYTMuted = false;
+
+const formatTime = (secs) => {
+    if (isNaN(secs) || secs < 0) return '00:00';
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
 
 const extractYouTubeId = (url) => {
     if (!url) return null;
@@ -2315,6 +3403,172 @@ const updateMusicButtonState = (muted) => {
     }
 };
 
+const updatePlayerUIState = () => {
+    const disc = document.getElementById('player-disc');
+    const playBtn = document.getElementById('btn-player-play');
+    const isPlaying = isUsingYouTube 
+        ? (ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === 1) 
+        : (!bgMusic.paused && !bgMusic.ended);
+
+    if (disc) {
+        if (isPlaying) {
+            disc.classList.remove('paused');
+        } else {
+            disc.classList.add('paused');
+        }
+    }
+
+    if (playBtn) {
+        playBtn.innerText = isPlaying ? '⏸️' : '▶️';
+    }
+
+    // Cập nhật equalizer animation trên playlist item
+    document.querySelectorAll('.playlist-item').forEach((item, idx) => {
+        if (idx === currentTrackIndex && !isUsingYouTube) {
+            item.classList.add('active');
+            if (isPlaying) {
+                item.classList.add('playing');
+            } else {
+                item.classList.remove('playing');
+            }
+        } else {
+            item.classList.remove('active', 'playing');
+        }
+    });
+};
+
+const updateNowPlayingCard = () => {
+    const titleEl = document.getElementById('player-current-title');
+    const artistEl = document.getElementById('player-current-artist');
+    const badgeEl = document.getElementById('player-status-badge');
+    const countEl = document.getElementById('local-song-count');
+
+    if (countEl) countEl.innerText = localPlaylist.length;
+
+    if (isUsingYouTube) {
+        if (titleEl) titleEl.innerText = 'YouTube Audio Stream';
+        if (artistEl) artistEl.innerText = 'Đang phát trực tuyến từ YouTube';
+        if (badgeEl) {
+            badgeEl.innerText = '📺 YouTube';
+            badgeEl.className = 'player-badge live';
+        }
+    } else {
+        const cur = localPlaylist[currentTrackIndex] || defaultPlaylist[0];
+        if (titleEl) titleEl.innerText = cur.title;
+        if (artistEl) artistEl.innerText = `${cur.artist} • ${cur.src.startsWith('blob:') ? 'Tệp người dùng' : cur.src}`;
+        if (badgeEl) {
+            badgeEl.innerText = '🎵 Local Audio';
+            badgeEl.className = 'player-badge live';
+        }
+    }
+    updatePlayerUIState();
+};
+
+const renderLocalPlaylist = () => {
+    const listEl = document.getElementById('local-playlist-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+    localPlaylist.forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = `playlist-item ${index === currentTrackIndex && !isUsingYouTube ? 'active' : ''}`;
+        item.innerHTML = `
+            <span class="playlist-track-num">${index + 1}</span>
+            <div class="playlist-track-info">
+                <div class="playlist-track-title">${track.title}</div>
+                <div class="playlist-track-meta">${track.artist}</div>
+            </div>
+            <div class="playlist-playing-bars">
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+            </div>
+            <span class="playlist-play-icon">${index === currentTrackIndex && !isUsingYouTube && !bgMusic.paused ? '🔊' : '▶'}</span>
+        `;
+
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playLocalTrack(index);
+        });
+
+        listEl.appendChild(item);
+    });
+};
+
+const playLocalTrack = (index) => {
+    if (index < 0 || index >= localPlaylist.length) return;
+    currentTrackIndex = index;
+    isUsingYouTube = false;
+    if (ytPlayer && ytPlayer.pauseVideo) {
+        ytPlayer.pauseVideo();
+    }
+
+    const track = localPlaylist[currentTrackIndex];
+    bgMusic.src = track.src;
+    bgMusic.currentTime = 0;
+    bgMusic.muted = isSoundMuted;
+
+    initAudioAnalyser();
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+    }
+
+    bgMusic.play().then(() => {
+        musicStarted = true;
+        updateMusicButtonState(isSoundMuted);
+        updateNowPlayingCard();
+        renderLocalPlaylist();
+    }).catch(() => {
+        updateNowPlayingCard();
+        renderLocalPlaylist();
+    });
+};
+
+const nextTrack = () => {
+    if (isUsingYouTube) return;
+    if (isShuffleMode && localPlaylist.length > 1) {
+        let randIdx = currentTrackIndex;
+        while (randIdx === currentTrackIndex) {
+            randIdx = Math.floor(Math.random() * localPlaylist.length);
+        }
+        playLocalTrack(randIdx);
+    } else {
+        const nextIdx = (currentTrackIndex + 1) % localPlaylist.length;
+        playLocalTrack(nextIdx);
+    }
+};
+
+const prevTrack = () => {
+    if (isUsingYouTube) return;
+    if (bgMusic.currentTime > 3) {
+        bgMusic.currentTime = 0;
+        return;
+    }
+    const prevIdx = (currentTrackIndex - 1 + localPlaylist.length) % localPlaylist.length;
+    playLocalTrack(prevIdx);
+};
+
+const togglePlayPause = () => {
+    if (isUsingYouTube) {
+        if (ytPlayer) {
+            const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
+            if (state === 1) {
+                ytPlayer.pauseVideo();
+            } else {
+                ytPlayer.playVideo();
+            }
+            setTimeout(updatePlayerUIState, 300);
+        }
+    } else {
+        if (bgMusic.paused) {
+            startMusic();
+        } else {
+            bgMusic.pause();
+        }
+        setTimeout(updatePlayerUIState, 100);
+    }
+};
+
 // Khôi phục trạng thái Âm Thanh Mute từ LocalStorage
 try {
     const savedMuted = localStorage.getItem('galaxy_music_muted');
@@ -2331,6 +3585,7 @@ const playYouTubeMusic = (videoId) => {
         bgMusic.pause();
         isUsingYouTube = true;
         isYTMuted = false;
+        updateNowPlayingCard();
 
         if (!ytPlayer) {
             ytPlayer = new window.YT.Player('yt-player', {
@@ -2349,11 +3604,13 @@ const playYouTubeMusic = (videoId) => {
                         event.target.playVideo();
                         musicStarted = true;
                         updateMusicButtonState(false);
+                        updatePlayerUIState();
                     },
                     onStateChange: (event) => {
                         if (event.data === window.YT.PlayerState.ENDED) {
                             event.target.playVideo();
                         }
+                        updatePlayerUIState();
                     }
                 }
             });
@@ -2364,6 +3621,7 @@ const playYouTubeMusic = (videoId) => {
             ytPlayer.playVideo();
             musicStarted = true;
             updateMusicButtonState(false);
+            updatePlayerUIState();
         }
     });
 };
@@ -2373,12 +3631,7 @@ const switchToDefaultMusic = () => {
     if (ytPlayer && ytPlayer.pauseVideo) {
         ytPlayer.pauseVideo();
     }
-    bgMusic.currentTime = 0;
-    bgMusic.muted = false;
-    bgMusic.play().then(() => {
-        musicStarted = true;
-        updateMusicButtonState(false);
-    }).catch(() => {});
+    playLocalTrack(0);
 };
 
 const initAudioAnalyser = () => {
@@ -2405,6 +3658,7 @@ const startMusic = () => {
             ytPlayer.playVideo();
             musicStarted = true;
             updateMusicButtonState(false);
+            updatePlayerUIState();
         }
         return;
     }
@@ -2415,16 +3669,71 @@ const startMusic = () => {
     bgMusic.play().then(() => {
         musicStarted = true;
         updateMusicButtonState(false);
+        updateNowPlayingCard();
     }).catch(() => {});
 };
 
-window.addEventListener('pointerdown', () => { if (!musicStarted) startMusic(); }, { once: true });
-window.addEventListener('click', () => { if (!musicStarted) startMusic(); }, { once: true });
-window.addEventListener('keydown', () => { if (!musicStarted) startMusic(); }, { once: true });
+// Event listeners cho bgMusic
+bgMusic.addEventListener('play', updatePlayerUIState);
+bgMusic.addEventListener('pause', updatePlayerUIState);
+bgMusic.addEventListener('ended', () => {
+    if (isLoopMode) {
+        nextTrack();
+    } else {
+        updatePlayerUIState();
+    }
+});
+
+bgMusic.addEventListener('timeupdate', () => {
+    if (isPlayerSeeking) return;
+    const curTimeEl = document.getElementById('player-current-time');
+    const durTimeEl = document.getElementById('player-duration-time');
+    const progressBar = document.getElementById('player-progress-bar');
+
+    if (curTimeEl) curTimeEl.innerText = formatTime(bgMusic.currentTime);
+    if (durTimeEl && bgMusic.duration && !isNaN(bgMusic.duration)) {
+        durTimeEl.innerText = formatTime(bgMusic.duration);
+    }
+    if (progressBar && bgMusic.duration && !isNaN(bgMusic.duration) && bgMusic.duration > 0) {
+        progressBar.value = (bgMusic.currentTime / bgMusic.duration) * 100;
+    }
+});
+
+// Mở khóa âm thanh an toàn và tức thì trên mọi trình duyệt di động (iOS Safari & Chrome Android)
+const unlockAudioOnTouch = () => {
+    if (!musicStarted && !isSoundMuted) {
+        startMusic();
+    }
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+    }
+    if (sfxAudioCtx && sfxAudioCtx.state === 'suspended') {
+        sfxAudioCtx.resume().catch(() => {});
+    }
+};
+
+['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, unlockAudioOnTouch, { passive: true });
+});
+
+// Tự động khôi phục AudioContext và nhạc khi người dùng quay lại tab trình duyệt trên điện thoại
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && musicStarted && !isSoundMuted) {
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+        }
+        if (sfxAudioCtx && sfxAudioCtx.state === 'suspended') {
+            sfxAudioCtx.resume().catch(() => {});
+        }
+        if (bgMusic.paused && !isUsingYouTube) {
+            bgMusic.play().catch(() => {});
+        }
+    }
+});
 
 /**
  * =========================================================================
- * 10.1 MAGIC FAIRY DUST TRAIL (Vệt bụi sao ma thuật theo chuột)
+ * 10.1 MAGIC FAIRY DUST TRAIL (Vệt bụi sao ma thuật theo chuột & ngón tay)
  * =========================================================================
  */
 const fairyCanvas = document.getElementById('fairy-canvas');
@@ -2441,16 +3750,16 @@ resizeFairyCanvas();
 
 let lastFairyTime = 0;
 
-window.addEventListener('pointermove', (e) => {
+const spawnFairyDustAt = (clientX, clientY) => {
     if (!fairyCtx || !fxConfig.fairyDust) return;
     const now = performance.now();
-    if (now - lastFairyTime < 35 || fairyDust.length > 20) return;
+    if (now - lastFairyTime < 28 || fairyDust.length > 25) return;
     lastFairyTime = now;
 
     const theme = colorThemes[currentThemeIndex];
     fairyDust.push({
-        x: e.clientX + (Math.random() - 0.5) * 8,
-        y: e.clientY + (Math.random() - 0.5) * 8,
+        x: clientX + (Math.random() - 0.5) * 8,
+        y: clientY + (Math.random() - 0.5) * 8,
         vx: (Math.random() - 0.5) * 0.8,
         vy: (Math.random() - 0.5) * 0.8 - 0.3,
         size: 11 + Math.random() * 6,
@@ -2459,7 +3768,23 @@ window.addEventListener('pointermove', (e) => {
         symbol: ['✨', '⭐', '💖', '🌟'][Math.floor(Math.random() * 4)],
         color: theme.heartGlow
     });
-});
+};
+
+window.addEventListener('pointermove', (e) => {
+    spawnFairyDustAt(e.clientX, e.clientY);
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches[0]) {
+        spawnFairyDustAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
+
+window.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+        spawnFairyDustAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: true });
 
 const updateFairyDust = () => {
     if (!fairyCtx || !fairyCanvas) return;
@@ -2531,14 +3856,31 @@ window.addEventListener('click', (event) => {
         }
     });
 
-    // 3. Tạo Pháo Hoa Trái Tim 3D tại vị trí click
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    const targetPoint = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, targetPoint);
-    if (!targetPoint || isNaN(targetPoint.x)) {
-        raycaster.ray.at(5, targetPoint);
+    if (clickedSprite) {
+        return;
     }
-    triggerHeartFirework(targetPoint);
+
+    // 2.5 Kiểm tra click trực tiếp vào Trái Tim 3D
+    if (fxConfig.showHeart !== false && heartPoints) {
+        if (!window.staticHeartCenter) window.staticHeartCenter = new THREE.Vector3(0, 2.4, 0);
+        const distToHeart = raycaster.ray.distanceToPoint(window.staticHeartCenter);
+        if (distToHeart < 1.65) {
+            // Click trúng Trái Tim -> Bùng nổ sóng ánh sáng & Trái tim pha lê mini bay vút lên trời!
+            triggerHeartBurst();
+            return;
+        }
+    }
+
+    // 3. Tạo Pháo Hoa Trái Tim 3D tại vị trí click nền không gian
+    if (!window.clickPlane) {
+        window.clickPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        window.clickTargetPoint = new THREE.Vector3();
+    }
+    raycaster.ray.intersectPlane(window.clickPlane, window.clickTargetPoint);
+    if (!window.clickTargetPoint || isNaN(window.clickTargetPoint.x)) {
+        raycaster.ray.at(5, window.clickTargetPoint);
+    }
+    triggerHeartFirework(window.clickTargetPoint);
 });
 
 window.addEventListener('dblclick', (e) => {
@@ -2554,6 +3896,8 @@ window.addEventListener('keydown', (e) => {
         spawnMeteorShower();
     } else if (e.code === 'KeyF') {
         triggerHeartFirework();
+    } else if (e.code === 'KeyW') {
+        triggerWormhole();
     } else if (e.code === 'KeyB' || e.code === 'KeyX') {
         triggerSupernovaLoveBurst();
     } else if (e.code === 'KeyS') {
@@ -2577,8 +3921,80 @@ let currentRingScale = 1.0;
 let smoothedBass = 0.0;
 
 const tick = () => {
-    const delta = clock.getDelta();
+    if (document.hidden) {
+        // Tự động tạm dừng render khi người dùng ẩn tab/khóa máy để tiết kiệm 100% pin & GPU
+        window.requestAnimationFrame(tick);
+        return;
+    }
+
+    const delta = Math.min(0.1, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
+
+    // 0.0 Cosmic Warp Entry Flight Animation (Lướt xuyên không gian vào tâm thiên hà)
+    if (isEntryWarping) {
+        entryWarpProgress += delta / entryWarpDuration;
+        const p = Math.min(1.0, entryWarpProgress);
+
+        // Perlin Smootherstep (f'(0)=0, f''(0)=0, f'(1)=0, f''(1)=0) -> Triệt tiêu 100% hiện tượng khựng giật khi hạ cánh
+        const easeT = p * p * p * (p * (p * 6 - 15) + 10);
+
+        // Đường cong Bézier bậc 2 cho quỹ đạo bay lượn uốn lượn mượt mà tuyệt đối
+        const u = 1 - easeT;
+        const tt = easeT * easeT;
+        const uu = u * u;
+        const ut2 = 2 * u * easeT;
+
+        camera.position.x = uu * entryWarpStartPos.x + ut2 * entryWarpControlPos.x + tt * defaultCameraPos.x;
+        camera.position.y = uu * entryWarpStartPos.y + ut2 * entryWarpControlPos.y + tt * defaultCameraPos.y;
+        camera.position.z = uu * entryWarpStartPos.z + ut2 * entryWarpControlPos.z + tt * defaultCameraPos.z;
+
+        const targetFOV = isPortrait() ? 80 : 75;
+        const startFOV = isPortrait() ? 96 : 90;
+        camera.fov = startFOV + (targetFOV - startFOV) * easeT;
+        camera.updateProjectionMatrix();
+
+        controls.target.lerpVectors(entryWarpStartTarget, defaultTarget, easeT);
+        camera.lookAt(controls.target);
+
+        // Đồng bộ liên tục ma trận nội bộ của OrbitControls để chuyển giao điều khiển mượt mà êm ru
+        controls.update();
+
+        // Hiệu ứng vệt sao tốc độ cao (Hyperspace Star Streaks)
+        if (entryWarpMesh && entryWarpMesh.visible) {
+            const posAttr = entryWarpMesh.geometry.attributes.position;
+            const warpSpeed = 1.0 + (1.0 - easeT) * 4.5;
+            for (let i = 0; i < entryWarpCount; i++) {
+                const i6 = i * 6;
+                posAttr.array[i6 + 2] += warpSpeed;
+                posAttr.array[i6 + 5] += warpSpeed;
+                if (posAttr.array[i6 + 2] > 45) {
+                    posAttr.array[i6 + 2] -= 80;
+                    posAttr.array[i6 + 5] -= 80;
+                }
+            }
+            posAttr.needsUpdate = true;
+            // Mờ dần êm ái trước khi chạm đích
+            const fade = Math.max(0, Math.min(0.95, (1.0 - easeT) * 1.5));
+            entryWarpMat.opacity = fade;
+            if (fade <= 0.01) {
+                entryWarpMesh.visible = false;
+            }
+        }
+
+        if (p >= 1.0) {
+            isEntryWarping = false;
+            if (entryWarpMesh) entryWarpMesh.visible = false;
+            controls.enabled = true;
+            controls.autoRotate = (fxConfig.rotationSpeed > 0);
+            camera.position.copy(defaultCameraPos);
+            controls.target.copy(defaultTarget);
+            camera.fov = targetFOV;
+            camera.updateProjectionMatrix();
+            controls.update();
+            playSparkleChime();
+            spawnMeteorShower();
+        }
+    }
 
     // 0. Audio Visualizer & YouTube Rhythm Engine
     let rawBass = 0;
@@ -2632,52 +4048,76 @@ const tick = () => {
         });
     }
 
-    // 0.4 Cập nhật Cổng Dịch Chuyển Wormhole
+    // 0.4 Cập nhật Cổng Dịch Chuyển Wormhole (Cinematic Smooth Flight & FOV Interpolation)
     if (isWarping && warpFlightCurve) {
-        warpProgress += delta * 0.38;
-        
+        warpProgress += delta * 0.30;
+        const p = Math.min(1.0, Math.max(0.0, warpProgress));
+        // S-curve EaseInOut for hyper-smooth speed profile
+        const easeT = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+
         if (typeof portalRingMesh !== 'undefined' && typeof portalRingMesh2 !== 'undefined' && typeof portalDisk1 !== 'undefined') {
-            portalRingMesh.rotation.z -= delta * 5.5;
-            portalRingMesh2.rotation.z += delta * 4.0;
-            portalDisk1.material.rotation += delta * 3.5;
+            const spinMult = 1.0 + Math.sin(easeT * Math.PI) * 2.5;
+            portalRingMesh.rotation.z -= delta * 5.0 * spinMult;
+            portalRingMesh2.rotation.z += delta * 4.0 * spinMult;
+            portalDisk1.material.rotation += delta * 3.5 * spinMult;
         }
 
-        const posAttr = warpStarsMesh.geometry.attributes.position;
-        for (let i = 0; i < warpStarCount; i++) {
-            const i6 = i * 6;
-            posAttr.array[i6 + 2] += (0.8 + warpProgress * 3.5);
-            posAttr.array[i6 + 5] += (0.8 + warpProgress * 3.5);
-            if (posAttr.array[i6 + 2] > 16) {
-                posAttr.array[i6 + 2] -= 32;
-                posAttr.array[i6 + 5] -= 32;
+        // Warp stars particle motion & opacity
+        if (warpStarsMesh && warpStarsMesh.geometry) {
+            const posAttr = warpStarsMesh.geometry.attributes.position;
+            const starSpeed = (0.8 + Math.sin(easeT * Math.PI) * 4.2);
+            for (let i = 0; i < warpStarCount; i++) {
+                const i6 = i * 6;
+                posAttr.array[i6 + 2] += starSpeed;
+                posAttr.array[i6 + 5] += starSpeed;
+                if (posAttr.array[i6 + 2] > 16) {
+                    posAttr.array[i6 + 2] -= 32;
+                    posAttr.array[i6 + 5] -= 32;
+                }
+            }
+            posAttr.needsUpdate = true;
+            if (warpStarMat) {
+                warpStarMat.opacity = Math.sin(easeT * Math.PI) * 0.95;
             }
         }
-        posAttr.needsUpdate = true;
 
-        const clampedT = Math.min(1.0, Math.max(0.0, warpProgress));
-        const currentCamPos = warpFlightCurve.getPointAt(clampedT);
+        // Camera position along curve
+        const currentCamPos = warpFlightCurve.getPointAt(easeT);
         camera.position.copy(currentCamPos);
 
-        if (clampedT < 0.45) {
-            const p1 = clampedT / 0.45;
-            const portalScale = Math.sin(p1 * Math.PI * 0.5) * 1.9;
-            wormholePortalGroup.scale.set(portalScale, portalScale, portalScale);
-            camera.fov = 75 + p1 * 30;
-            camera.updateProjectionMatrix();
-            controls.target.lerp(new THREE.Vector3(0, 2.4, 0), 0.15);
-        } else if (clampedT < 0.58) {
+        // Dynamic forward-facing camera look target
+        if (easeT < 0.72) {
+            const forwardT = Math.min(1.0, easeT + 0.08);
+            const forwardLook = warpFlightCurve.getPointAt(forwardT);
+            controls.target.lerp(forwardLook, 0.22);
+        } else {
+            const returnP = (easeT - 0.72) / 0.28;
+            controls.target.lerp(defaultTarget, returnP * 0.15 + 0.08);
+        }
+        camera.lookAt(controls.target);
+
+        // Smooth cinematic FOV breathing (no sudden jumps!)
+        const fovSpread = Math.sin(easeT * Math.PI) * 26.0;
+        camera.fov = 75 + fovSpread;
+        camera.updateProjectionMatrix();
+
+        // Portal scale expansion & collapse
+        if (easeT < 0.55) {
+            const pScale = Math.sin((easeT / 0.55) * Math.PI * 0.5) * 2.2;
+            wormholePortalGroup.scale.set(pScale, pScale, pScale);
+        } else {
+            const shrinkRatio = Math.max(0, (1.0 - (easeT - 0.55) / 0.45));
+            const pScale = shrinkRatio * 2.2;
+            wormholePortalGroup.scale.set(pScale, pScale, pScale);
+        }
+
+        // Event Horizon flash trigger (clean 1-time trigger)
+        if (easeT >= 0.44 && easeT <= 0.54) {
             const flashEl = document.getElementById('wormhole-flash');
             if (flashEl && !flashEl.classList.contains('active')) {
                 flashEl.classList.add('active');
-                setTimeout(() => flashEl.classList.remove('active'), 550);
+                setTimeout(() => flashEl.classList.remove('active'), 600);
             }
-            camera.fov = 75;
-            camera.updateProjectionMatrix();
-        } else {
-            const p2 = (clampedT - 0.58) / 0.42;
-            const portalShrink = Math.max(0, (1.0 - p2) * 1.9);
-            wormholePortalGroup.scale.set(portalShrink, portalShrink, portalShrink);
-            controls.target.lerp(defaultTarget, 0.08);
         }
 
         if (warpProgress >= 1.0) {
@@ -2686,6 +4126,7 @@ const tick = () => {
             warpStarsGroup.visible = false;
             warpFlightCurve = null;
 
+            controls.enabled = true;
             camera.position.copy(defaultCameraPos);
             controls.target.copy(defaultTarget);
             camera.fov = 75;
@@ -2704,16 +4145,48 @@ const tick = () => {
         starfieldPoints.rotation.y = elapsedTime * 0.015;
     }
 
-    // 2. Rotate & Pulse Heart (Thở êm dịu, uyển chuyển, không bị giật)
+    // 2. Rotate & Realistic Double Heartbeat Pulse (Nhịp đập "Thình... Thịch" sống động như hơi thở thật)
     if (heartPoints) {
         heartPoints.rotation.y = elapsedTime * 0.08;
 
-        const steadyBreathe = Math.sin(elapsedTime * 1.4) * 0.05;
-        const bassAdd = smoothedBass * 0.08;
-        const targetScale = 1.0 + steadyBreathe + bassAdd;
+        // Xoay nhẹ các dải lụa năng lượng và hiệu ứng đa tầng
+        heartPoints.children.forEach(child => {
+            if (child.isMesh && child.userData && child.userData.speed) {
+                child.rotation.z += child.userData.speed * delta;
+            }
+            if (child.userData && child.userData.isStardust) {
+                child.rotation.y = -elapsedTime * 0.04;
+                child.position.y = Math.sin(elapsedTime * 1.4) * 0.03;
+            }
+            if (child.userData && child.userData.isCleft && child.material) {
+                // Nhấp nháy thở nhẹ ở khe tim theo nhịp đập và âm bass
+                child.material.opacity = child.userData.baseOpacity + Math.sin(elapsedTime * 2.8) * 0.07 + smoothedBass * 0.10;
+                child.material.size = 0.021 + Math.sin(elapsedTime * 3.2) * 0.003 + smoothedBass * 0.006;
+            }
+        });
 
-        currentHeartScale += (targetScale - currentHeartScale) * 0.1;
-        heartPoints.scale.set(currentHeartScale, currentHeartScale, currentHeartScale);
+        // Nhịp tim đập đôi chân thực (Lub-Dub Heartbeat Rhythm)
+        const heartRate = 1.25; // ~75 nhịp/phút
+        const cycle = (elapsedTime * heartRate) % 1.0;
+        let heartBeat = 0;
+        if (cycle < 0.14) {
+            // Lub (Co bóp chính mạnh mẽ, ấm áp)
+            heartBeat = Math.sin((cycle / 0.14) * Math.PI) * 0.095;
+        } else if (cycle > 0.18 && cycle < 0.32) {
+            // Dub (Co bóp phụ tiếp nối)
+            heartBeat = Math.sin(((cycle - 0.18) / 0.14) * Math.PI) * 0.048;
+        } else {
+            // Nhịp thở êm đềm giữa các chu kỳ
+            heartBeat = Math.sin(cycle * Math.PI * 2) * 0.012;
+        }
+
+        const bassAdd = smoothedBass * 0.11;
+        const targetScale = 1.0 + heartBeat + bassAdd;
+
+        currentHeartScale += (targetScale - currentHeartScale) * 0.14;
+        if (!isSupernovaRunning) {
+            heartPoints.scale.set(currentHeartScale, currentHeartScale, currentHeartScale);
+        }
     }
 
     // 2.1 Xoay Vành đai
@@ -2721,7 +4194,9 @@ const tick = () => {
         heartRingPoints.rotation.y = elapsedTime * 0.05;
         const ringTarget = 1.0 + (currentHeartScale - 1.0) * 0.5;
         currentRingScale += (ringTarget - currentRingScale) * 0.08;
-        heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
+        if (!isSupernovaRunning) {
+            heartRingPoints.scale.set(currentRingScale, currentRingScale, currentRingScale);
+        }
     }
 
     // 2.2 Cập nhật Vòng Sóng Âm Nhạc 3D (Audio Visualizer Waves Ring - Nhảy múa cả khi phát YouTube & MP3)
@@ -2762,8 +4237,10 @@ const tick = () => {
             posAttr.setXYZ(i, Math.cos(angle) * r, yVal, Math.sin(angle) * r);
 
             const mixRatio = 0.5 + Math.sin(angle * 3 + elapsedTime * 2) * 0.5;
-            const col = baseCol.clone().lerp(altCol, mixRatio);
-            colorAttr.setXYZ(i, col.r, col.g, col.b);
+            const rVal = THREE.MathUtils.lerp(baseCol.r, altCol.r, mixRatio);
+            const gVal = THREE.MathUtils.lerp(baseCol.g, altCol.g, mixRatio);
+            const bVal = THREE.MathUtils.lerp(baseCol.b, altCol.b, mixRatio);
+            colorAttr.setXYZ(i, rVal, gVal, bVal);
         }
         posAttr.needsUpdate = true;
         colorAttr.needsUpdate = true;
@@ -2816,6 +4293,7 @@ const tick = () => {
 
     // 5. Pháo hoa Trái Tim 3D update
     fireworkPool.forEach(f => f.update(delta));
+    updateHeartBurst(delta, elapsedTime);
 
     // 6. Floating Sprites Orbit
     getAllOrbitSprites().forEach(sprite => {
@@ -2893,6 +4371,8 @@ const tick = () => {
             if (heartRingPoints) heartRingPoints.scale.set(scaleDown, scaleDown, scaleDown);
             if (galaxyPoints) galaxyPoints.scale.set(scaleDown, scaleDown, scaleDown);
             if (saturnMainGroup) saturnMainGroup.scale.set(scaleDown, scaleDown, scaleDown);
+            if (audioVisualizerGroup) audioVisualizerGroup.scale.set(scaleDown, scaleDown, scaleDown);
+            if (textSprite) textSprite.scale.set(3.6 * scaleDown, 0.9 * scaleDown, 1 * scaleDown);
 
             if (supernovaShockwave) {
                 supernovaShockwave.material.opacity = progress * 0.8;
@@ -2906,7 +4386,7 @@ const tick = () => {
 
                 playSupernovaDetonationSound();
 
-                // Flash
+                // Flash & Heavy Screen Shake on Detonation
                 const flashEl = document.getElementById('supernova-flash');
                 if (flashEl) {
                     flashEl.classList.remove('fade-out');
@@ -2915,6 +4395,12 @@ const tick = () => {
                         flashEl.classList.remove('active');
                         flashEl.classList.add('fade-out');
                     }, 200);
+                }
+                const appEl = document.getElementById('app');
+                if (appEl) {
+                    appEl.classList.remove('screen-shake');
+                    void appEl.offsetWidth;
+                    appEl.classList.add('screen-shake');
                 }
 
                 // Kích nổ 4.500 hạt Siêu Tân Tinh
@@ -2958,6 +4444,14 @@ const tick = () => {
             }
         } else if (supernovaState === 'explosion') {
             // Giai đoạn 2: Bùng nổ hạt & lan tỏa sóng xung kích (0 -> 3.2s)
+            const explMinScale = 0.001;
+            if (heartPoints) heartPoints.scale.set(explMinScale, explMinScale, explMinScale);
+            if (heartRingPoints) heartRingPoints.scale.set(explMinScale, explMinScale, explMinScale);
+            if (galaxyPoints) galaxyPoints.scale.set(explMinScale, explMinScale, explMinScale);
+            if (saturnMainGroup) saturnMainGroup.scale.set(explMinScale, explMinScale, explMinScale);
+            if (audioVisualizerGroup) audioVisualizerGroup.scale.set(explMinScale, explMinScale, explMinScale);
+            if (textSprite) textSprite.scale.set(3.6 * explMinScale, 0.9 * explMinScale, 1 * explMinScale);
+
             const posAttr = supernovaGeom.attributes.position;
 
             for (let i = 0; i < supernovaParticleCount; i++) {
@@ -3002,6 +4496,8 @@ const tick = () => {
             if (heartRingPoints) heartRingPoints.scale.set(smoothScale, smoothScale, smoothScale);
             if (galaxyPoints) galaxyPoints.scale.set(smoothScale, smoothScale, smoothScale);
             if (saturnMainGroup) saturnMainGroup.scale.set(smoothScale, smoothScale, smoothScale);
+            if (audioVisualizerGroup) audioVisualizerGroup.scale.set(smoothScale, smoothScale, smoothScale);
+            if (textSprite) textSprite.scale.set(3.6 * smoothScale, 0.9 * smoothScale, 1 * smoothScale);
 
             supernovaMat.opacity = Math.max(0, 1.0 - rebProgress);
 
@@ -3015,6 +4511,8 @@ const tick = () => {
                 if (heartRingPoints) heartRingPoints.scale.set(1, 1, 1);
                 if (galaxyPoints) galaxyPoints.scale.set(1, 1, 1);
                 if (saturnMainGroup) saturnMainGroup.scale.set(1, 1, 1);
+                if (audioVisualizerGroup) audioVisualizerGroup.scale.set(1, 1, 1);
+                if (textSprite) textSprite.scale.set(3.6, 0.9, 1);
                 playSparkleChime();
             }
         }
@@ -3030,7 +4528,8 @@ const tick = () => {
         camera.position.z = Math.cos(ct) * radius;
         camera.position.y = 2.4 + Math.sin(ct * 1.3) * 1.8;
 
-        controls.target.lerp(new THREE.Vector3(0, 2.2, 0), 0.05);
+        if (!window.staticCinemaTarget) window.staticCinemaTarget = new THREE.Vector3(0, 2.2, 0);
+        controls.target.lerp(window.staticCinemaTarget, 0.05);
         controls.update();
     } else {
         controls.autoRotate = (!isResettingView && fxConfig.rotationSpeed > 0);
@@ -3046,7 +4545,7 @@ const tick = () => {
         }
     }
 
-    if (!isCinemaMode) {
+    if (!isCinemaMode && !isWarping) {
         controls.update();
     }
 
@@ -3356,7 +4855,7 @@ const btnCloseSaturnModal = document.getElementById('btn-close-saturn-modal');
 
 const syncSaturnModalSettingsUI = () => {
     if (toggleSaturnEnabledTab) toggleSaturnEnabledTab.checked = (fxConfig.showSaturnRings !== false);
-    if (selectSaturnTheme) selectSaturnTheme.value = fxConfig.saturnTheme || 'gold';
+    if (selectSaturnTheme) selectSaturnTheme.value = fxConfig.saturnTheme || 'rainbow';
     if (selectSaturnSpeed) selectSaturnSpeed.value = String(fxConfig.saturnSpeed !== undefined ? fxConfig.saturnSpeed : 0.08);
     if (selectSaturnTilt) selectSaturnTilt.value = fxConfig.saturnTilt || 'saturn';
 };
@@ -3525,7 +5024,7 @@ if (btnUpload && imageUploadInput) {
     });
 }
 
-// 9. Nút Đổi Nhạc & Presets
+// 9. Nút Đổi Nhạc, Trình Phát & Danh Sách Bài Hát
 const btnChangeMusic = document.getElementById('btn-change-music');
 const musicModal = document.getElementById('music-modal');
 const youtubeUrlInput = document.getElementById('youtube-url-input');
@@ -3533,14 +5032,162 @@ const btnPlayYouTube = document.getElementById('btn-play-youtube');
 const btnDefaultMusic = document.getElementById('btn-default-music');
 const btnCancelMusic = document.getElementById('btn-cancel-music');
 
+const tabBtnLocal = document.getElementById('tab-btn-local');
+const tabBtnYt = document.getElementById('tab-btn-yt');
+const tabLocalMusic = document.getElementById('tab-local-music');
+const tabYtMusic = document.getElementById('tab-youtube-music');
+
+const btnTriggerUploadAudio = document.getElementById('btn-trigger-upload-audio');
+const audioUploadInput = document.getElementById('audio-upload-input');
+
+const btnPlayerPlay = document.getElementById('btn-player-play');
+const btnPlayerNext = document.getElementById('btn-player-next');
+const btnPlayerPrev = document.getElementById('btn-player-prev');
+const btnPlayerShuffle = document.getElementById('btn-player-shuffle');
+const btnPlayerLoop = document.getElementById('btn-player-loop');
+const playerProgressBar = document.getElementById('player-progress-bar');
+const playerVolumeSlider = document.getElementById('player-volume-slider');
+const playerVolumePercent = document.getElementById('player-volume-percent');
+
+// Khởi tạo hiển thị ban đầu của Playlist và Now Playing Card
+renderLocalPlaylist();
+updateNowPlayingCard();
+
 if (btnChangeMusic && musicModal) {
     btnChangeMusic.addEventListener('click', (e) => {
         e.stopPropagation();
+        renderLocalPlaylist();
+        updateNowPlayingCard();
         musicModal.classList.add('show');
-        youtubeUrlInput.focus();
     });
 
-    // Preset buttons
+    // Chuyển tab giữa Thư Mục Audio và YouTube
+    if (tabBtnLocal && tabBtnYt && tabLocalMusic && tabYtMusic) {
+        tabBtnLocal.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tabBtnLocal.classList.add('active');
+            tabBtnYt.classList.remove('active');
+            tabLocalMusic.classList.add('active');
+            tabYtMusic.classList.remove('active');
+        });
+
+        tabBtnYt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tabBtnYt.classList.add('active');
+            tabBtnLocal.classList.remove('active');
+            tabYtMusic.classList.add('active');
+            tabLocalMusic.classList.remove('active');
+        });
+    }
+
+    // Tải tệp âm thanh từ máy tính cá nhân
+    if (btnTriggerUploadAudio && audioUploadInput) {
+        btnTriggerUploadAudio.addEventListener('click', (e) => {
+            e.stopPropagation();
+            audioUploadInput.click();
+        });
+
+        audioUploadInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            let firstNewIndex = -1;
+            Array.from(files).forEach((file) => {
+                const url = URL.createObjectURL(file);
+                const cleanName = file.name.replace(/\.[^/.]+$/, "");
+                const newTrack = {
+                    id: `user-track-${Date.now()}-${Math.random()}`,
+                    title: cleanName,
+                    artist: 'Nhạc Tải Lên (Cá Nhân)',
+                    src: url,
+                    sourceType: 'user'
+                };
+                localPlaylist.push(newTrack);
+                if (firstNewIndex === -1) {
+                    firstNewIndex = localPlaylist.length - 1;
+                }
+            });
+
+            renderLocalPlaylist();
+            if (firstNewIndex !== -1) {
+                playLocalTrack(firstNewIndex);
+            }
+            audioUploadInput.value = '';
+        });
+    }
+
+    // Thanh tua thời gian nhạc (Seek bar)
+    if (playerProgressBar) {
+        playerProgressBar.addEventListener('input', (e) => {
+            isPlayerSeeking = true;
+            if (bgMusic.duration && !isNaN(bgMusic.duration)) {
+                const curTimeEl = document.getElementById('player-current-time');
+                const seekSec = (parseFloat(e.target.value) / 100) * bgMusic.duration;
+                if (curTimeEl) curTimeEl.innerText = formatTime(seekSec);
+            }
+        });
+
+        playerProgressBar.addEventListener('change', (e) => {
+            if (bgMusic.duration && !isNaN(bgMusic.duration)) {
+                bgMusic.currentTime = (parseFloat(e.target.value) / 100) * bgMusic.duration;
+            }
+            isPlayerSeeking = false;
+        });
+    }
+
+    // Nút điều khiển trình phát chính
+    if (btnPlayerPlay) {
+        btnPlayerPlay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePlayPause();
+        });
+    }
+
+    if (btnPlayerNext) {
+        btnPlayerNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nextTrack();
+        });
+    }
+
+    if (btnPlayerPrev) {
+        btnPlayerPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            prevTrack();
+        });
+    }
+
+    if (btnPlayerShuffle) {
+        btnPlayerShuffle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isShuffleMode = !isShuffleMode;
+            btnPlayerShuffle.classList.toggle('active', isShuffleMode);
+        });
+    }
+
+    if (btnPlayerLoop) {
+        btnPlayerLoop.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isLoopMode = !isLoopMode;
+            btnPlayerLoop.classList.toggle('active', isLoopMode);
+        });
+    }
+
+    // Thanh chỉnh âm lượng
+    if (playerVolumeSlider) {
+        playerVolumeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            bgMusic.volume = val;
+            if (playerVolumePercent) {
+                playerVolumePercent.innerText = `${Math.round(val * 100)}%`;
+            }
+            if (ytPlayer && ytPlayer.setVolume) {
+                ytPlayer.setVolume(Math.round(val * 100));
+            }
+        });
+    }
+
+    // Preset buttons YouTube
     document.querySelectorAll('.btn-preset-song').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -3556,40 +5203,47 @@ if (btnChangeMusic && musicModal) {
         });
     });
 
-    btnPlayYouTube.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const url = youtubeUrlInput.value.trim();
-        const videoId = extractYouTubeId(url);
-        if (videoId) {
+    if (btnPlayYouTube) {
+        btnPlayYouTube.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const url = youtubeUrlInput ? youtubeUrlInput.value.trim() : '';
+            const videoId = extractYouTubeId(url);
+            if (videoId) {
+                try {
+                    localStorage.setItem('galaxy_yt_music', url);
+                } catch (err) {}
+                playYouTubeMusic(videoId);
+                musicModal.classList.remove('show');
+            } else {
+                alert('Vui lòng nhập link YouTube hợp lệ!');
+            }
+        });
+    }
+
+    if (btnDefaultMusic) {
+        btnDefaultMusic.addEventListener('click', (e) => {
+            e.stopPropagation();
             try {
-                localStorage.setItem('galaxy_yt_music', url);
+                localStorage.removeItem('galaxy_yt_music');
             } catch (err) {}
-            playYouTubeMusic(videoId);
+            switchToDefaultMusic();
+        });
+    }
+
+    if (btnCancelMusic) {
+        btnCancelMusic.addEventListener('click', (e) => {
+            e.stopPropagation();
             musicModal.classList.remove('show');
-        } else {
-            alert('Vui lòng nhập link YouTube hợp lệ!');
-        }
-    });
+        });
+    }
 
-    btnDefaultMusic.addEventListener('click', (e) => {
-        e.stopPropagation();
-        try {
-            localStorage.removeItem('galaxy_yt_music');
-        } catch (err) {}
-        switchToDefaultMusic();
-        musicModal.classList.remove('show');
-    });
-
-    btnCancelMusic.addEventListener('click', (e) => {
-        e.stopPropagation();
-        musicModal.classList.remove('show');
-    });
-
-    youtubeUrlInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            btnPlayYouTube.click();
-        }
-    });
+    if (youtubeUrlInput) {
+        youtubeUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                btnPlayYouTube?.click();
+            }
+        });
+    }
 }
 
 // 10. Nút Bật/Tắt Âm thanh
@@ -3636,6 +5290,32 @@ if (btnReset) {
         getAllOrbitSprites().forEach(sprite => {
             sprite.userData.isZoomed = false;
         });
+    });
+}
+
+// 11.1 Nút Chế Độ Toàn Màn Hình (Fullscreen)
+const btnFullscreen = document.getElementById('btn-fullscreen');
+if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+            btnFullscreen.classList.add('active');
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            }
+            btnFullscreen.classList.remove('active');
+        }
+        playSparkleChime();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            btnFullscreen.classList.remove('active');
+        } else {
+            btnFullscreen.classList.add('active');
+        }
     });
 }
 
@@ -3726,28 +5406,67 @@ const initLoadingScreen = () => {
 
     const loadingBar = document.getElementById('loading-bar');
     const loadingPercent = document.getElementById('loading-percent');
+    const loadingHint = loadingScreen.querySelector('.loading-hint');
+
+    let isDismissed = false;
+    const dismissLoading = () => {
+        if (isDismissed) return;
+
+        // Nếu đang ở màn hình dọc trên điện thoại -> Giữ lại, không cho bắt đầu cho đến khi xoay ngang
+        if (shouldEnforceLandscape()) {
+            isAssetsLoadingFinished = true;
+            if (loadingBar) loadingBar.style.width = '100%';
+            if (loadingPercent) loadingPercent.textContent = '100%';
+            if (loadingHint) loadingHint.textContent = '📱 Vui lòng xoay ngang điện thoại để du hành vào Vũ Trụ 💖';
+            enforceLandscape();
+            return;
+        }
+
+        isDismissed = true;
+        hasGalaxyJourneyStarted = true;
+        clearInterval(progressInterval);
+        if (loadingBar) loadingBar.style.width = '100%';
+        if (loadingPercent) loadingPercent.textContent = '100%';
+
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => {
+            loadingScreen.remove();
+        }, 850);
+
+        startCosmicEntryFlight();
+
+        if (!musicStarted && !isSoundMuted) {
+            startMusic();
+        }
+    };
+
+    dismissLoadingScreenFn = dismissLoading;
+
+    // Chạm/Click vào màn hình loading để bắt đầu ngay lập tức
+    loadingScreen.addEventListener('click', dismissLoading, { passive: true });
+    loadingScreen.addEventListener('touchstart', dismissLoading, { passive: true });
 
     let currentProgress = 0;
     const progressInterval = setInterval(() => {
-        currentProgress += Math.floor(Math.random() * 14) + 8;
+        if (isDismissed) return;
+        currentProgress += Math.floor(Math.random() * 18) + 12;
         if (currentProgress >= 100) {
             currentProgress = 100;
-            clearInterval(progressInterval);
-
             if (loadingBar) loadingBar.style.width = '100%';
             if (loadingPercent) loadingPercent.textContent = '100%';
-
-            setTimeout(() => {
-                loadingScreen.classList.add('fade-out');
-                setTimeout(() => {
-                    loadingScreen.remove();
-                }, 950);
-            }, 350);
+            isAssetsLoadingFinished = true;
+            if (shouldEnforceLandscape()) {
+                if (loadingHint) loadingHint.textContent = '📱 Vui lòng xoay ngang điện thoại để du hành vào Vũ Trụ 💖';
+                enforceLandscape();
+            } else {
+                dismissLoading();
+            }
         } else {
             if (loadingBar) loadingBar.style.width = `${currentProgress}%`;
             if (loadingPercent) loadingPercent.textContent = `${currentProgress}%`;
         }
-    }, 45);
+    }, 40);
 };
 
 initLoadingScreen();
+
